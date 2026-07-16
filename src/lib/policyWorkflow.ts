@@ -40,6 +40,7 @@ function contentTypeFor(file: File) {
 
 export async function uploadPolicyDraft(input: {
   file: File;
+  previewPdf?: File | null;
   note?: string;
   title?: string;
 }) {
@@ -49,6 +50,14 @@ export async function uploadPolicyDraft(input: {
 
   if (!allowedTypes.has(contentType)) {
     throw new Error("الصيغ المسموحة هي PDF و DOCX فقط.");
+  }
+
+  if (contentType !== "application/pdf" && !input.previewPdf) {
+    throw new Error("لمعاينة Word بدقة، ارفع نسخة PDF مطابقة مع ملف DOCX.");
+  }
+
+  if (input.previewPdf && contentTypeFor(input.previewPdf) !== "application/pdf") {
+    throw new Error("ملف المعاينة يجب أن يكون PDF.");
   }
 
   const {
@@ -122,6 +131,14 @@ export async function uploadPolicyDraft(input: {
     throw fileError;
   }
 
+  if (input.previewPdf) {
+    await uploadPreviewPdf({
+      policyId,
+      versionId,
+      file: input.previewPdf,
+    });
+  }
+
   await supabase.from("file_processing_jobs").insert({
     policy_id: policyId,
     version_id: versionId,
@@ -136,6 +153,7 @@ export async function uploadPolicyDraft(input: {
 export async function uploadRevision(input: {
   policy: Policy;
   file: File;
+  previewPdf?: File | null;
   note?: string;
 }) {
   const supabase = assertSupabase();
@@ -143,6 +161,14 @@ export async function uploadRevision(input: {
 
   if (!allowedTypes.has(contentType)) {
     throw new Error("الصيغ المسموحة هي PDF و DOCX فقط.");
+  }
+
+  if (contentType !== "application/pdf" && !input.previewPdf) {
+    throw new Error("لمعاينة Word بدقة، ارفع نسخة PDF مطابقة مع ملف DOCX.");
+  }
+
+  if (input.previewPdf && contentTypeFor(input.previewPdf) !== "application/pdf") {
+    throw new Error("ملف المعاينة يجب أن يكون PDF.");
   }
 
   const {
@@ -214,6 +240,14 @@ export async function uploadRevision(input: {
     throw fileError;
   }
 
+  if (input.previewPdf) {
+    await uploadPreviewPdf({
+      policyId: input.policy.id,
+      versionId,
+      file: input.previewPdf,
+    });
+  }
+
   await supabase.from("file_processing_jobs").insert({
     policy_id: input.policy.id,
     version_id: versionId,
@@ -223,6 +257,63 @@ export async function uploadRevision(input: {
   });
 
   return { versionId, fileId };
+}
+
+export async function uploadPreviewPdf(input: {
+  policyId: string;
+  versionId: string;
+  file: File;
+}) {
+  const supabase = assertSupabase();
+  const contentType = contentTypeFor(input.file);
+
+  if (contentType !== "application/pdf") {
+    throw new Error("ملف المعاينة الرسمي يجب أن يكون PDF.");
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error("يجب تسجيل الدخول قبل رفع ملف المعاينة.");
+  }
+
+  const fileId = crypto.randomUUID();
+  const fileName = safeFileName(input.file.name);
+  const storagePath = `${user.id}/${input.policyId}/${input.versionId}/preview-${Date.now()}-${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("policy-previews")
+    .upload(storagePath, input.file, {
+      contentType,
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { error: fileError } = await supabase.from("policy_files").insert({
+    id: fileId,
+    policy_id: input.policyId,
+    version_id: input.versionId,
+    bucket_id: "policy-previews",
+    storage_path: storagePath,
+    file_kind: "preview",
+    file_name: input.file.name,
+    content_type: contentType,
+    file_size: input.file.size,
+    preview_ready: true,
+    created_by: user.id,
+  });
+
+  if (fileError) {
+    throw fileError;
+  }
+
+  return { fileId };
 }
 
 export async function submitPolicyVersion(

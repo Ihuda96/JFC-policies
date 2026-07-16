@@ -9,6 +9,7 @@ import {
 
 export function UploadPolicyPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [previewPdf, setPreviewPdf] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [result, setResult] = useState<{ policyId: string; versionId: string } | null>(null);
@@ -18,9 +19,18 @@ export function UploadPolicyPage() {
 
   function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     setFile(event.target.files?.[0] ?? null);
+    setPreviewPdf(null);
     setResult(null);
     setError(null);
   }
+
+  function onPreviewChange(event: ChangeEvent<HTMLInputElement>) {
+    setPreviewPdf(event.target.files?.[0] ?? null);
+    setResult(null);
+    setError(null);
+  }
+
+  const needsPreviewPdf = Boolean(file && file.name.toLowerCase().endsWith(".docx"));
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,7 +42,7 @@ export function UploadPolicyPage() {
     setLoading(true);
     setError(null);
     try {
-      const uploaded = await uploadPolicyDraft({ file, title, note });
+      const uploaded = await uploadPolicyDraft({ file, previewPdf, title, note });
       setResult(uploaded);
     } catch (err) {
       setError(readableWorkflowError(err));
@@ -98,8 +108,19 @@ export function UploadPolicyPage() {
               onChange={onFileChange}
             />
           </label>
+          {needsPreviewPdf ? (
+            <label className="dropzone compact-dropzone">
+              <FileUp aria-hidden="true" />
+              <strong>{previewPdf ? previewPdf.name : "ارفع PDF مطابق للمعاينة الرسمية"}</strong>
+              <span>مطلوب مع DOCX لمراجعة التنسيق بدقة</span>
+              <input type="file" accept=".pdf,application/pdf" onChange={onPreviewChange} />
+            </label>
+          ) : null}
           {error ? <p className="inline-error">{error}</p> : null}
-          <button className="primary-button full" disabled={loading || !file || Boolean(result)}>
+          <button
+            className="primary-button full"
+            disabled={loading || !file || Boolean(result) || (needsPreviewPdf && !previewPdf)}
+          >
             {loading ? "جاري الرفع..." : result ? "تم الرفع" : "رفع ومعاينة"}
           </button>
         </form>

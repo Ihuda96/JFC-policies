@@ -12,6 +12,7 @@ import {
   readableWorkflowError,
   returnPolicyForRevision,
   submitPolicyVersion,
+  uploadPreviewPdf,
   uploadRevision,
 } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
@@ -35,6 +36,8 @@ export function PolicyDetailPage() {
   const [actions, setActions] = useState<ApprovalAction[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [revisionFile, setRevisionFile] = useState<File | null>(null);
+  const [revisionPreviewPdf, setRevisionPreviewPdf] = useState<File | null>(null);
+  const [standalonePreviewPdf, setStandalonePreviewPdf] = useState<File | null>(null);
   const [revisionNote, setRevisionNote] = useState("");
   const [returnComment, setReturnComment] = useState("");
   const [loading, setLoading] = useState(true);
@@ -101,13 +104,13 @@ export function PolicyDetailPage() {
       return null;
     }
 
+    const files = [...(policy.policy_files ?? [])]
+      .filter((file) => file.version_id === selectedVersion.id)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
     return (
-      policy.policy_files?.find(
-        (file) => file.version_id === selectedVersion.id && file.file_kind === "preview",
-      ) ??
-      policy.policy_files?.find(
-        (file) => file.version_id === selectedVersion.id && file.file_kind === "original",
-      ) ??
+      files.find((file) => file.file_kind === "preview") ??
+      files.find((file) => file.file_kind === "original") ??
       null
     );
   }, [policy, selectedVersion]);
@@ -178,9 +181,15 @@ export function PolicyDetailPage() {
     setActionLoading(true);
     setError(null);
     try {
-      const revision = await uploadRevision({ policy, file: revisionFile, note: revisionNote });
+      const revision = await uploadRevision({
+        policy,
+        file: revisionFile,
+        previewPdf: revisionPreviewPdf,
+        note: revisionNote,
+      });
       await submitPolicyVersion(policy.id, revision.versionId, revisionNote);
       setRevisionFile(null);
+      setRevisionPreviewPdf(null);
       setRevisionNote("");
       setSelectedVersionId(revision.versionId);
       await load();
@@ -193,6 +202,38 @@ export function PolicyDetailPage() {
 
   function onRevisionFile(event: ChangeEvent<HTMLInputElement>) {
     setRevisionFile(event.target.files?.[0] ?? null);
+    setRevisionPreviewPdf(null);
+  }
+
+  function onRevisionPreviewFile(event: ChangeEvent<HTMLInputElement>) {
+    setRevisionPreviewPdf(event.target.files?.[0] ?? null);
+  }
+
+  function onStandalonePreviewFile(event: ChangeEvent<HTMLInputElement>) {
+    setStandalonePreviewPdf(event.target.files?.[0] ?? null);
+  }
+
+  async function submitPreviewPdf(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!policy || !selectedVersion || !standalonePreviewPdf) {
+      return;
+    }
+
+    setActionLoading(true);
+    setError(null);
+    try {
+      await uploadPreviewPdf({
+        policyId: policy.id,
+        versionId: selectedVersion.id,
+        file: standalonePreviewPdf,
+      });
+      setStandalonePreviewPdf(null);
+      await load();
+    } catch (err) {
+      setError(readableWorkflowError(err));
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   if (setupError) {
@@ -213,6 +254,14 @@ export function PolicyDetailPage() {
   const canOwnerRevise =
     policy.owner_id === profile?.id &&
     ["draft", "returned_for_revision"].includes(policy.status);
+  const revisionNeedsPreviewPdf = Boolean(
+    revisionFile && revisionFile.name.toLowerCase().endsWith(".docx"),
+  );
+  const selectedIsDocxWithoutPreview = Boolean(
+    selectedFile &&
+      selectedFile.file_kind === "original" &&
+      selectedFile.file_name.toLowerCase().endsWith(".docx"),
+  );
 
   return (
     <div className="policy-detail">
@@ -275,7 +324,21 @@ export function PolicyDetailPage() {
                 <span>{revisionFile ? revisionFile.name : "اختر ملف النسخة المعدلة"}</span>
                 <input type="file" accept=".pdf,.docx" onChange={onRevisionFile} />
               </label>
-              <button className="primary-button full" disabled={actionLoading || !revisionFile}>
+              {revisionNeedsPreviewPdf ? (
+                <label className="file-line">
+                  <UploadCloud aria-hidden="true" />
+                  <span>
+                    {revisionPreviewPdf
+                      ? revisionPreviewPdf.name
+                      : "ارفع PDF مطابق للنسخة المعدلة"}
+                  </span>
+                  <input type="file" accept=".pdf,application/pdf" onChange={onRevisionPreviewFile} />
+                </label>
+              ) : null}
+              <button
+                className="primary-button full"
+                disabled={actionLoading || !revisionFile || (revisionNeedsPreviewPdf && !revisionPreviewPdf)}
+              >
                 <Send aria-hidden="true" />
                 رفع وإرسال
               </button>
@@ -289,6 +352,24 @@ export function PolicyDetailPage() {
                   إرسال النسخة الحالية
                 </button>
               ) : null}
+            </form>
+          ) : null}
+
+          {selectedIsDocxWithoutPreview ? (
+            <form className="info-card" onSubmit={submitPreviewPdf}>
+              <h2>معاينة PDF مطابقة</h2>
+              <p>
+                هذه النسخة Word ولا توجد لها معاينة PDF. ارفع PDF مصدّر من Word
+                لعرض التنسيق النهائي بدقة.
+              </p>
+              <label className="file-line">
+                <UploadCloud aria-hidden="true" />
+                <span>{standalonePreviewPdf ? standalonePreviewPdf.name : "اختر PDF المعاينة"}</span>
+                <input type="file" accept=".pdf,application/pdf" onChange={onStandalonePreviewFile} />
+              </label>
+              <button className="secondary-button full" disabled={actionLoading || !standalonePreviewPdf}>
+                رفع PDF المعاينة
+              </button>
             </form>
           ) : null}
 

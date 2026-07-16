@@ -27,3 +27,5 @@ supabase/DEPLOY_TO_SUPABASE.sql
 ```
 
 See [docs/SUPABASE_MANUAL_DEPLOYMENT.md](docs/SUPABASE_MANUAL_DEPLOYMENT.md).
+
+For exact policy formatting review, DOCX uploads require a matching PDF rendition exported from Word. The app displays the PDF rendition as the official preview and keeps the original DOCX available for download.
