@@ -238,7 +238,8 @@ create table if not exists public.policy_files (
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     )
   ),
-  constraint policy_files_unique_object unique (bucket_id, storage_path)
+  constraint policy_files_unique_object unique (bucket_id, storage_path),
+  constraint policy_files_unique_kind_per_version unique (version_id, file_kind, bucket_id, storage_path)
 );
 
 create table if not exists public.policy_metadata (
@@ -321,6 +322,12 @@ create table if not exists public.file_processing_jobs (
   updated_at timestamptz not null default now(),
   constraint file_processing_jobs_attempts_positive check (attempts >= 0)
 );
+
+do $$ begin
+  alter table public.file_processing_jobs
+    add constraint file_processing_jobs_file_id_fkey
+    foreign key (file_id) references public.policy_files(id) on delete cascade;
+exception when duplicate_object then null; end $$;
 
 create table if not exists public.audit_logs (
   id bigserial primary key,

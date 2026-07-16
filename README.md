@@ -28,4 +28,6 @@ supabase/DEPLOY_TO_SUPABASE.sql
 
 See [docs/SUPABASE_MANUAL_DEPLOYMENT.md](docs/SUPABASE_MANUAL_DEPLOYMENT.md).
 
-For exact policy formatting review, DOCX uploads require a matching PDF rendition exported from Word. The app displays the PDF rendition as the official preview and keeps the original DOCX available for download.
+For exact policy formatting review, DOCX uploads are converted to PDF by the processing worker. The app displays the generated PDF as the official preview and keeps the original DOCX available for download.
+
+The DOCX conversion worker is in `workers/docx-preview-worker/`. It must run in a server environment with LibreOffice and server-only Supabase credentials.

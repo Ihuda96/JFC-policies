@@ -1107,6 +1107,48 @@ dd {
   color: var(--muted);
 }
 
+.file-action-row {
+  display: grid;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.file-action-row > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.file-action-row span,
+.file-action-row strong {
+  display: block;
+}
+
+.file-action-row span {
+  color: var(--muted);
+}
+
+.file-action-row button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--blue-900);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.row-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
 .file-line {
   min-height: 92px;
 }

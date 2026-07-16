@@ -127,7 +127,7 @@ where email = 'ضع_بريد_مدير_النظام_هنا';
 3. تحقق من ظهور لوحة مدير النظام.
 4. من صفحة `المستخدمون` فعّل حساب مدير الجودة `Halotaibi` وحساب موظف الجودة `Haljohani`.
 5. سجّل الدخول بحساب موظف الجودة وارفع ملف PDF أو DOCX.
-   - إذا كان الملف DOCX، ارفع معه PDF مطابقًا مصدّرًا من Word حتى تظهر المعاينة النهائية بدقة.
+   - إذا كان الملف DOCX، ستنشأ مهمة تحويل PDF تلقائية. تظهر المعاينة النهائية بعد تشغيل Worker التحويل.
 6. اضغط `إرسال للاعتماد`.
 7. سجّل الدخول بحساب مدير الجودة.
 8. افتح `طلبات الاعتماد` واعتمد السياسة أو أعدها للتعديل.
@@ -135,7 +135,37 @@ where email = 'ضع_بريد_مدير_النظام_هنا';
 
 إذا لم تكن الجداول منشورة أو فشل RLS، سيعرض التطبيق رسالة إعداد مطلوبة بدل محتوى وهمي.
 
-## 8. التراجع الآمن عند الفشل
+## 8. شغّل Worker تحويل Word إلى PDF
+
+معاينة DOCX الدقيقة تحتاج خدمة خلفية تشغّل LibreOffice. الكود موجود في:
+
+```text
+workers/docx-preview-worker/
+```
+
+إعدادات التشغيل تكون على الخادم فقط، ولا تُضاف إلى Vite أو المتصفح:
+
+```text
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+LIBREOFFICE_BINARY=
+WORKER_POLL_INTERVAL_MS=
+WORKER_MAX_ATTEMPTS=
+LIBREOFFICE_TIMEOUT_MS=
+```
+
+آلية العمل:
+
+1. التطبيق يرفع DOCX إلى `policy-originals`.
+2. التطبيق ينشئ صفًا في `file_processing_jobs` بنوع `docx_to_pdf_preview`.
+3. الـ Worker يحمّل ملف DOCX من Supabase Storage.
+4. LibreOffice يحوّله إلى PDF.
+5. الـ Worker يرفع PDF إلى `policy-previews`.
+6. التطبيق يعرض PDF تلقائيًا كمعاينة نهائية دقيقة.
+
+لا تشغّل هذا الـ Worker في المتصفح، ولا تضع `SUPABASE_SERVICE_ROLE_KEY` في `.env.local` الخاص بالتطبيق.
+
+## 9. التراجع الآمن عند الفشل
 
 إذا فشل تشغيل `DEPLOY_TO_SUPABASE.sql`:
 

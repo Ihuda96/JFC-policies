@@ -11,7 +11,9 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
   const [loading, setLoading] = useState(false);
 
   const isPdf = useMemo(
-    () => file?.content_type === "application/pdf" || file?.file_name.toLowerCase().endsWith(".pdf"),
+    () =>
+      file?.content_type === "application/pdf" ||
+      file?.file_name.toLowerCase().endsWith(".pdf"),
     [file],
   );
 
@@ -19,12 +21,15 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
     let cancelled = false;
 
     async function load() {
-      if (!file) {
+      setUrl(null);
+      setError(null);
+
+      if (!file || !isPdf) {
+        setLoading(false);
         return;
       }
 
       setLoading(true);
-      setError(null);
       try {
         const signed = await signedFileUrl(file, "preview");
         if (!cancelled) {
@@ -79,13 +84,15 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
         <div className="toolbar-actions">
           <button onClick={() => void openFile("download")}>
             <Download aria-hidden="true" />
-            تنزيل
+            {isPdf ? "تنزيل PDF" : "تنزيل Word"}
           </button>
-          <button onClick={() => void openFile("print")}>
-            <Printer aria-hidden="true" />
-            طباعة
-          </button>
-          {url ? (
+          {isPdf ? (
+            <button onClick={() => void openFile("print")}>
+              <Printer aria-hidden="true" />
+              طباعة
+            </button>
+          ) : null}
+          {isPdf && url ? (
             <a href={url} target="_blank" rel="noreferrer">
               <ExternalLink aria-hidden="true" />
               فتح
@@ -102,10 +109,11 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
       {!loading && !error && !isPdf ? (
         <div className="word-preview-state">
           <FileText aria-hidden="true" />
-          <h3>معاينة دقيقة مطلوبة</h3>
+          <h3>جاري تجهيز PDF المعاينة</h3>
           <p>
-            هذا ملف DOCX أصلي. لتدقيق التنسيق والمنتج النهائي بدقة يجب رفع PDF
-            مطابق مصدّر من Word لهذه النسخة، ثم سيظهر هنا داخل العارض.
+            هذا ملف DOCX أصلي. سيظهر المنتج النهائي هنا بعد تحويله تلقائيًا إلى
+            PDF بواسطة Worker المعالجة. لا نعرض تحويلًا تقريبيًا حتى لا يضلل
+            تدقيق التنسيق.
           </p>
         </div>
       ) : null}

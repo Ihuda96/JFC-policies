@@ -40,7 +40,6 @@ function contentTypeFor(file: File) {
 
 export async function uploadPolicyDraft(input: {
   file: File;
-  previewPdf?: File | null;
   note?: string;
   title?: string;
 }) {
@@ -50,14 +49,6 @@ export async function uploadPolicyDraft(input: {
 
   if (!allowedTypes.has(contentType)) {
     throw new Error("الصيغ المسموحة هي PDF و DOCX فقط.");
-  }
-
-  if (contentType !== "application/pdf" && !input.previewPdf) {
-    throw new Error("لمعاينة Word بدقة، ارفع نسخة PDF مطابقة مع ملف DOCX.");
-  }
-
-  if (input.previewPdf && contentTypeFor(input.previewPdf) !== "application/pdf") {
-    throw new Error("ملف المعاينة يجب أن يكون PDF.");
   }
 
   const {
@@ -131,19 +122,11 @@ export async function uploadPolicyDraft(input: {
     throw fileError;
   }
 
-  if (input.previewPdf) {
-    await uploadPreviewPdf({
-      policyId,
-      versionId,
-      file: input.previewPdf,
-    });
-  }
-
   await supabase.from("file_processing_jobs").insert({
     policy_id: policyId,
     version_id: versionId,
     file_id: fileId,
-    job_type: contentType === "application/pdf" ? "pdf_text_extraction" : "docx_preview",
+    job_type: contentType === "application/pdf" ? "pdf_text_extraction" : "docx_to_pdf_preview",
     status: "queued",
   });
 
@@ -153,7 +136,6 @@ export async function uploadPolicyDraft(input: {
 export async function uploadRevision(input: {
   policy: Policy;
   file: File;
-  previewPdf?: File | null;
   note?: string;
 }) {
   const supabase = assertSupabase();
@@ -161,14 +143,6 @@ export async function uploadRevision(input: {
 
   if (!allowedTypes.has(contentType)) {
     throw new Error("الصيغ المسموحة هي PDF و DOCX فقط.");
-  }
-
-  if (contentType !== "application/pdf" && !input.previewPdf) {
-    throw new Error("لمعاينة Word بدقة، ارفع نسخة PDF مطابقة مع ملف DOCX.");
-  }
-
-  if (input.previewPdf && contentTypeFor(input.previewPdf) !== "application/pdf") {
-    throw new Error("ملف المعاينة يجب أن يكون PDF.");
   }
 
   const {
@@ -240,19 +214,11 @@ export async function uploadRevision(input: {
     throw fileError;
   }
 
-  if (input.previewPdf) {
-    await uploadPreviewPdf({
-      policyId: input.policy.id,
-      versionId,
-      file: input.previewPdf,
-    });
-  }
-
   await supabase.from("file_processing_jobs").insert({
     policy_id: input.policy.id,
     version_id: versionId,
     file_id: fileId,
-    job_type: contentType === "application/pdf" ? "pdf_text_extraction" : "docx_preview",
+    job_type: contentType === "application/pdf" ? "pdf_text_extraction" : "docx_to_pdf_preview",
     status: "queued",
   });
 

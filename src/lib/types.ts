@@ -153,8 +153,24 @@ export interface AuditLog {
   metadata: Record<string, unknown>;
 }
 
+export interface FileProcessingJob {
+  id: string;
+  policy_id: string;
+  version_id: string;
+  file_id: string;
+  job_type: string;
+  status: ProcessingStatus;
+  attempts: number;
+  last_error: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PolicyBundle extends Policy {
   policy_versions?: PolicyVersion[];
   policy_files?: PolicyFile[];
   policy_metadata?: PolicyMetadata | null;
+  file_processing_jobs?: FileProcessingJob[];
 }
