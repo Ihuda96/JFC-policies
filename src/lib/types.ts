@@ -57,6 +57,7 @@ export interface Policy {
   submitted_at: string | null;
   approved_at: string | null;
   next_review_at: string | null;
+  archived_at: string | null;
   profiles?: Pick<Profile, "full_name" | "email"> | null;
 }
 

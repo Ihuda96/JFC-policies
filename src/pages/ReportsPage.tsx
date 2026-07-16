@@ -18,7 +18,10 @@ export function ReportsPage() {
       }
 
       setLoading(true);
-      const { data, error } = await supabase.from("policies").select("*");
+      const { data, error } = await supabase
+        .from("policies")
+        .select("*")
+        .neq("status", "archived");
       if (error) {
         if (isSetupError(error)) {
           setSetupError(error.message);

@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CheckCircle2, Download, FileText, Printer, Send, UploadCloud } from "lucide-react";
+import { CheckCircle2, Download, FileText, Printer, Send, Trash2, UploadCloud } from "lucide-react";
 import { DocumentPreview } from "../components/DocumentPreview";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { fileSize, formatDate, versionStatusLabels } from "../lib/format";
 import {
   approvePolicyVersion,
+  archivePolicy,
   readableWorkflowError,
   returnPolicyForRevision,
   signedFileUrl,
@@ -40,6 +41,7 @@ export function PolicyDetailPage() {
   const [standalonePreviewPdf, setStandalonePreviewPdf] = useState<File | null>(null);
   const [revisionNote, setRevisionNote] = useState("");
   const [returnComment, setReturnComment] = useState("");
+  const [archiveReason, setArchiveReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -238,6 +240,35 @@ export function PolicyDetailPage() {
     }
   }
 
+  async function archiveCurrentPolicy(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!policy) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      policy.status === "approved"
+        ? "سيتم حذف السياسة المعتمدة من المكتبة ونقلها إلى الأرشيف مع حفظ سجل التدقيق. هل تريد المتابعة؟"
+        : "سيتم حذف السياسة من القوائم ونقلها إلى الأرشيف مع حفظ سجل التدقيق. هل تريد المتابعة؟",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setActionLoading(true);
+    setError(null);
+    try {
+      await archivePolicy(policy.id, archiveReason);
+      setArchiveReason("");
+      await load();
+    } catch (err) {
+      setError(readableWorkflowError(err));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   if (setupError) {
     return <SetupRequired message={setupError} />;
   }
@@ -256,6 +287,10 @@ export function PolicyDetailPage() {
   const canOwnerRevise =
     policy.owner_id === profile?.id &&
     ["draft", "returned_for_revision"].includes(policy.status);
+  const canArchive =
+    policy.status !== "archived" &&
+    (profile?.role === "quality_manager" ||
+      (policy.owner_id === profile?.id && ["draft", "returned_for_revision"].includes(policy.status)));
   const revisionIsDocx = Boolean(revisionFile && revisionFile.name.toLowerCase().endsWith(".docx"));
   const selectedIsDocxWithoutPreview = Boolean(
     originalFile?.file_name.toLowerCase().endsWith(".docx") && !previewFile,
@@ -450,6 +485,24 @@ export function PolicyDetailPage() {
                 </button>
               </form>
             </div>
+          ) : null}
+
+          {canArchive ? (
+            <form className="info-card danger-card" onSubmit={archiveCurrentPolicy}>
+              <h2>حذف السياسة</h2>
+              <p>
+                الحذف ينقل السياسة إلى الأرشيف ويخفيها من القوائم والمكتبة مع إبقاء سجل التدقيق والملفات محفوظة.
+              </p>
+              <textarea
+                placeholder="سبب الحذف (اختياري)"
+                value={archiveReason}
+                onChange={(event) => setArchiveReason(event.target.value)}
+              />
+              <button className="danger-button full" disabled={actionLoading}>
+                <Trash2 aria-hidden="true" />
+                حذف السياسة
+              </button>
+            </form>
           ) : null}
 
           <div className="info-card">

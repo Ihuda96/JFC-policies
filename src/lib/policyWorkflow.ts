@@ -330,6 +330,18 @@ export async function approvePolicyVersion(policyId: string, versionId: string) 
   }
 }
 
+export async function archivePolicy(policyId: string, reason?: string) {
+  const supabase = assertSupabase();
+  const { error } = await supabase.rpc("archive_policy", {
+    p_policy_id: policyId,
+    p_reason: reason?.trim() || null,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function signedFileUrl(
   file: Pick<PolicyFile, "id" | "bucket_id" | "storage_path">,
   action: "preview" | "download" | "print",

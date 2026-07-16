@@ -23,6 +23,7 @@ export function WorkspacePage() {
       const { data, error } = await supabase
         .from("policies")
         .select("*, profiles:profiles!policies_owner_id_fkey(full_name,email)")
+        .neq("status", "archived")
         .order("updated_at", { ascending: false });
 
       if (error) {

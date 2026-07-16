@@ -26,6 +26,7 @@ export function DashboardPage() {
       const { data, error } = await supabase
         .from("policies")
         .select("*")
+        .neq("status", "archived")
         .order("updated_at", { ascending: false })
         .limit(12);
 
