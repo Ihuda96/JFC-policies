@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CheckCircle2, Download, FileText, Printer, Send, Trash2, UploadCloud } from "lucide-react";
+import { CheckCircle2, Download, FileText, Send, Trash2, UploadCloud } from "lucide-react";
 import { DocumentPreview } from "../components/DocumentPreview";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
@@ -14,7 +14,6 @@ import {
   returnPolicyForRevision,
   signedFileUrl,
   submitPolicyVersion,
-  uploadPreviewPdf,
   uploadRevision,
 } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
@@ -38,7 +37,6 @@ export function PolicyDetailPage() {
   const [actions, setActions] = useState<ApprovalAction[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [revisionFile, setRevisionFile] = useState<File | null>(null);
-  const [standalonePreviewPdf, setStandalonePreviewPdf] = useState<File | null>(null);
   const [revisionNote, setRevisionNote] = useState("");
   const [returnComment, setReturnComment] = useState("");
   const [archiveReason, setArchiveReason] = useState("");
@@ -62,7 +60,7 @@ export function PolicyDetailPage() {
       supabase
         .from("policies")
         .select(
-          "*, policy_versions:policy_versions!policy_versions_policy_id_fkey(*), policy_files:policy_files!policy_files_policy_id_fkey(*), policy_metadata:policy_metadata!policy_metadata_policy_id_fkey(*), file_processing_jobs:file_processing_jobs!file_processing_jobs_policy_id_fkey(*)",
+          "*, policy_versions:policy_versions!policy_versions_policy_id_fkey(*), policy_files:policy_files!policy_files_policy_id_fkey(*), policy_metadata:policy_metadata!policy_metadata_policy_id_fkey(*)",
         )
         .eq("id", policyId)
         .maybeSingle(),
@@ -106,45 +104,6 @@ export function PolicyDetailPage() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if (!policy) {
-      return;
-    }
-
-    const currentVersions = sortedVersions(policy.policy_versions);
-    const currentVersion =
-      currentVersions.find((version) => version.id === selectedVersionId) ?? currentVersions[0];
-
-    if (!currentVersion) {
-      return;
-    }
-
-    const versionFiles = (policy.policy_files ?? []).filter(
-      (file) => file.version_id === currentVersion.id,
-    );
-    const hasPreview = versionFiles.some((file) => file.file_kind === "preview");
-    const hasDocxOriginal = versionFiles.some(
-      (file) => file.file_kind === "original" && file.file_name.toLowerCase().endsWith(".docx"),
-    );
-    const latestJob = [...(policy.file_processing_jobs ?? [])]
-      .filter((job) => job.version_id === currentVersion.id)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-
-    if (!hasDocxOriginal || hasPreview) {
-      return;
-    }
-
-    if (latestJob && !["queued", "processing"].includes(latestJob.status)) {
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      void load({ silent: true });
-    }, 5000);
-
-    return () => window.clearInterval(intervalId);
-  }, [load, policy, selectedVersionId]);
-
   const versions = useMemo(() => sortedVersions(policy?.policy_versions), [policy]);
   const selectedVersion = versions.find((version) => version.id === selectedVersionId) ?? versions[0];
   const selectedVersionFiles = useMemo<PolicyFile[]>(() => {
@@ -156,11 +115,9 @@ export function PolicyDetailPage() {
       .filter((file) => file.version_id === selectedVersion.id)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [policy, selectedVersion]);
-  const previewFile =
-    selectedVersionFiles.find((file) => file.file_kind === "preview") ?? null;
   const originalFile =
     selectedVersionFiles.find((file) => file.file_kind === "original") ?? null;
-  const selectedFile = previewFile ?? originalFile;
+  const selectedFile = originalFile;
 
   async function submitLatest() {
     if (!policy || !selectedVersion) {
@@ -249,10 +206,6 @@ export function PolicyDetailPage() {
     setRevisionFile(event.target.files?.[0] ?? null);
   }
 
-  function onStandalonePreviewFile(event: ChangeEvent<HTMLInputElement>) {
-    setStandalonePreviewPdf(event.target.files?.[0] ?? null);
-  }
-
   async function openVersionFile(file: PolicyFile, action: "download" | "print") {
     setError(null);
     try {
@@ -260,29 +213,6 @@ export function PolicyDetailPage() {
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (err) {
       setError(readableWorkflowError(err));
-    }
-  }
-
-  async function submitPreviewPdf(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!policy || !selectedVersion || !standalonePreviewPdf) {
-      return;
-    }
-
-    setActionLoading(true);
-    setError(null);
-    try {
-      await uploadPreviewPdf({
-        policyId: policy.id,
-        versionId: selectedVersion.id,
-        file: standalonePreviewPdf,
-      });
-      setStandalonePreviewPdf(null);
-      await load();
-    } catch (err) {
-      setError(readableWorkflowError(err));
-    } finally {
-      setActionLoading(false);
     }
   }
 
@@ -337,14 +267,7 @@ export function PolicyDetailPage() {
     policy.status !== "archived" &&
     (profile?.role === "quality_manager" ||
       (policy.owner_id === profile?.id && ["draft", "returned_for_revision"].includes(policy.status)));
-  const revisionIsDocx = Boolean(revisionFile && revisionFile.name.toLowerCase().endsWith(".docx"));
-  const selectedIsDocxWithoutPreview = Boolean(
-    originalFile?.file_name.toLowerCase().endsWith(".docx") && !previewFile,
-  );
   const originalIsPdf = Boolean(originalFile?.file_name.toLowerCase().endsWith(".pdf"));
-  const selectedJob = [...(policy.file_processing_jobs ?? [])]
-    .filter((job) => job.version_id === selectedVersion?.id)
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
   return (
     <div className="policy-detail">
@@ -376,34 +299,6 @@ export function PolicyDetailPage() {
       <section className="review-layout">
         <DocumentPreview file={selectedFile} />
         <aside className="review-panel">
-          {selectedIsDocxWithoutPreview ? (
-            <div className="info-card processing-card">
-              <h2>معاينة PDF</h2>
-              <p>
-                تم حفظ Word الأصلي. يجري تجهيز PDF للمعاينة النهائية عبر Worker
-                التحويل.
-              </p>
-              <dl>
-                <div>
-                  <dt>حالة التحويل</dt>
-                  <dd>{selectedJob?.status ?? "بانتظار المعالجة"}</dd>
-                </div>
-                <div>
-                  <dt>المحاولات</dt>
-                  <dd>{selectedJob?.attempts ?? 0}</dd>
-                </div>
-              </dl>
-              {selectedJob?.last_error ? <p className="inline-error">{selectedJob.last_error}</p> : null}
-              <button
-                type="button"
-                className="secondary-button full"
-                onClick={() => void load({ silent: true })}
-                disabled={actionLoading}
-              >
-                تحديث حالة المعاينة
-              </button>
-            </div>
-          ) : null}
           <div className="info-card">
             <h2>بيانات الطلب</h2>
             <dl>
@@ -439,29 +334,6 @@ export function PolicyDetailPage() {
                 </button>
               </article>
             ) : null}
-            {previewFile ? (
-              <article className="file-action-row">
-                <div>
-                  <FileText aria-hidden="true" />
-                  <span>
-                    <strong>PDF المعاينة</strong>
-                    {previewFile.file_name} · {fileSize(previewFile.file_size)}
-                  </span>
-                </div>
-                <div className="row-actions">
-                  <button onClick={() => void openVersionFile(previewFile, "download")}>
-                    <Download aria-hidden="true" />
-                    تنزيل PDF
-                  </button>
-                  <button onClick={() => void openVersionFile(previewFile, "print")}>
-                    <Printer aria-hidden="true" />
-                    طباعة
-                  </button>
-                </div>
-              </article>
-            ) : !originalIsPdf ? (
-              <p>PDF المعاينة غير جاهز بعد.</p>
-            ) : null}
           </div>
 
           {canOwnerRevise ? (
@@ -477,11 +349,6 @@ export function PolicyDetailPage() {
                 <span>{revisionFile ? revisionFile.name : "اختر ملف النسخة المعدلة"}</span>
                 <input type="file" accept=".pdf,.docx" onChange={onRevisionFile} />
               </label>
-              {revisionIsDocx ? (
-                <p className="note-box">
-                  سيتم إنشاء PDF المعاينة تلقائيًا عبر Worker التحويل بعد الرفع.
-                </p>
-              ) : null}
               <button
                 className="primary-button full"
                 disabled={actionLoading || !revisionFile}
@@ -499,24 +366,6 @@ export function PolicyDetailPage() {
                   إرسال النسخة الحالية
                 </button>
               ) : null}
-            </form>
-          ) : null}
-
-          {selectedIsDocxWithoutPreview ? (
-            <form className="info-card" onSubmit={submitPreviewPdf}>
-              <h2>معاينة PDF مطابقة</h2>
-              <p>
-                هذه النسخة Word ولا توجد لها معاينة PDF. ارفع PDF مصدّر من Word
-                لعرض التنسيق النهائي بدقة.
-              </p>
-              <label className="file-line">
-                <UploadCloud aria-hidden="true" />
-                <span>{standalonePreviewPdf ? standalonePreviewPdf.name : "اختر PDF المعاينة"}</span>
-                <input type="file" accept=".pdf,application/pdf" onChange={onStandalonePreviewFile} />
-              </label>
-              <button className="secondary-button full" disabled={actionLoading || !standalonePreviewPdf}>
-                رفع PDF المعاينة
-              </button>
             </form>
           ) : null}
 

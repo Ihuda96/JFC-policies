@@ -102,7 +102,7 @@ export function UploadPolicyPage() {
           </label>
           {isDocx ? (
             <div className="note-box">
-              سيتم حفظ Word الأصلي وعرضه مباشرة للمعاينة، ثم تستبدل المعاينة تلقائيًا بملف PDF النهائي عند اكتمال التحويل.
+              سيتم حفظ Word الأصلي وعرضه مباشرة للمعاينة بدون تحويل إلى PDF.
             </div>
           ) : null}
           {error ? <p className="inline-error">{error}</p> : null}
@@ -120,7 +120,7 @@ export function UploadPolicyPage() {
               <CheckCircle2 aria-hidden="true" />
               <h2>تم حفظ النسخة</h2>
               <p>
-                الملف محفوظ الآن في Storage خاص، وسُجلت مهمة المعالجة الخلفية.
+                الملف محفوظ الآن في Storage خاص وجاهز للمعاينة من صفحة السياسة.
                 يمكنك إرسال النسخة للاعتماد.
               </p>
               <div className="stacked-actions">

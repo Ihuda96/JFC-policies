@@ -124,7 +124,7 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
       {!loading && !error && officePreviewUrl ? (
         <div className="docx-preview-shell">
           <div className="preview-notice">
-            معاينة Word مباشرة لحين اكتمال PDF النهائي. عند جاهزية PDF ستظهر نسخة المعاينة المعتمدة هنا تلقائيًا.
+            معاينة Word مباشرة من الملف الأصلي.
           </div>
           <iframe className="office-frame" src={officePreviewUrl} title={file.file_name} />
         </div>
@@ -134,7 +134,7 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
           <FileText aria-hidden="true" />
           <h3>جاري تجهيز معاينة الملف</h3>
           <p>
-            هذا ملف DOCX أصلي. سيتم إنشاء رابط معاينة مؤقت، ثم سيظهر PDF النهائي بعد اكتمال التحويل.
+            هذا ملف DOCX أصلي. سيتم إنشاء رابط معاينة Word مؤقت من الملف المحفوظ.
           </p>
         </div>
       ) : null}

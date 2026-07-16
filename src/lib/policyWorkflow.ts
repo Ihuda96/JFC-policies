@@ -122,14 +122,6 @@ export async function uploadPolicyDraft(input: {
     throw fileError;
   }
 
-  await supabase.from("file_processing_jobs").insert({
-    policy_id: policyId,
-    version_id: versionId,
-    file_id: fileId,
-    job_type: contentType === "application/pdf" ? "pdf_text_extraction" : "docx_to_pdf_preview",
-    status: "queued",
-  });
-
   return { policyId, versionId, fileId };
 }
 
@@ -214,72 +206,7 @@ export async function uploadRevision(input: {
     throw fileError;
   }
 
-  await supabase.from("file_processing_jobs").insert({
-    policy_id: input.policy.id,
-    version_id: versionId,
-    file_id: fileId,
-    job_type: contentType === "application/pdf" ? "pdf_text_extraction" : "docx_to_pdf_preview",
-    status: "queued",
-  });
-
   return { versionId, fileId };
-}
-
-export async function uploadPreviewPdf(input: {
-  policyId: string;
-  versionId: string;
-  file: File;
-}) {
-  const supabase = assertSupabase();
-  const contentType = contentTypeFor(input.file);
-
-  if (contentType !== "application/pdf") {
-    throw new Error("ملف المعاينة الرسمي يجب أن يكون PDF.");
-  }
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    throw new Error("يجب تسجيل الدخول قبل رفع ملف المعاينة.");
-  }
-
-  const fileId = crypto.randomUUID();
-  const fileName = safeFileName(input.file.name);
-  const storagePath = `${user.id}/${input.policyId}/${input.versionId}/preview-${Date.now()}-${fileName}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("policy-previews")
-    .upload(storagePath, input.file, {
-      contentType,
-      upsert: false,
-    });
-
-  if (uploadError) {
-    throw uploadError;
-  }
-
-  const { error: fileError } = await supabase.from("policy_files").insert({
-    id: fileId,
-    policy_id: input.policyId,
-    version_id: input.versionId,
-    bucket_id: "policy-previews",
-    storage_path: storagePath,
-    file_kind: "preview",
-    file_name: input.file.name,
-    content_type: contentType,
-    file_size: input.file.size,
-    preview_ready: true,
-    created_by: user.id,
-  });
-
-  if (fileError) {
-    throw fileError;
-  }
-
-  return { fileId };
 }
 
 export async function submitPolicyVersion(

@@ -11,7 +11,7 @@
 
 1. افتح لوحة Supabase.
 2. اختر المشروع بالمرجع `sbhpbfoadltmjsziayum`.
-3. تأكد أن الرابط الظاهر للمشروع هو `https://sbhpbfoadltmjsziayum.supabase.co`.
+3. تأكد أن رابط المشروع هو `https://sbhpbfoadltmjsziayum.supabase.co`.
 
 ## 2. افتح SQL Editor
 
@@ -26,11 +26,11 @@
 2. اضغط `Run`.
 3. يجب أن ينتهي التنفيذ بدون أخطاء.
 
-الملف يحتوي `begin;` و `commit;`. إذا فشل التنفيذ قبل `commit` فلن تُحفظ التغييرات الجزئية.
+الملف يحتوي `begin;` و `commit;`. إذا فشل التنفيذ قبل `commit` فلن تحفظ التغييرات الجزئية.
 
 ## 4. تحقق من الجداول وRLS
 
-من `Table Editor` تحقق من وجود الجداول التالية:
+من `Table Editor` تحقق من وجود الجداول المهمة:
 
 - `profiles`
 - `categories`
@@ -41,11 +41,10 @@
 - `review_comments`
 - `approval_actions`
 - `notifications`
-- `file_processing_jobs`
 - `audit_logs`
 - `app_settings`
 
-ثم من كل جدول مهم تأكد أن `RLS enabled`.
+ثم تأكد أن `RLS enabled` على كل جدول مهم.
 
 يمكن التحقق من SQL Editor:
 
@@ -62,7 +61,6 @@ where schemaname = 'public'
     'review_comments',
     'approval_actions',
     'notifications',
-    'file_processing_jobs',
     'audit_logs',
     'app_settings'
   )
@@ -120,58 +118,28 @@ where email = 'ضع_بريد_مدير_النظام_هنا';
 - `Halotaibi` = `quality_manager`
 - `Suoaljohani` = `system_admin`
 
-## 7. اختبر المصادقة
+## 7. اختبر المصادقة والمعاينة
 
 1. افتح التطبيق.
-2. سجّل الدخول بحساب `Suoaljohani`.
+2. سجل الدخول بحساب `Suoaljohani`.
 3. تحقق من ظهور لوحة مدير النظام.
 4. من صفحة `المستخدمون` فعّل حساب مدير الجودة `Halotaibi` وحساب موظف الجودة `Haljohani`.
-5. سجّل الدخول بحساب موظف الجودة وارفع ملف PDF أو DOCX.
-   - إذا كان الملف DOCX، ستنشأ مهمة تحويل PDF تلقائية. تظهر المعاينة النهائية بعد تشغيل Worker التحويل.
-6. اضغط `إرسال للاعتماد`.
-7. سجّل الدخول بحساب مدير الجودة.
-8. افتح `طلبات الاعتماد` واعتمد السياسة أو أعدها للتعديل.
-9. بعد الاعتماد تحقق من ظهور السياسة في `مكتبة السياسات`.
+5. سجل الدخول بحساب موظف الجودة وارفع ملف PDF أو DOCX.
+6. إذا كان الملف DOCX، يجب أن تظهر معاينة Word مباشرة من الملف الأصلي فورًا.
+7. اضغط `إرسال للاعتماد`.
+8. سجل الدخول بحساب مدير الجودة.
+9. افتح `طلبات الاعتماد` واعتمد السياسة أو أعدها للتعديل.
+10. بعد الاعتماد تحقق من ظهور السياسة في `مكتبة السياسات`.
 
 إذا لم تكن الجداول منشورة أو فشل RLS، سيعرض التطبيق رسالة إعداد مطلوبة بدل محتوى وهمي.
 
-## 8. شغّل Worker تحويل Word إلى PDF
-
-معاينة DOCX الدقيقة تحتاج خدمة خلفية تشغّل LibreOffice. الكود موجود في:
-
-```text
-workers/docx-preview-worker/
-```
-
-إعدادات التشغيل تكون على الخادم فقط، ولا تُضاف إلى Vite أو المتصفح:
-
-```text
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-LIBREOFFICE_BINARY=
-WORKER_POLL_INTERVAL_MS=
-WORKER_MAX_ATTEMPTS=
-LIBREOFFICE_TIMEOUT_MS=
-```
-
-آلية العمل:
-
-1. التطبيق يرفع DOCX إلى `policy-originals`.
-2. التطبيق ينشئ صفًا في `file_processing_jobs` بنوع `docx_to_pdf_preview`.
-3. الـ Worker يحمّل ملف DOCX من Supabase Storage.
-4. LibreOffice يحوّله إلى PDF.
-5. الـ Worker يرفع PDF إلى `policy-previews`.
-6. التطبيق يعرض PDF تلقائيًا كمعاينة نهائية دقيقة.
-
-لا تشغّل هذا الـ Worker في المتصفح، ولا تضع `SUPABASE_SERVICE_ROLE_KEY` في `.env.local` الخاص بالتطبيق.
-
-## 9. التراجع الآمن عند الفشل
+## 8. التراجع الآمن عند الفشل
 
 إذا فشل تشغيل `DEPLOY_TO_SUPABASE.sql`:
 
-1. لا تعيد تشغيل أجزاء متفرقة من الملف.
+1. لا تعد تشغيل أجزاء متفرقة من الملف.
 2. اقرأ رسالة الخطأ في SQL Editor.
-3. إذا ظهر الخطأ قبل `commit`، فالتغييرات داخل المعاملة لم تُحفظ.
+3. إذا ظهر الخطأ قبل `commit`، فالتغييرات داخل المعاملة لم تحفظ.
 4. أصلح السبب في الملف ثم أعد تشغيل الملف كاملًا.
 5. إذا حدث فشل بعد تنفيذ سابق ناجح جزئيًا بسبب تشغيل يدوي خارج الملف، شغّل الفحص التالي:
 
@@ -188,7 +156,6 @@ where table_schema = 'public'
     'review_comments',
     'approval_actions',
     'notifications',
-    'file_processing_jobs',
     'audit_logs',
     'app_settings'
   )

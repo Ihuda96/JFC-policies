@@ -307,28 +307,6 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.file_processing_jobs (
-  id uuid primary key default gen_random_uuid(),
-  policy_id uuid not null references public.policies(id) on delete cascade,
-  version_id uuid not null references public.policy_versions(id) on delete cascade,
-  file_id uuid not null references public.policy_files(id) on delete cascade,
-  job_type text not null,
-  status public.processing_status not null default 'queued',
-  attempts integer not null default 0,
-  last_error text,
-  started_at timestamptz,
-  completed_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint file_processing_jobs_attempts_positive check (attempts >= 0)
-);
-
-do $$ begin
-  alter table public.file_processing_jobs
-    add constraint file_processing_jobs_file_id_fkey
-    foreign key (file_id) references public.policy_files(id) on delete cascade;
-exception when duplicate_object then null; end $$;
-
 create table if not exists public.audit_logs (
   id bigserial primary key,
   event_time timestamptz not null default now(),
@@ -364,7 +342,6 @@ create index if not exists policy_metadata_search_idx on public.policy_metadata 
 create index if not exists review_comments_policy_version_idx on public.review_comments (policy_id, version_id, created_at desc);
 create index if not exists approval_actions_policy_idx on public.approval_actions (policy_id, created_at desc);
 create index if not exists notifications_recipient_unread_idx on public.notifications (recipient_id, read_at, created_at desc);
-create index if not exists file_processing_jobs_status_idx on public.file_processing_jobs (status, created_at);
 create index if not exists audit_logs_time_idx on public.audit_logs (event_time desc);
 create index if not exists audit_logs_policy_idx on public.audit_logs (policy_id, event_time desc);
 create index if not exists audit_logs_actor_idx on public.audit_logs (actor_id, event_time desc);
@@ -1057,11 +1034,6 @@ create trigger review_comments_updated_at
 before update on public.review_comments
 for each row execute function public.set_updated_at();
 
-drop trigger if exists file_processing_jobs_updated_at on public.file_processing_jobs;
-create trigger file_processing_jobs_updated_at
-before update on public.file_processing_jobs
-for each row execute function public.set_updated_at();
-
 drop trigger if exists audit_logs_no_update on public.audit_logs;
 create trigger audit_logs_no_update
 before update or delete on public.audit_logs
@@ -1084,7 +1056,6 @@ alter table public.policy_metadata enable row level security;
 alter table public.review_comments enable row level security;
 alter table public.approval_actions enable row level security;
 alter table public.notifications enable row level security;
-alter table public.file_processing_jobs enable row level security;
 alter table public.audit_logs enable row level security;
 alter table public.app_settings enable row level security;
 
@@ -1214,22 +1185,6 @@ create policy "notifications_update_own"
 on public.notifications for update to authenticated
 using (recipient_id = auth.uid())
 with check (recipient_id = auth.uid());
-
-drop policy if exists "file_processing_jobs_select_allowed" on public.file_processing_jobs;
-create policy "file_processing_jobs_select_allowed"
-on public.file_processing_jobs for select to authenticated
-using (public.can_access_policy_record(policy_id) or public.current_app_role() = 'system_admin');
-
-drop policy if exists "file_processing_jobs_insert_owner_manager" on public.file_processing_jobs;
-create policy "file_processing_jobs_insert_owner_manager"
-on public.file_processing_jobs for insert to authenticated
-with check (
-  exists (
-    select 1 from public.policies p
-    where p.id = policy_id
-      and (p.owner_id = auth.uid() or public.current_app_role() = 'quality_manager')
-  )
-);
 
 drop policy if exists "audit_logs_select_manager_admin" on public.audit_logs;
 create policy "audit_logs_select_manager_admin"
