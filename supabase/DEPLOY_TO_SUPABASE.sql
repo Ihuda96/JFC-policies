@@ -1322,4 +1322,6 @@ set name_en = excluded.name_en,
     is_active = true,
     updated_at = now();
 
+notify pgrst, 'reload schema';
+
 commit;

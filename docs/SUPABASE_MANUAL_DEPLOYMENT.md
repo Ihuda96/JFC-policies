@@ -135,6 +135,8 @@ where email = 'ضع_بريد_مدير_النظام_هنا';
 
 ## 8. التراجع الآمن عند الفشل
 
+إذا ظهرت رسالة `Could not find the function public.archive_policy(p_policy_id, p_reason) in the schema cache` بعد النشر، شغّل الملف `supabase/DEPLOY_ARCHIVE_POLICY_FIX.sql` من SQL Editor ثم أعد تحميل صفحة التطبيق. الملف ينشئ الدالة ويطلب من PostgREST إعادة تحميل schema cache.
+
 إذا فشل تشغيل `DEPLOY_TO_SUPABASE.sql`:
 
 1. لا تعد تشغيل أجزاء متفرقة من الملف.
