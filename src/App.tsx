@@ -5,6 +5,7 @@ import { AdminUsersPage } from "./pages/AdminUsersPage";
 import { ApprovalsPage } from "./pages/ApprovalsPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { DesignSystemPage } from "./pages/DesignSystemPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LibraryPage } from "./pages/LibraryPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -19,6 +20,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/design-system" element={<DesignSystemPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/app" element={<AppShell />}>

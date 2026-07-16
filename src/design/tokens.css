@@ -1,0 +1,383 @@
+@font-face {
+  font-family: "Janna LT";
+  src: url("/brand/JannaLT-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Janna LT";
+  src: url("/brand/Janna-LT-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  --jfc-color-sky-50: #f3fafd;
+  --jfc-color-sky-100: #e2f3fb;
+  --jfc-color-sky-200: #c5e7f6;
+  --jfc-color-sky-300: #9bd6f0;
+  --jfc-color-sky-400: #69c1e9;
+  --jfc-color-sky-500: #2fa9e0;
+  --jfc-color-sky-600: #278ebc;
+  --jfc-color-sky-700: #207398;
+  --jfc-color-sky-800: #185874;
+  --jfc-color-sky-900: #113d51;
+  --jfc-color-sky-950: #092837;
+
+  --jfc-color-blue-50: #f1f8fc;
+  --jfc-color-blue-100: #def0f8;
+  --jfc-color-blue-200: #bee0f2;
+  --jfc-color-blue-300: #8fcae8;
+  --jfc-color-blue-400: #57b0dd;
+  --jfc-color-blue-500: #1691d0;
+  --jfc-color-blue-600: #127aaf;
+  --jfc-color-blue-700: #0f638d;
+  --jfc-color-blue-800: #0b4b6c;
+  --jfc-color-blue-900: #08344b;
+  --jfc-color-blue-950: #052233;
+
+  --jfc-color-navy-50: #f1f4f8;
+  --jfc-color-navy-100: #dee6ef;
+  --jfc-color-navy-200: #bdcede;
+  --jfc-color-navy-300: #8fabc7;
+  --jfc-color-navy-400: #5781ab;
+  --jfc-color-navy-500: #15508a;
+  --jfc-color-navy-600: #124374;
+  --jfc-color-navy-700: #0e365e;
+  --jfc-color-navy-800: #0b2a48;
+  --jfc-color-navy-900: #081d32;
+  --jfc-color-navy-950: #051220;
+
+  --jfc-color-gray-50: #f9f9fa;
+  --jfc-color-gray-100: #f2f1f3;
+  --jfc-color-gray-200: #e4e4e7;
+  --jfc-color-gray-300: #d1d0d6;
+  --jfc-color-gray-400: #bab9c1;
+  --jfc-color-gray-500: #9f9ea9;
+  --jfc-color-gray-600: #86858e;
+  --jfc-color-gray-700: #6c6b73;
+  --jfc-color-gray-800: #535258;
+  --jfc-color-gray-900: #39393d;
+  --jfc-color-gray-950: #242428;
+
+  --jfc-color-indigo-50: #f2f3f8;
+  --jfc-color-indigo-100: #e1e3ee;
+  --jfc-color-indigo-200: #c3c8dc;
+  --jfc-color-indigo-300: #98a0c3;
+  --jfc-color-indigo-400: #6471a6;
+  --jfc-color-indigo-500: #283a83;
+  --jfc-color-indigo-600: #22316e;
+  --jfc-color-indigo-700: #1b2759;
+  --jfc-color-indigo-800: #151e44;
+  --jfc-color-indigo-900: #0e152f;
+  --jfc-color-indigo-950: #080d1f;
+
+  --jfc-color-teal-50: #f0f7f8;
+  --jfc-color-teal-100: #dcecef;
+  --jfc-color-teal-200: #b9d8e0;
+  --jfc-color-teal-300: #87bdca;
+  --jfc-color-teal-400: #4b9caf;
+  --jfc-color-teal-500: #057590;
+  --jfc-color-teal-600: #046279;
+  --jfc-color-teal-700: #035062;
+  --jfc-color-teal-800: #033d4b;
+  --jfc-color-teal-900: #022a34;
+  --jfc-color-teal-950: #011a20;
+
+  --jfc-color-cyan-50: #f1f9fc;
+  --jfc-color-cyan-100: #def0f9;
+  --jfc-color-cyan-200: #bce1f2;
+  --jfc-color-cyan-300: #8dcce9;
+  --jfc-color-cyan-400: #54b2df;
+  --jfc-color-cyan-500: #1194d2;
+  --jfc-color-cyan-600: #0e7cb0;
+  --jfc-color-cyan-700: #0c658f;
+  --jfc-color-cyan-800: #094d6d;
+  --jfc-color-cyan-900: #06354c;
+  --jfc-color-cyan-950: #042333;
+
+  --jfc-color-aqua-50: #f3fbfb;
+  --jfc-color-aqua-100: #e3f6f7;
+  --jfc-color-aqua-200: #c8edee;
+  --jfc-color-aqua-300: #a0e1e2;
+  --jfc-color-aqua-400: #71d2d4;
+  --jfc-color-aqua-500: #3ac0c3;
+  --jfc-color-aqua-600: #31a1a4;
+  --jfc-color-aqua-700: #278385;
+  --jfc-color-aqua-800: #1e6465;
+  --jfc-color-aqua-900: #154546;
+  --jfc-color-aqua-950: #0c2f30;
+
+  --jfc-color-green-50: #f4faf4;
+  --jfc-color-green-100: #e5f4e5;
+  --jfc-color-green-200: #cce8cc;
+  --jfc-color-green-300: #a7d8a7;
+  --jfc-color-green-400: #7bc47b;
+  --jfc-color-green-500: #48ad48;
+  --jfc-color-green-600: #3c913c;
+  --jfc-color-green-700: #317631;
+  --jfc-color-green-800: #255a25;
+  --jfc-color-green-900: #1a3e1a;
+  --jfc-color-green-950: #102810;
+
+  --jfc-color-lime-50: #f9fcf3;
+  --jfc-color-lime-100: #f1f8e4;
+  --jfc-color-lime-200: #e4f1c8;
+  --jfc-color-lime-300: #d0e7a1;
+  --jfc-color-lime-400: #b9da72;
+  --jfc-color-lime-500: #9ecc3b;
+  --jfc-color-lime-600: #85ab32;
+  --jfc-color-lime-700: #6b8b28;
+  --jfc-color-lime-800: #526a1f;
+  --jfc-color-lime-900: #394915;
+  --jfc-color-lime-950: #242f0d;
+
+  --jfc-color-critical-50: #fcf5f1;
+  --jfc-color-critical-100: #f8e7de;
+  --jfc-color-critical-200: #f2cfbe;
+  --jfc-color-critical-300: #e8ad8f;
+  --jfc-color-critical-400: #dd8557;
+  --jfc-color-critical-500: #d05516;
+  --jfc-color-critical-600: #af4712;
+  --jfc-color-critical-700: #8d3a0f;
+  --jfc-color-critical-800: #6c2c0b;
+  --jfc-color-critical-900: #4b1f08;
+  --jfc-color-critical-950: #301405;
+
+  --jfc-surface-canvas: var(--jfc-color-gray-50);
+  --jfc-surface-subtle: var(--jfc-color-blue-50);
+  --jfc-surface-elevated: #ffffff;
+  --jfc-surface-sunken: var(--jfc-color-gray-100);
+  --jfc-surface-overlay: rgb(8 29 50 / 0.42);
+  --jfc-surface-document: #ffffff;
+  --jfc-surface-document-muted: var(--jfc-color-gray-50);
+  --jfc-surface-inverse: var(--jfc-color-navy-900);
+
+  --jfc-text-primary: var(--jfc-color-navy-900);
+  --jfc-text-secondary: var(--jfc-color-gray-800);
+  --jfc-text-muted: var(--jfc-color-gray-700);
+  --jfc-text-inverse: #ffffff;
+  --jfc-text-link: var(--jfc-color-blue-700);
+
+  --jfc-border-default: var(--jfc-color-gray-300);
+  --jfc-border-subtle: var(--jfc-color-gray-200);
+  --jfc-border-strong: var(--jfc-color-gray-500);
+  --jfc-border-focus: var(--jfc-color-sky-700);
+
+  --jfc-action-primary: var(--jfc-color-blue-600);
+  --jfc-action-primary-hover: var(--jfc-color-blue-700);
+  --jfc-action-primary-active: var(--jfc-color-blue-800);
+  --jfc-action-primary-on: #ffffff;
+  --jfc-action-secondary: var(--jfc-color-navy-700);
+  --jfc-action-danger: var(--jfc-color-critical-700);
+
+  --jfc-status-draft-bg: var(--jfc-color-gray-100);
+  --jfc-status-draft-fg: var(--jfc-color-gray-800);
+  --jfc-status-review-bg: var(--jfc-color-lime-50);
+  --jfc-status-review-fg: var(--jfc-color-lime-900);
+  --jfc-status-returned-bg: var(--jfc-color-critical-50);
+  --jfc-status-returned-fg: var(--jfc-color-critical-800);
+  --jfc-status-approved-bg: var(--jfc-color-green-50);
+  --jfc-status-approved-fg: var(--jfc-color-green-800);
+  --jfc-status-archived-bg: var(--jfc-color-gray-100);
+  --jfc-status-archived-fg: var(--jfc-color-gray-700);
+  --jfc-status-cancelled-bg: var(--jfc-color-critical-50);
+  --jfc-status-cancelled-fg: var(--jfc-color-critical-800);
+  --jfc-status-replaced-bg: var(--jfc-color-indigo-50);
+  --jfc-status-replaced-fg: var(--jfc-color-indigo-800);
+  --jfc-status-info-bg: var(--jfc-color-blue-50);
+  --jfc-status-info-fg: var(--jfc-color-blue-700);
+  --jfc-feedback-success-bg: var(--jfc-status-approved-bg);
+  --jfc-feedback-success-fg: var(--jfc-status-approved-fg);
+  --jfc-feedback-warning-bg: var(--jfc-status-review-bg);
+  --jfc-feedback-warning-fg: var(--jfc-status-review-fg);
+  --jfc-feedback-danger-bg: var(--jfc-status-returned-bg);
+  --jfc-feedback-danger-fg: var(--jfc-status-returned-fg);
+  --jfc-feedback-info-bg: var(--jfc-status-info-bg);
+  --jfc-feedback-info-fg: var(--jfc-status-info-fg);
+
+  --jfc-font-family-heading: "Janna LT", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  --jfc-font-family-body: "Janna LT", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  --jfc-font-weight-regular: 400;
+  --jfc-font-weight-bold: 700;
+
+  --jfc-font-size-0: 0.75rem;
+  --jfc-font-size-1: 0.875rem;
+  --jfc-font-size-2: 1rem;
+  --jfc-font-size-3: 1.25rem;
+  --jfc-font-size-4: 1.563rem;
+  --jfc-font-size-5: 1.953rem;
+  --jfc-font-size-6: 2.441rem;
+  --jfc-font-size-7: 3.052rem;
+  --jfc-font-size-8: 3.815rem;
+
+  --jfc-line-height-tight: 1.25;
+  --jfc-line-height-heading: 1.35;
+  --jfc-line-height-body: 1.8;
+  --jfc-line-height-compact: 1.5;
+  --jfc-letter-spacing-tight: 0;
+  --jfc-letter-spacing-normal: 0;
+  --jfc-letter-spacing-wide: 0.01em;
+
+  --jfc-space-0: 0;
+  --jfc-space-1: 0.25rem;
+  --jfc-space-2: 0.5rem;
+  --jfc-space-3: 0.75rem;
+  --jfc-space-4: 1rem;
+  --jfc-space-5: 1.25rem;
+  --jfc-space-6: 1.5rem;
+  --jfc-space-7: 1.75rem;
+  --jfc-space-8: 2rem;
+  --jfc-space-10: 2.5rem;
+  --jfc-space-12: 3rem;
+  --jfc-space-14: 3.5rem;
+  --jfc-space-16: 4rem;
+  --jfc-space-20: 5rem;
+  --jfc-space-24: 6rem;
+  --jfc-space-32: 8rem;
+
+  --jfc-radius-0: 0;
+  --jfc-radius-xs: 0.25rem;
+  --jfc-radius-sm: 0.5rem;
+  --jfc-radius-md: 0.75rem;
+  --jfc-radius-lg: 1rem;
+  --jfc-radius-xl: 1.5rem;
+  --jfc-radius-full: 9999px;
+
+  --jfc-border-width-0: 0;
+  --jfc-border-width-1: 1px;
+  --jfc-border-width-2: 2px;
+  --jfc-border-width-focus: 3px;
+  --jfc-border-style-solid: solid;
+
+  --jfc-shadow-0: none;
+  --jfc-shadow-1: 0 1px 2px rgb(8 29 50 / 0.12), 0 0 0 1px rgb(21 80 138 / 0.06);
+  --jfc-shadow-2: 0 4px 12px rgb(8 29 50 / 0.14), 0 1px 3px rgb(8 29 50 / 0.10);
+  --jfc-shadow-3: 0 10px 28px rgb(8 29 50 / 0.16), 0 4px 10px rgb(8 29 50 / 0.10);
+  --jfc-shadow-4: 0 18px 44px rgb(8 29 50 / 0.20), 0 8px 20px rgb(8 29 50 / 0.12);
+  --jfc-shadow-5: 0 28px 68px rgb(8 29 50 / 0.24), 0 12px 28px rgb(8 29 50 / 0.14);
+
+  --jfc-z-base: 0;
+  --jfc-z-docked: 10;
+  --jfc-z-sticky: 20;
+  --jfc-z-overlay: 30;
+  --jfc-z-drawer: 40;
+  --jfc-z-modal: 50;
+  --jfc-z-toast: 60;
+
+  --jfc-breakpoint-xs: 0;
+  --jfc-breakpoint-sm: 30rem;
+  --jfc-breakpoint-md: 48rem;
+  --jfc-breakpoint-lg: 64rem;
+  --jfc-breakpoint-xl: 80rem;
+  --jfc-breakpoint-2xl: 90rem;
+  --jfc-breakpoint-3xl: 120rem;
+
+  --jfc-container-sm: 40rem;
+  --jfc-container-md: 64rem;
+  --jfc-container-lg: 80rem;
+  --jfc-container-xl: 90rem;
+  --jfc-document-width: 72ch;
+  --jfc-sidebar-width: 17rem;
+  --jfc-header-height: 4.5rem;
+  --jfc-print-page-margin: 1.5cm;
+  --jfc-print-header-height: 2cm;
+  --jfc-print-footer-height: 1.5cm;
+
+  --jfc-duration-fast: 120ms;
+  --jfc-duration-base: 180ms;
+  --jfc-duration-slow: 200ms;
+  --jfc-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --jfc-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --jfc-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --blue-950: var(--jfc-color-navy-900);
+  --blue-900: var(--jfc-color-blue-700);
+  --blue-700: var(--jfc-color-blue-600);
+  --blue-500: var(--jfc-color-sky-500);
+  --teal-500: var(--jfc-color-aqua-600);
+  --green-600: var(--jfc-color-green-700);
+  --amber-600: var(--jfc-color-lime-900);
+  --red-600: var(--jfc-color-critical-700);
+  --ink: var(--jfc-text-primary);
+  --muted: var(--jfc-text-muted);
+  --line: var(--jfc-border-default);
+  --soft: var(--jfc-surface-canvas);
+  --white: var(--jfc-surface-elevated);
+  --shadow: var(--jfc-shadow-3);
+
+  font-family: var(--jfc-font-family-body);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --jfc-surface-canvas: var(--jfc-color-navy-900);
+  --jfc-surface-subtle: var(--jfc-color-navy-800);
+  --jfc-surface-elevated: var(--jfc-color-navy-700);
+  --jfc-surface-sunken: var(--jfc-color-indigo-900);
+  --jfc-surface-overlay: rgb(0 0 0 / 0.56);
+  --jfc-surface-document: var(--jfc-color-navy-950);
+  --jfc-surface-document-muted: var(--jfc-color-navy-800);
+  --jfc-surface-inverse: #ffffff;
+
+  --jfc-text-primary: #ffffff;
+  --jfc-text-secondary: var(--jfc-color-gray-200);
+  --jfc-text-muted: var(--jfc-color-gray-400);
+  --jfc-text-inverse: var(--jfc-color-navy-900);
+  --jfc-text-link: var(--jfc-color-sky-300);
+
+  --jfc-border-default: var(--jfc-color-navy-500);
+  --jfc-border-subtle: var(--jfc-color-navy-600);
+  --jfc-border-strong: var(--jfc-color-sky-700);
+  --jfc-border-focus: var(--jfc-color-sky-300);
+
+  --jfc-action-primary: var(--jfc-color-sky-400);
+  --jfc-action-primary-hover: var(--jfc-color-sky-300);
+  --jfc-action-primary-active: var(--jfc-color-sky-500);
+  --jfc-action-primary-on: var(--jfc-color-navy-900);
+  --jfc-action-secondary: var(--jfc-color-sky-200);
+  --jfc-action-danger: var(--jfc-color-critical-300);
+
+  --jfc-status-draft-bg: var(--jfc-color-navy-800);
+  --jfc-status-draft-fg: var(--jfc-color-gray-200);
+  --jfc-status-review-bg: var(--jfc-color-lime-400);
+  --jfc-status-review-fg: var(--jfc-color-navy-900);
+  --jfc-status-returned-bg: var(--jfc-color-critical-600);
+  --jfc-status-returned-fg: #ffffff;
+  --jfc-status-approved-bg: var(--jfc-color-green-800);
+  --jfc-status-approved-fg: #ffffff;
+  --jfc-status-archived-bg: var(--jfc-color-navy-800);
+  --jfc-status-archived-fg: var(--jfc-color-gray-300);
+  --jfc-status-cancelled-bg: var(--jfc-color-critical-700);
+  --jfc-status-cancelled-fg: #ffffff;
+  --jfc-status-replaced-bg: var(--jfc-color-indigo-700);
+  --jfc-status-replaced-fg: #ffffff;
+  --jfc-status-info-bg: var(--jfc-color-blue-800);
+  --jfc-status-info-fg: var(--jfc-color-sky-200);
+  --jfc-feedback-success-bg: var(--jfc-status-approved-bg);
+  --jfc-feedback-success-fg: var(--jfc-status-approved-fg);
+  --jfc-feedback-warning-bg: var(--jfc-status-review-bg);
+  --jfc-feedback-warning-fg: var(--jfc-status-review-fg);
+  --jfc-feedback-danger-bg: var(--jfc-status-returned-bg);
+  --jfc-feedback-danger-fg: var(--jfc-status-returned-fg);
+  --jfc-feedback-info-bg: var(--jfc-status-info-bg);
+  --jfc-feedback-info-fg: var(--jfc-status-info-fg);
+
+  --jfc-shadow-1: 0 1px 2px rgb(0 0 0 / 0.38), 0 0 0 1px rgb(47 169 224 / 0.08);
+  --jfc-shadow-2: 0 6px 16px rgb(0 0 0 / 0.40), 0 0 0 1px rgb(47 169 224 / 0.10);
+  --jfc-shadow-3: 0 16px 36px rgb(0 0 0 / 0.46), 0 0 0 1px rgb(47 169 224 / 0.12);
+  --jfc-shadow-4: 0 28px 64px rgb(0 0 0 / 0.54), 0 0 0 1px rgb(47 169 224 / 0.14);
+  --jfc-shadow-5: 0 36px 84px rgb(0 0 0 / 0.58), 0 0 0 1px rgb(47 169 224 / 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --jfc-duration-fast: 1ms;
+    --jfc-duration-base: 1ms;
+    --jfc-duration-slow: 1ms;
+  }
+}
