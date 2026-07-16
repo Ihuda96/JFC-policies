@@ -22,7 +22,7 @@ export function WorkspacePage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("policies")
-        .select("*, profiles:owner_id(full_name,email)")
+        .select("*, profiles:profiles!policies_owner_id_fkey(full_name,email)")
         .order("updated_at", { ascending: false });
 
       if (error) {

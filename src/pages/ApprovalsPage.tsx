@@ -35,7 +35,9 @@ export function ApprovalsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("policies")
-      .select("*, policy_versions(*), profiles:owner_id(full_name,email)")
+      .select(
+        "*, policy_versions:policy_versions!policy_versions_policy_id_fkey(*), profiles:profiles!policies_owner_id_fkey(full_name,email)",
+      )
       .in("status", ["pending_approval", "resubmitted"])
       .order("submitted_at", { ascending: true });
 

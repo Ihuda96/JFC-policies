@@ -51,7 +51,9 @@ export function PolicyDetailPage() {
     const [policyResult, commentsResult, actionsResult] = await Promise.all([
       supabase
         .from("policies")
-        .select("*, policy_versions(*), policy_files(*), policy_metadata(*)")
+        .select(
+          "*, policy_versions:policy_versions!policy_versions_policy_id_fkey(*), policy_files:policy_files!policy_files_policy_id_fkey(*), policy_metadata:policy_metadata!policy_metadata_policy_id_fkey(*)",
+        )
         .eq("id", policyId)
         .maybeSingle(),
       supabase

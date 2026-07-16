@@ -23,7 +23,7 @@ export function LibraryPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("policies")
-        .select("*, policy_metadata(*)")
+        .select("*, policy_metadata:policy_metadata!policy_metadata_policy_id_fkey(*)")
         .eq("status", "approved")
         .order("approved_at", { ascending: false });
 
