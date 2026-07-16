@@ -102,8 +102,7 @@ export function UploadPolicyPage() {
           </label>
           {isDocx ? (
             <div className="note-box">
-              سيتم حفظ Word الأصلي وإنشاء مهمة تحويل PDF تلقائية للمعاينة الدقيقة.
-              تظهر المعاينة عندما ينهي Worker التحويل.
+              سيتم حفظ Word الأصلي وعرضه مباشرة للمعاينة، ثم تستبدل المعاينة تلقائيًا بملف PDF النهائي عند اكتمال التحويل.
             </div>
           ) : null}
           {error ? <p className="inline-error">{error}</p> : null}

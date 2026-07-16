@@ -47,12 +47,17 @@ export function PolicyDetailPage() {
   const [setupError, setSetupError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options: { silent?: boolean } = {}) => {
     if (!supabase || !policyId) {
+      if (!options.silent) {
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
+    if (!options.silent) {
+      setLoading(true);
+    }
     const [policyResult, commentsResult, actionsResult] = await Promise.all([
       supabase
         .from("policies")
@@ -92,12 +97,53 @@ export function PolicyDetailPage() {
     if (!actionsResult.error) {
       setActions((actionsResult.data as ApprovalAction[]) ?? []);
     }
-    setLoading(false);
+    if (!options.silent) {
+      setLoading(false);
+    }
   }, [policyId]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!policy) {
+      return;
+    }
+
+    const currentVersions = sortedVersions(policy.policy_versions);
+    const currentVersion =
+      currentVersions.find((version) => version.id === selectedVersionId) ?? currentVersions[0];
+
+    if (!currentVersion) {
+      return;
+    }
+
+    const versionFiles = (policy.policy_files ?? []).filter(
+      (file) => file.version_id === currentVersion.id,
+    );
+    const hasPreview = versionFiles.some((file) => file.file_kind === "preview");
+    const hasDocxOriginal = versionFiles.some(
+      (file) => file.file_kind === "original" && file.file_name.toLowerCase().endsWith(".docx"),
+    );
+    const latestJob = [...(policy.file_processing_jobs ?? [])]
+      .filter((job) => job.version_id === currentVersion.id)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+    if (!hasDocxOriginal || hasPreview) {
+      return;
+    }
+
+    if (latestJob && !["queued", "processing"].includes(latestJob.status)) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void load({ silent: true });
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [load, policy, selectedVersionId]);
 
   const versions = useMemo(() => sortedVersions(policy?.policy_versions), [policy]);
   const selectedVersion = versions.find((version) => version.id === selectedVersionId) ?? versions[0];
@@ -348,6 +394,14 @@ export function PolicyDetailPage() {
                 </div>
               </dl>
               {selectedJob?.last_error ? <p className="inline-error">{selectedJob.last_error}</p> : null}
+              <button
+                type="button"
+                className="secondary-button full"
+                onClick={() => void load({ silent: true })}
+                disabled={actionLoading}
+              >
+                تحديث حالة المعاينة
+              </button>
             </div>
           ) : null}
           <div className="info-card">

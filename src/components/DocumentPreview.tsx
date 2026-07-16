@@ -5,6 +5,9 @@ import { readableWorkflowError, signedFileUrl } from "../lib/policyWorkflow";
 import type { PolicyFile } from "../lib/types";
 import { LoadingState } from "./LoadingState";
 
+const OFFICE_VIEWER_URL = "https://view.officeapps.live.com/op/embed.aspx?src=";
+const officePreviewEnabled = import.meta.env.VITE_ENABLE_OFFICE_DOCX_PREVIEW !== "false";
+
 export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +19,17 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
       file?.file_name.toLowerCase().endsWith(".pdf"),
     [file],
   );
+  const isDocx = useMemo(
+    () =>
+      file?.content_type ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      file?.file_name.toLowerCase().endsWith(".docx"),
+    [file],
+  );
+  const officePreviewUrl =
+    officePreviewEnabled && isDocx && url
+      ? `${OFFICE_VIEWER_URL}${encodeURIComponent(url)}`
+      : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -24,7 +38,7 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
       setUrl(null);
       setError(null);
 
-      if (!file || !isPdf) {
+      if (!file || (!isPdf && !isDocx)) {
         setLoading(false);
         return;
       }
@@ -47,10 +61,11 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
     }
 
     void load();
+
     return () => {
       cancelled = true;
     };
-  }, [file, isPdf]);
+  }, [file, isPdf, isDocx]);
 
   async function openFile(action: "download" | "print") {
     if (!file) {
@@ -92,10 +107,10 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
               طباعة
             </button>
           ) : null}
-          {isPdf && url ? (
-            <a href={url} target="_blank" rel="noreferrer">
+          {url ? (
+            <a href={officePreviewUrl ?? url} target="_blank" rel="noreferrer">
               <ExternalLink aria-hidden="true" />
-              فتح
+              {isDocx ? "فتح المعاينة" : "فتح"}
             </a>
           ) : null}
         </div>
@@ -106,14 +121,20 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
       {!loading && !error && isPdf && url ? (
         <iframe className="pdf-frame" src={url} title={file.file_name} />
       ) : null}
-      {!loading && !error && !isPdf ? (
+      {!loading && !error && officePreviewUrl ? (
+        <div className="docx-preview-shell">
+          <div className="preview-notice">
+            معاينة Word مباشرة لحين اكتمال PDF النهائي. عند جاهزية PDF ستظهر نسخة المعاينة المعتمدة هنا تلقائيًا.
+          </div>
+          <iframe className="office-frame" src={officePreviewUrl} title={file.file_name} />
+        </div>
+      ) : null}
+      {!loading && !error && isDocx && !officePreviewUrl ? (
         <div className="word-preview-state">
           <FileText aria-hidden="true" />
-          <h3>جاري تجهيز PDF المعاينة</h3>
+          <h3>جاري تجهيز معاينة الملف</h3>
           <p>
-            هذا ملف DOCX أصلي. سيظهر المنتج النهائي هنا بعد تحويله تلقائيًا إلى
-            PDF بواسطة Worker المعالجة. لا نعرض تحويلًا تقريبيًا حتى لا يضلل
-            تدقيق التنسيق.
+            هذا ملف DOCX أصلي. سيتم إنشاء رابط معاينة مؤقت، ثم سيظهر PDF النهائي بعد اكتمال التحويل.
           </p>
         </div>
       ) : null}
