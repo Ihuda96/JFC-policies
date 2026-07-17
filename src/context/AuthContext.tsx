@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { hasSupabaseConfig } from "../lib/config";
+import { isPlatformSuperAdminMetadata } from "../lib/authClaims";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { Profile } from "../lib/types";
 
@@ -24,6 +25,17 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function applyAuthClaims(profile: Profile | null, appMetadata: unknown) {
+  if (!profile || !isPlatformSuperAdminMetadata(appMetadata)) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    role: "system_admin" as const,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -31,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [setupRequired, setSetupRequired] = useState(!hasSupabaseConfig);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  const loadProfile = useCallback(async (userId: string) => {
+  const loadProfile = useCallback(async (userId: string, appMetadata?: unknown) => {
     if (!supabase) {
       setSetupRequired(true);
       setProfile(null);
@@ -56,14 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setSetupRequired(false);
     setProfileError(null);
-    setProfile((data as Profile | null) ?? null);
+    setProfile(applyAuthClaims((data as Profile | null) ?? null, appMetadata));
   }, []);
 
   const refreshProfile = useCallback(async () => {
     if (session?.user.id) {
-      await loadProfile(session.user.id);
+      await loadProfile(session.user.id, session.user.app_metadata);
     }
-  }, [loadProfile, session?.user.id]);
+  }, [loadProfile, session?.user.app_metadata, session?.user.id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -87,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(currentSession);
       if (currentSession?.user.id) {
-        await loadProfile(currentSession.user.id);
+        await loadProfile(currentSession.user.id, currentSession.user.app_metadata);
       }
       setLoading(false);
     }
@@ -105,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       if (nextSession?.user.id) {
-        void loadProfile(nextSession.user.id);
+        void loadProfile(nextSession.user.id, nextSession.user.app_metadata);
       } else {
         setProfile(null);
       }
