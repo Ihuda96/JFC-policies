@@ -1159,8 +1159,42 @@ dd {
 }
 
 .admin-user-card {
-  grid-template-columns: minmax(220px, 1.2fr) repeat(5, minmax(130px, 1fr)) auto;
+  grid-template-columns: minmax(220px, 1.2fr) repeat(7, minmax(130px, 1fr)) auto;
   align-items: end;
+}
+
+.admin-create-card,
+.settings-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.admin-create-card {
+  padding: 24px;
+}
+
+.admin-form-grid,
+.settings-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.settings-card {
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1.2fr) minmax(180px, 0.8fr) auto;
+  align-items: end;
+}
+
+.settings-card textarea {
+  min-height: 120px;
+}
+
+.muted-line {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 code {
@@ -1436,7 +1470,8 @@ code {
   .approval-card,
   .policy-card,
   .notification-card,
-  .admin-user-card {
+  .admin-user-card,
+  .settings-card {
     grid-template-columns: 1fr;
   }
 }

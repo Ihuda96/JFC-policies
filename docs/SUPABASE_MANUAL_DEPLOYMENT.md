@@ -137,7 +137,7 @@ where email = 'ضع_بريد_مدير_النظام_هنا';
 
 إذا ظهرت رسالة `Could not find the function public.archive_policy(p_policy_id, p_reason) in the schema cache` بعد النشر، شغّل الملف `supabase/DEPLOY_ARCHIVE_POLICY_FIX.sql` من SQL Editor ثم أعد تحميل صفحة التطبيق. الملف ينشئ الدالة ويطلب من PostgREST إعادة تحميل schema cache.
 
-Superadmin recovery: if a trusted Supabase Auth superadmin account accidentally changes its own `profiles.role` away from `system_admin`, run `supabase/DEPLOY_SUPERADMIN_RECOVERY_FIX.sql` from SQL Editor, sign out and sign in again, then open `/app/admin/users` and set the profile role back to `system_admin`. The recovery only trusts `app_metadata`, not `user_metadata`.
+Superadmin recovery: if the first administrator account is locked out after its `profiles.role` is changed away from `system_admin`, run `supabase/DEPLOY_SUPERADMIN_RECOVERY_FIX.sql` from SQL Editor. The file restores `suoaljohani@moh.gov.sa` to `system_admin`, adds an email-based system-admin override, reloads the PostgREST schema cache, and enables username login support. Sign out and sign in again after running it.
 
 إذا فشل تشغيل `DEPLOY_TO_SUPABASE.sql`:
 

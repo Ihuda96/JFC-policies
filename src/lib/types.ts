@@ -30,6 +30,7 @@ export type ProcessingStatus =
 export interface Profile {
   id: string;
   email: string | null;
+  username: string | null;
   full_name: string | null;
   role: AppRole;
   status: ProfileStatus;
