@@ -10,7 +10,7 @@ export function LoginPage() {
   const { session } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "reset">("login");
   const [loading, setLoading] = useState(false);
@@ -27,6 +27,27 @@ export function LoginPage() {
     return <Navigate to={from} replace />;
   }
 
+  async function resolveIdentifierEmail() {
+    const trimmed = identifier.trim();
+    if (trimmed.includes("@")) {
+      return trimmed.toLowerCase();
+    }
+
+    const { data, error: resolveError } = await supabase!.rpc("resolve_login_identifier", {
+      p_identifier: trimmed,
+    });
+
+    if (resolveError) {
+      throw resolveError;
+    }
+
+    if (typeof data !== "string" || data.length === 0) {
+      throw new Error("اسم المستخدم غير موجود أو غير مفعل.");
+    }
+
+    return data;
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -34,8 +55,9 @@ export function LoginPage() {
     setMessage(null);
 
     try {
+      const resolvedEmail = await resolveIdentifierEmail();
       if (mode === "reset") {
-        const { error: resetError } = await supabase!.auth.resetPasswordForEmail(email, {
+        const { error: resetError } = await supabase!.auth.resetPasswordForEmail(resolvedEmail, {
           redirectTo: `${window.location.origin}/login`,
         });
         if (resetError) {
@@ -44,7 +66,7 @@ export function LoginPage() {
         setMessage("تم إرسال رابط استعادة كلمة المرور إذا كان البريد مسجلًا.");
       } else {
         const { error: loginError } = await supabase!.auth.signInWithPassword({
-          email,
+          email: resolvedEmail,
           password,
         });
         if (loginError) {
@@ -71,15 +93,15 @@ export function LoginPage() {
         <h1>{mode === "login" ? "تسجيل الدخول" : "استعادة كلمة المرور"}</h1>
         <form onSubmit={submit}>
           <label>
-            <span>البريد الإلكتروني</span>
+            <span>البريد الإلكتروني أو اسم المستخدم</span>
             <div className="input-shell">
               <Mail aria-hidden="true" />
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
+                value={identifier}
+                onChange={(event) => setIdentifier(event.target.value)}
+                autoComplete="username"
               />
             </div>
           </label>

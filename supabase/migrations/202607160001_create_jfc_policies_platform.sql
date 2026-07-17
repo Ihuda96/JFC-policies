@@ -127,6 +127,7 @@ exception when duplicate_object then null; end $$;
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text unique,
+  username text,
   full_name text,
   role public.app_role not null default 'quality_staff',
   status public.profile_status not null default 'pending',
@@ -138,7 +139,22 @@ create table if not exists public.profiles (
   deactivated_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint profiles_email_format check (email is null or email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$')
+  constraint profiles_email_format check (email is null or email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$'),
+  constraint profiles_username_format check (username is null or username ~ '^[a-z0-9._-]{3,32}$')
+);
+
+alter table public.profiles add column if not exists username text;
+do $$ begin
+  alter table public.profiles add constraint profiles_username_format check (username is null or username ~ '^[a-z0-9._-]{3,32}$');
+exception when duplicate_object then null; end $$;
+
+create table if not exists public.system_admin_overrides (
+  email text primary key,
+  is_active boolean not null default true,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint system_admin_overrides_email_format check (email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$')
 );
 
 create table if not exists public.categories (
@@ -331,6 +347,8 @@ create table if not exists public.app_settings (
 -- Indexes
 -- ---------------------------------------------------------------------------
 create index if not exists profiles_role_status_idx on public.profiles (role, status);
+create unique index if not exists profiles_username_unique_idx on public.profiles (lower(username)) where username is not null;
+create index if not exists system_admin_overrides_active_idx on public.system_admin_overrides (is_active, email);
 create index if not exists categories_parent_idx on public.categories (parent_id, kind, is_active);
 create index if not exists policies_owner_status_idx on public.policies (owner_id, status, updated_at desc);
 create index if not exists policies_status_approved_idx on public.policies (status, approved_at desc);
@@ -390,8 +408,41 @@ as $$
         ) as permission_claim(value)
         where lower(permission_claim.value) in ('superadmin', 'super_admin', 'system_admin')
       )
+      or exists (
+        select 1
+        from public.system_admin_overrides sao
+        where sao.is_active
+          and lower(sao.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+      )
     )
   from app_metadata
+$$;
+
+create or replace function public.normalize_username(p_username text)
+returns text
+language sql
+immutable
+as $$
+  select nullif(lower(regexp_replace(trim(coalesce(p_username, '')), '\s+', '', 'g')), '')
+$$;
+
+create or replace function public.resolve_login_identifier(p_identifier text)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case
+    when position('@' in trim(coalesce(p_identifier, ''))) > 0 then lower(trim(p_identifier))
+    else (
+      select p.email
+      from public.profiles p
+      where lower(p.username) = lower(trim(coalesce(p_identifier, '')))
+        and p.status <> 'disabled'
+      limit 1
+    )
+  end
 $$;
 
 create or replace function public.current_app_role()
@@ -528,13 +579,17 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name, role, status)
+  insert into public.profiles (id, email, username, full_name, role, status, department, job_title, phone)
   values (
     new.id,
     new.email,
+    public.normalize_username(new.raw_user_meta_data->>'username'),
     nullif(trim(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', '')), ''),
     'quality_staff',
-    'pending'
+    'pending',
+    nullif(trim(coalesce(new.raw_user_meta_data->>'department', '')), ''),
+    nullif(trim(coalesce(new.raw_user_meta_data->>'job_title', '')), ''),
+    nullif(trim(coalesce(new.raw_user_meta_data->>'phone', '')), '')
   )
   on conflict (id) do nothing;
 
@@ -992,13 +1047,17 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_update_profile(uuid, text, public.app_role, public.profile_status, text, text);
+drop function if exists public.admin_update_profile(uuid, text, text, public.app_role, public.profile_status, text, text, text);
 create or replace function public.admin_update_profile(
   p_user_id uuid,
+  p_username text,
   p_full_name text,
   p_role public.app_role,
   p_status public.profile_status,
   p_department text default null,
-  p_job_title text default null
+  p_job_title text default null,
+  p_phone text default null
 )
 returns void
 language plpgsql
@@ -1007,10 +1066,13 @@ set search_path = public
 as $$
 declare
   v_old_role public.app_role;
+  v_username text;
 begin
   if auth.uid() is null or not public.is_system_admin() then
     raise exception 'system admin role is required';
   end if;
+
+  v_username := public.normalize_username(p_username);
 
   select role into v_old_role
   from public.profiles
@@ -1022,11 +1084,13 @@ begin
   end if;
 
   update public.profiles
-  set full_name = nullif(trim(coalesce(p_full_name, '')), ''),
+  set username = v_username,
+      full_name = nullif(trim(coalesce(p_full_name, '')), ''),
       role = p_role,
       status = p_status,
       department = nullif(trim(coalesce(p_department, '')), ''),
       job_title = nullif(trim(coalesce(p_job_title, '')), ''),
+      phone = nullif(trim(coalesce(p_phone, '')), ''),
       deactivated_at = case when p_status = 'disabled' then coalesce(deactivated_at, now()) else null end,
       updated_at = now()
   where id = p_user_id;
@@ -1036,7 +1100,7 @@ begin
     'profiles',
     p_user_id,
     null,
-    jsonb_build_object('role', p_role, 'status', p_status)
+    jsonb_build_object('username', v_username, 'role', p_role, 'status', p_status)
   );
 end;
 $$;
@@ -1047,6 +1111,11 @@ $$;
 drop trigger if exists profiles_updated_at on public.profiles;
 create trigger profiles_updated_at
 before update on public.profiles
+for each row execute function public.set_updated_at();
+
+drop trigger if exists system_admin_overrides_updated_at on public.system_admin_overrides;
+create trigger system_admin_overrides_updated_at
+before update on public.system_admin_overrides
 for each row execute function public.set_updated_at();
 
 drop trigger if exists categories_updated_at on public.categories;
@@ -1088,6 +1157,7 @@ for each row execute function public.handle_new_user();
 -- RLS enablement
 -- ---------------------------------------------------------------------------
 alter table public.profiles enable row level security;
+alter table public.system_admin_overrides enable row level security;
 alter table public.categories enable row level security;
 alter table public.policies enable row level security;
 alter table public.policy_versions enable row level security;
@@ -1114,6 +1184,17 @@ drop policy if exists "profiles_update_self_or_admin" on public.profiles;
 drop policy if exists "profiles_update_admin_only" on public.profiles;
 create policy "profiles_update_admin_only"
 on public.profiles for update to authenticated
+using (public.current_app_role() = 'system_admin')
+with check (public.current_app_role() = 'system_admin');
+
+drop policy if exists "system_admin_overrides_select_admin" on public.system_admin_overrides;
+create policy "system_admin_overrides_select_admin"
+on public.system_admin_overrides for select to authenticated
+using (public.current_app_role() = 'system_admin');
+
+drop policy if exists "system_admin_overrides_write_admin" on public.system_admin_overrides;
+create policy "system_admin_overrides_write_admin"
+on public.system_admin_overrides for all to authenticated
 using (public.current_app_role() = 'system_admin')
 with check (public.current_app_role() = 'system_admin');
 
@@ -1326,13 +1407,15 @@ with check (
 -- ---------------------------------------------------------------------------
 revoke all on function public.log_audit(public.audit_event_type, text, uuid, uuid, jsonb) from anon, authenticated;
 grant execute on function public.is_platform_superadmin() to authenticated;
+grant execute on function public.current_app_role() to authenticated;
+grant execute on function public.resolve_login_identifier(text) to anon, authenticated;
 grant execute on function public.submit_policy_version(uuid, uuid, text) to authenticated;
 grant execute on function public.return_policy_for_revision(uuid, uuid, text, integer) to authenticated;
 grant execute on function public.approve_policy_version(uuid, uuid) to authenticated;
 grant execute on function public.archive_policy(uuid, text) to authenticated;
 grant execute on function public.track_file_access(uuid, text) to authenticated;
 grant execute on function public.mark_notification_read(uuid) to authenticated;
-grant execute on function public.admin_update_profile(uuid, text, public.app_role, public.profile_status, text, text) to authenticated;
+grant execute on function public.admin_update_profile(uuid, text, text, public.app_role, public.profile_status, text, text, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Required seed/reference data only
@@ -1342,7 +1425,9 @@ values
   ('default_review_interval_months', '36'::jsonb, 'Default review interval when the policy document does not provide a review date.'),
   ('max_upload_size_mb', '50'::jsonb, 'Maximum browser upload size enforced by private Storage buckets.'),
   ('library_public_access', 'false'::jsonb, 'The v1 library is available after authentication only.'),
-  ('word_download_scope', '"quality_staff_and_manager"'::jsonb, 'Approved Word download scope for v1.')
+  ('word_download_scope', '"quality_staff_and_manager"'::jsonb, 'Approved Word download scope for v1.'),
+  ('username_login_enabled', 'true'::jsonb, 'Allow users to sign in with username through resolve_login_identifier.'),
+  ('admin_user_creation_mode', '"supabase_auth_signup_detached_client"'::jsonb, 'Admins can create users with email, username, password, role, and status when Supabase Auth signups are enabled.')
 on conflict (key) do update
 set value = excluded.value,
     description = excluded.description,
