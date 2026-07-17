@@ -11,7 +11,7 @@ import type { Session } from "@supabase/supabase-js";
 import { hasSupabaseConfig } from "../lib/config";
 import { isPlatformSuperAdminMetadata } from "../lib/authClaims";
 import { isSetupError, supabase } from "../lib/supabase";
-import type { Profile } from "../lib/types";
+import type { AppRole, Profile } from "../lib/types";
 
 interface AuthContextValue {
   session: Session | null;
@@ -24,6 +24,7 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const appRoles = new Set<AppRole>(["quality_staff", "quality_manager", "system_admin"]);
 
 function applyAuthClaims(profile: Profile | null, appMetadata: unknown) {
   if (!profile || !isPlatformSuperAdminMetadata(appMetadata)) {
@@ -68,7 +69,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setSetupRequired(false);
     setProfileError(null);
-    setProfile(applyAuthClaims((data as Profile | null) ?? null, appMetadata));
+    let nextProfile = applyAuthClaims((data as Profile | null) ?? null, appMetadata);
+    if (nextProfile) {
+      const { data: effectiveRole } = await supabase.rpc("current_app_role");
+      if (typeof effectiveRole === "string" && appRoles.has(effectiveRole as AppRole)) {
+        nextProfile = {
+          ...nextProfile,
+          role: effectiveRole as AppRole,
+        };
+      }
+    }
+    setProfile(nextProfile);
   }, []);
 
   const refreshProfile = useCallback(async () => {

@@ -11,6 +11,20 @@ export const supabase = hasSupabaseConfig
     })
   : null;
 
+export function createDetachedSupabaseClient() {
+  if (!hasSupabaseConfig) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabasePublishableKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
 export function assertSupabase() {
   if (!supabase) {
     throw new Error("Supabase public browser configuration is missing.");
