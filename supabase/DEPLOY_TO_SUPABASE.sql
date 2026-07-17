@@ -359,6 +359,41 @@ begin
 end;
 $$;
 
+create or replace function public.is_platform_superadmin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with app_metadata as (
+    select coalesce(auth.jwt() -> 'app_metadata', '{}'::jsonb) as claims
+  )
+  select auth.uid() is not null
+    and (
+      lower(coalesce(claims ->> 'role', '')) in ('superadmin', 'super_admin', 'system_admin')
+      or lower(coalesce(claims ->> 'app_role', '')) in ('superadmin', 'super_admin', 'system_admin')
+      or lower(coalesce(claims ->> 'superadmin', '')) in ('true', '1', 'yes')
+      or lower(coalesce(claims ->> 'is_super_admin', '')) in ('true', '1', 'yes')
+      or lower(coalesce(claims ->> 'system_admin', '')) in ('true', '1', 'yes')
+      or exists (
+        select 1
+        from jsonb_array_elements_text(
+          case when jsonb_typeof(claims -> 'roles') = 'array' then claims -> 'roles' else '[]'::jsonb end
+        ) as role_claim(value)
+        where lower(role_claim.value) in ('superadmin', 'super_admin', 'system_admin')
+      )
+      or exists (
+        select 1
+        from jsonb_array_elements_text(
+          case when jsonb_typeof(claims -> 'permissions') = 'array' then claims -> 'permissions' else '[]'::jsonb end
+        ) as permission_claim(value)
+        where lower(permission_claim.value) in ('superadmin', 'super_admin', 'system_admin')
+      )
+    )
+  from app_metadata
+$$;
+
 create or replace function public.current_app_role()
 returns public.app_role
 language sql
@@ -366,11 +401,16 @@ stable
 security definer
 set search_path = public
 as $$
-  select role
-  from public.profiles
-  where id = auth.uid()
-    and status = 'active'
-  limit 1
+  select case
+    when public.is_platform_superadmin() then 'system_admin'::public.app_role
+    else (
+      select role
+      from public.profiles
+      where id = auth.uid()
+        and status = 'active'
+      limit 1
+    )
+  end
 $$;
 
 create or replace function public.is_active_profile()
@@ -380,7 +420,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select exists (
+  select public.is_platform_superadmin() or exists (
     select 1
     from public.profiles
     where id = auth.uid()
@@ -968,7 +1008,7 @@ as $$
 declare
   v_old_role public.app_role;
 begin
-  if auth.uid() is null or public.current_app_role() <> 'system_admin' then
+  if auth.uid() is null or not public.is_system_admin() then
     raise exception 'system admin role is required';
   end if;
 
@@ -1285,6 +1325,7 @@ with check (
 -- Function grants
 -- ---------------------------------------------------------------------------
 revoke all on function public.log_audit(public.audit_event_type, text, uuid, uuid, jsonb) from anon, authenticated;
+grant execute on function public.is_platform_superadmin() to authenticated;
 grant execute on function public.submit_policy_version(uuid, uuid, text) to authenticated;
 grant execute on function public.return_policy_for_revision(uuid, uuid, text, integer) to authenticated;
 grant execute on function public.approve_policy_version(uuid, uuid) to authenticated;
