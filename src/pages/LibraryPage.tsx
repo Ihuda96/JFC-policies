@@ -77,7 +77,7 @@ export function LibraryPage() {
         <div>
           <p className="eyebrow">المكتبة المعتمدة</p>
           <h1>مكتبة السياسات</h1>
-          <p>السياسات المنشورة فقط تظهر هنا وفق RLS والصلاحيات.</p>
+          <p>تظهر هنا السياسات المعتمدة والمنشورة فقط.</p>
         </div>
       </section>
       <label className="search-box">

@@ -115,7 +115,7 @@ export function LandingPage() {
       <section className="governance-section" id="governance">
         <div>
           <p className="eyebrow">الحوكمة والأمان</p>
-          <h2>Supabase Auth وRLS وتخزين خاص</h2>
+          <h2>حماية متقدمة وصلاحيات دقيقة وتخزين آمن</h2>
           <p>
             لا تعتمد المنصة على مفاتيح سرية في المتصفح. كل الملفات تحفظ في
             حاويات خاصة، والوصول يتم بروابط موقعة ومؤقتة بعد التحقق من الصلاحية.
@@ -123,7 +123,7 @@ export function LandingPage() {
         </div>
         <div className="governance-cards">
           <span><Lock /> ملفات خاصة قبل الاعتماد</span>
-          <span><ShieldCheck /> RLS على الجداول والتخزين</span>
+          <span><ShieldCheck /> صلاحيات دقيقة للوصول إلى البيانات</span>
           <span><Workflow /> سجل تدقيق لكل إجراء حساس</span>
         </div>
       </section>

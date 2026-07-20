@@ -624,6 +624,22 @@ textarea {
   cursor: pointer;
 }
 
+.icon-button.danger {
+  background: rgba(214, 69, 69, 0.1);
+  color: var(--red-600);
+}
+
+.icon-button.danger:hover:not(:disabled) {
+  background: var(--red-600);
+  color: var(--white);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .content-area {
   padding: 24px;
 }

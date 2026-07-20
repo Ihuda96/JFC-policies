@@ -1,17 +1,23 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
 import { StatusBadge } from "../components/StatusBadge";
+import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../lib/format";
+import { archivePolicy, readableWorkflowError } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { Policy } from "../lib/types";
 
 export function WorkspacePage() {
+  const { profile } = useAuth();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -39,6 +45,42 @@ export function WorkspacePage() {
     void load();
   }, []);
 
+  function canRemove(policy: Policy) {
+    if (policy.status === "archived") {
+      return false;
+    }
+
+    if (profile?.role === "quality_manager") {
+      return true;
+    }
+
+    return (
+      policy.owner_id === profile?.id &&
+      ["draft", "returned_for_revision"].includes(policy.status)
+    );
+  }
+
+  async function removePolicy(policy: Policy) {
+    const confirmed = window.confirm(
+      `هل تريد حذف "${policy.title}"؟ سيتم نقلها إلى الأرشيف وإخفاؤها من القوائم.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingId(policy.id);
+    setActionError(null);
+    try {
+      await archivePolicy(policy.id);
+      setPolicies((current) => current.filter((item) => item.id !== policy.id));
+    } catch (err) {
+      setActionError(readableWorkflowError(err));
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   if (setupError) {
     return <SetupRequired message={setupError} />;
   }
@@ -53,9 +95,10 @@ export function WorkspacePage() {
         <div>
           <p className="eyebrow">السياسات قيد العمل</p>
           <h1>سياساتي</h1>
-          <p>تعرض القائمة ما تسمح به صلاحيات RLS للمستخدم الحالي.</p>
+          <p>تعرض القائمة السياسات المتاحة لك حسب صلاحياتك.</p>
         </div>
       </section>
+      {actionError ? <p className="inline-error">{actionError}</p> : null}
       {policies.length === 0 ? (
         <EmptyState title="لا توجد سياسات" body="ابدأ بإضافة سياسة جديدة من شاشة الرفع." />
       ) : (
@@ -77,9 +120,23 @@ export function WorkspacePage() {
                   <dd>{formatDate(policy.updated_at)}</dd>
                 </div>
               </dl>
-              <Link className="secondary-button" to={`/app/policies/${policy.id}`}>
-                فتح السياسة
-              </Link>
+              <div className="card-actions">
+                <Link className="secondary-button" to={`/app/policies/${policy.id}`}>
+                  فتح السياسة
+                </Link>
+                {canRemove(policy) ? (
+                  <button
+                    type="button"
+                    className="icon-button danger"
+                    onClick={() => void removePolicy(policy)}
+                    disabled={deletingId === policy.id}
+                    aria-label={`حذف ${policy.title}`}
+                    title="حذف السياسة"
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
             </article>
           ))}
         </div>

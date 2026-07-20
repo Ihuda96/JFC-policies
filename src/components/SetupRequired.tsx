@@ -1,32 +1,28 @@
-import { AlertTriangle, Database, FileText, ShieldCheck } from "lucide-react";
-import { deploymentProject } from "../lib/config";
+import { AlertTriangle, Clock, LifeBuoy } from "lucide-react";
 
 export function SetupRequired({ message }: { message?: string | null }) {
+  void message;
+
   return (
     <main className="setup-screen">
       <section className="setup-panel">
         <div className="setup-icon">
           <AlertTriangle aria-hidden="true" />
         </div>
-        <p className="eyebrow">إعداد مطلوب</p>
-        <h1>قاعدة البيانات أو إعدادات Supabase غير جاهزة بعد</h1>
+        <p className="eyebrow">الخدمة غير متاحة مؤقتًا</p>
+        <h1>تعذّر عرض البيانات في الوقت الحالي</h1>
         <p>
-          التطبيق لا يعرض بيانات تجريبية عند غياب المخطط. شغّل ملف النشر اليدوي
-          على مشروع Supabase ثم أعد تحميل الصفحة.
+          نعتذر عن هذا الانقطاع المؤقت. يرجى إعادة تحميل الصفحة بعد قليل، وإذا
+          استمرت المشكلة تواصل مع الدعم الفني لمساعدتك.
         </p>
-        {message ? <p className="setup-error">{message}</p> : null}
         <div className="setup-list">
           <div>
-            <Database aria-hidden="true" />
-            <span>{deploymentProject.ref}</span>
+            <Clock aria-hidden="true" />
+            <span>أعد تحميل الصفحة بعد قليل</span>
           </div>
           <div>
-            <FileText aria-hidden="true" />
-            <span>supabase/DEPLOY_TO_SUPABASE.sql</span>
-          </div>
-          <div>
-            <ShieldCheck aria-hidden="true" />
-            <span>RLS و Storage private مطلوبة قبل الاستخدام</span>
+            <LifeBuoy aria-hidden="true" />
+            <span>تواصل مع الدعم الفني إذا استمرت المشكلة</span>
           </div>
         </div>
       </section>

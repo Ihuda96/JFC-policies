@@ -120,8 +120,8 @@ export function UploadPolicyPage() {
               <CheckCircle2 aria-hidden="true" />
               <h2>تم حفظ النسخة</h2>
               <p>
-                الملف محفوظ الآن في Storage خاص وجاهز للمعاينة من صفحة السياسة.
-                يمكنك إرسال النسخة للاعتماد.
+                تم حفظ الملف بأمان وأصبح جاهزًا للمعاينة من صفحة السياسة.
+                يمكنك الآن إرسال النسخة للاعتماد.
               </p>
               <div className="stacked-actions">
                 <button className="primary-button full" onClick={() => void submit()} disabled={submitting}>
@@ -138,8 +138,8 @@ export function UploadPolicyPage() {
               <FileUp aria-hidden="true" />
               <h2>المعاينة بعد الرفع</h2>
               <p>
-                بعد نجاح الرفع سيظهر الطلب ويمكن فتح الملف من صفحة السياسة عبر
-                رابط Supabase مؤقت. لا تُنشأ بيانات وهمية أو ملفات بديلة.
+                بعد رفع الملف سيظهر الطلب مباشرة، ويمكنك فتح الملف ومعاينته من
+                صفحة السياسة في أي وقت.
               </p>
             </>
           )}

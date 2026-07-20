@@ -112,7 +112,7 @@ export function AdminUsersPage() {
     const detachedClient = createDetachedSupabaseClient();
 
     if (!detachedClient) {
-      setError("إعداد Supabase غير موجود.");
+      setError("تعذّر الاتصال بالخدمة حاليًا. يرجى المحاولة لاحقًا.");
       return;
     }
 
@@ -140,7 +140,7 @@ export function AdminUsersPage() {
       }
 
       if (!data.user?.id) {
-        throw new Error("لم يرجع Supabase معرف المستخدم. تأكد أن التسجيل مفعل وأن البريد غير مستخدم.");
+        throw new Error("تعذّر إنشاء الحساب. تأكد أن البريد غير مستخدم مسبقًا ثم حاول مرة أخرى.");
       }
 
       await waitForProfile(data.user.id);
@@ -203,7 +203,7 @@ export function AdminUsersPage() {
           <h1>المستخدمون والأدوار</h1>
           <p>
             أنشئ مستخدمين ببيانات دخول، ثم حدّد الدور والحالة وبيانات العمل من نفس
-            الصفحة. إنشاء الحساب يستخدم Supabase Auth بدون service role في المتصفح.
+            الصفحة.
           </p>
         </div>
       </section>
