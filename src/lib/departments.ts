@@ -1,29 +1,30 @@
 import type { PolicyBundle } from "./types";
 
-// Prefixes that appear in policy codes but are NOT departments (cluster name,
-// document-type/series markers). They are skipped while reading a code.
-const NON_DEPARTMENT_TOKENS = new Set([
-  "JFHC",
-  "JFC",
-  "JHC",
-  "MOH",
+// Cluster-level prefixes that are never a department.
+const CLUSTER_PREFIXES = new Set(["JFHC", "JFC", "JHC", "MOH"]);
+
+// Document-type / category markers inside a code that are not organizational
+// units (e.g. JFHC-HRD-HPD-APP-PP-01 → APP, PP are document markers).
+const DOCUMENT_TOKENS = new Set([
+  "APP",
   "PP",
   "POL",
   "SOP",
   "PR",
-  "APP",
   "FRM",
   "GL",
+  "PLAN",
+  "PROT",
+  "GUIDE",
+  "WI",
 ]);
 
-// High-confidence department code → Arabic name. Extend this map with the
-// official JFC department code list to get precise names for every code.
+// Department code → full Arabic name. Extend with the official JFC list to
+// cover every department precisely.
 const DEPARTMENT_NAMES: Record<string, string> = {
   HRD: "إدارة الموارد البشرية",
-  HRO: "إدارة الموارد البشرية",
-  HR: "إدارة الموارد البشرية",
   IPC: "إدارة مكافحة العدوى",
-  QM: "إدارة الجودة",
+  QM: "إدارة الجودة وسلامة المرضى",
   QPS: "إدارة الجودة وسلامة المرضى",
   PSQ: "إدارة الجودة وسلامة المرضى",
   IT: "إدارة تقنية المعلومات",
@@ -39,6 +40,14 @@ const DEPARTMENT_NAMES: Record<string, string> = {
   SCM: "إدارة سلسلة الإمداد",
 };
 
+// Sub-section / unit code → full Arabic name and its parent department code.
+// This lets a lone sub-code (e.g. "HPD 01" in a title) still resolve to its
+// department (HRD). Extend with the official JFC unit list.
+const SUBSECTIONS: Record<string, { name: string; parent: string }> = {
+  HPD: { name: "تخطيط وتطوير الموارد البشرية", parent: "HRD" },
+  HRO: { name: "عمليات الموارد البشرية", parent: "HRD" },
+};
+
 export const UNCLASSIFIED_LABEL = "غير مصنف";
 
 function cleanText(value?: string | null) {
@@ -46,92 +55,192 @@ function cleanText(value?: string | null) {
   return trimmed && trimmed.length > 0 ? trimmed : null;
 }
 
-// Read the first alphabetic department code from any coded value, e.g.
-// "JFHC-HRD-HRO-APP-PP-032" → "HRD", "الهيكل التنظيمي HPD 01" → "HPD".
-function departmentCodeFrom(...sources: (string | null | undefined)[]) {
-  for (const source of sources) {
-    if (!source) {
-      continue;
-    }
-
-    const tokens = source.toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
-    for (const token of tokens) {
-      if (NON_DEPARTMENT_TOKENS.has(token)) {
-        continue;
-      }
-      if (/^[A-Z]{2,6}$/.test(token)) {
-        return token;
-      }
-    }
+// Extract the ordered organizational codes from a coded value, dropping the
+// cluster prefix, document-type markers and numeric serials.
+// "JFHC-HRD-HPD-APP-PP-01" → ["HRD", "HPD"], "الهيكل التنظيمي HPD 01" → ["HPD"].
+function orgCodes(source: string | null | undefined): string[] {
+  if (!source) {
+    return [];
   }
 
-  return null;
+  return source
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(Boolean)
+    .filter(
+      (token) =>
+        /^[A-Z]{2,6}$/.test(token) &&
+        !CLUSTER_PREFIXES.has(token) &&
+        !DOCUMENT_TOKENS.has(token),
+    );
 }
 
-export interface PolicyDepartment {
-  key: string;
-  label: string;
-  code: string | null;
+function firstNonEmpty(...lists: string[][]): string[] {
+  for (const list of lists) {
+    if (list.length > 0) {
+      return list;
+    }
+  }
+  return [];
 }
 
-export function resolvePolicyDepartment(policy: PolicyBundle): PolicyDepartment {
-  // 1) Department text set explicitly by the organization takes priority.
+export function departmentName(code: string) {
+  return DEPARTMENT_NAMES[code] ?? `قسم ${code}`;
+}
+
+export function subsectionName(code: string) {
+  return SUBSECTIONS[code]?.name ?? `تصنيف ${code}`;
+}
+
+export interface PolicyClassification {
+  departmentCode: string | null;
+  departmentKey: string;
+  departmentLabel: string;
+  sectionCode: string | null;
+  sectionKey: string | null;
+  sectionLabel: string | null;
+}
+
+export function classifyPolicy(policy: PolicyBundle): PolicyClassification {
+  // Read the ordered codes from the richest coded field available.
+  const codes = firstNonEmpty(
+    orgCodes(policy.policy_number),
+    orgCodes(policy.policy_metadata?.extracted_policy_number),
+    orgCodes(policy.title),
+    orgCodes(policy.policy_metadata?.extracted_title),
+  );
+
+  let departmentCode = codes[0] ?? null;
+  let sectionCode = codes[1] ?? null;
+
+  // A single code that is actually a sub-section (e.g. only "HPD" in the
+  // title): promote its parent department and keep it as the sub-section.
+  if (departmentCode && !sectionCode && SUBSECTIONS[departmentCode]) {
+    sectionCode = departmentCode;
+    departmentCode = SUBSECTIONS[departmentCode].parent;
+  }
+
+  if (departmentCode) {
+    return {
+      departmentCode,
+      departmentKey: departmentCode,
+      departmentLabel: departmentName(departmentCode),
+      sectionCode,
+      sectionKey: sectionCode,
+      sectionLabel: sectionCode ? subsectionName(sectionCode) : null,
+    };
+  }
+
+  // No code detected — fall back to the department text set by the org.
   const explicit =
     cleanText(policy.policy_metadata?.issuing_department) ??
     cleanText(policy.owner_department);
   if (explicit) {
-    return { key: explicit, label: explicit, code: null };
+    return {
+      departmentCode: null,
+      departmentKey: explicit,
+      departmentLabel: explicit,
+      sectionCode: null,
+      sectionKey: null,
+      sectionLabel: null,
+    };
   }
 
-  // 2) Otherwise detect the department code embedded in the policy number/title.
-  const code = departmentCodeFrom(
-    policy.policy_number,
-    policy.policy_metadata?.extracted_policy_number,
-    policy.title,
-    policy.policy_metadata?.extracted_title,
-  );
+  return {
+    departmentCode: null,
+    departmentKey: UNCLASSIFIED_LABEL,
+    departmentLabel: UNCLASSIFIED_LABEL,
+    sectionCode: null,
+    sectionKey: null,
+    sectionLabel: null,
+  };
+}
 
-  if (code) {
-    const named = DEPARTMENT_NAMES[code];
-    return { key: named ?? code, label: named ?? `قسم ${code}`, code };
-  }
-
-  // 3) Nothing detected.
-  return { key: UNCLASSIFIED_LABEL, label: UNCLASSIFIED_LABEL, code: null };
+export interface SectionGroup {
+  key: string;
+  label: string | null;
+  code: string | null;
+  policies: PolicyBundle[];
 }
 
 export interface DepartmentGroup {
   key: string;
   label: string;
-  policies: PolicyBundle[];
+  code: string | null;
+  count: number;
+  sections: SectionGroup[];
 }
 
-// Group policies by resolved department, sorted alphabetically with the
-// "unclassified" bucket always last.
+const NO_SECTION_KEY = "__general__";
+
+// Build a two-level department → sub-section tree from a list of policies.
 export function groupPoliciesByDepartment(policies: PolicyBundle[]): DepartmentGroup[] {
-  const groups = new Map<string, DepartmentGroup>();
+  const departments = new Map<
+    string,
+    {
+      key: string;
+      label: string;
+      code: string | null;
+      count: number;
+      sections: Map<string, SectionGroup>;
+    }
+  >();
 
   for (const policy of policies) {
-    const department = resolvePolicyDepartment(policy);
-    const existing = groups.get(department.key);
-    if (existing) {
-      existing.policies.push(policy);
-    } else {
-      groups.set(department.key, {
-        key: department.key,
-        label: department.label,
-        policies: [policy],
-      });
+    const classification = classifyPolicy(policy);
+    let department = departments.get(classification.departmentKey);
+    if (!department) {
+      department = {
+        key: classification.departmentKey,
+        label: classification.departmentLabel,
+        code: classification.departmentCode,
+        count: 0,
+        sections: new Map(),
+      };
+      departments.set(classification.departmentKey, department);
     }
+
+    department.count += 1;
+
+    const sectionKey = classification.sectionKey ?? NO_SECTION_KEY;
+    let section = department.sections.get(sectionKey);
+    if (!section) {
+      section = {
+        key: sectionKey,
+        label: classification.sectionLabel,
+        code: classification.sectionCode,
+        policies: [],
+      };
+      department.sections.set(sectionKey, section);
+    }
+    section.policies.push(policy);
   }
 
-  return [...groups.values()].sort((a, b) => {
-    if (a.key === UNCLASSIFIED_LABEL) {
+  const sortByLabel = (a: { label: string | null; key: string }, b: { label: string | null; key: string }) => {
+    if (a.key === NO_SECTION_KEY) {
       return 1;
     }
-    if (b.key === UNCLASSIFIED_LABEL) {
+    if (b.key === NO_SECTION_KEY) {
       return -1;
     }
-    return a.label.localeCompare(b.label, "ar");
-  });
+    return (a.label ?? "").localeCompare(b.label ?? "", "ar");
+  };
+
+  return [...departments.values()]
+    .map((department) => ({
+      key: department.key,
+      label: department.label,
+      code: department.code,
+      count: department.count,
+      sections: [...department.sections.values()].sort(sortByLabel),
+    }))
+    .sort((a, b) => {
+      if (a.key === UNCLASSIFIED_LABEL) {
+        return 1;
+      }
+      if (b.key === UNCLASSIFIED_LABEL) {
+        return -1;
+      }
+      return a.label.localeCompare(b.label, "ar");
+    });
 }
