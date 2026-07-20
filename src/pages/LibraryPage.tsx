@@ -1,9 +1,13 @@
-import { Search } from "lucide-react";
+import { Building2, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
+import {
+  groupPoliciesByDepartment,
+  resolvePolicyDepartment,
+} from "../lib/departments";
 import { formatDate } from "../lib/format";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { PolicyBundle } from "../lib/types";
@@ -11,6 +15,7 @@ import type { PolicyBundle } from "../lib/types";
 export function LibraryPage() {
   const [policies, setPolicies] = useState<PolicyBundle[]>([]);
   const [query, setQuery] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [setupError, setSetupError] = useState<string | null>(null);
 
@@ -40,7 +45,7 @@ export function LibraryPage() {
     void load();
   }, []);
 
-  const filtered = useMemo(() => {
+  const searched = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) {
       return policies;
@@ -63,6 +68,18 @@ export function LibraryPage() {
     });
   }, [policies, query]);
 
+  // Department chips reflect the whole approved library so they stay stable
+  // while searching.
+  const departments = useMemo(() => groupPoliciesByDepartment(policies), [policies]);
+
+  const visibleGroups = useMemo(() => {
+    const groups = groupPoliciesByDepartment(searched);
+    if (!selectedDepartment) {
+      return groups;
+    }
+    return groups.filter((group) => group.key === selectedDepartment);
+  }, [searched, selectedDepartment]);
+
   if (setupError) {
     return <SetupRequired message={setupError} />;
   }
@@ -71,15 +88,18 @@ export function LibraryPage() {
     return <LoadingState />;
   }
 
+  const hasResults = visibleGroups.some((group) => group.policies.length > 0);
+
   return (
     <div className="page-stack">
       <section className="page-hero compact">
         <div>
           <p className="eyebrow">المكتبة المعتمدة</p>
           <h1>مكتبة السياسات</h1>
-          <p>تظهر هنا السياسات المعتمدة والمنشورة فقط.</p>
+          <p>تظهر هنا السياسات المعتمدة مرتبة حسب الإدارة المسؤولة عنها.</p>
         </div>
       </section>
+
       <label className="search-box">
         <Search aria-hidden="true" />
         <input
@@ -88,29 +108,73 @@ export function LibraryPage() {
           placeholder="ابحث باسم السياسة أو رقمها أو الإدارة"
         />
       </label>
-      {filtered.length === 0 ? (
-        <EmptyState title="لا توجد نتائج" body="لا توجد سياسات معتمدة تطابق البحث الحالي." />
+
+      {departments.length > 0 ? (
+        <div className="library-filters" role="tablist" aria-label="تصفية حسب الإدارة">
+          <button
+            type="button"
+            className={selectedDepartment === null ? "dept-chip active" : "dept-chip"}
+            onClick={() => setSelectedDepartment(null)}
+          >
+            جميع الإدارات
+            <span>{policies.length}</span>
+          </button>
+          {departments.map((department) => (
+            <button
+              key={department.key}
+              type="button"
+              className={
+                selectedDepartment === department.key ? "dept-chip active" : "dept-chip"
+              }
+              onClick={() => setSelectedDepartment(department.key)}
+            >
+              {department.label}
+              <span>{department.policies.length}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {!hasResults ? (
+        <EmptyState title="لا توجد نتائج" body="لا توجد سياسات معتمدة تطابق البحث أو الإدارة المحددة." />
       ) : (
-        <div className="library-grid">
-          {filtered.map((policy) => (
-            <article className="library-card" key={policy.id}>
-              <span>{policy.policy_metadata?.issuing_department ?? policy.owner_department ?? "غير مصنف"}</span>
-              <h2>{policy.policy_metadata?.extracted_title ?? policy.title}</h2>
-              <p>{policy.policy_number ?? policy.policy_metadata?.extracted_policy_number ?? "بدون رقم"}</p>
-              <dl>
+        <div className="library-departments">
+          {visibleGroups.map((group) => (
+            <section className="library-department" key={group.key}>
+              <header className="library-department-head">
                 <div>
-                  <dt>تاريخ الاعتماد</dt>
-                  <dd>{formatDate(policy.approved_at)}</dd>
+                  <Building2 aria-hidden="true" />
+                  <h2>{group.label}</h2>
                 </div>
-                <div>
-                  <dt>المراجعة القادمة</dt>
-                  <dd>{formatDate(policy.next_review_at)}</dd>
-                </div>
-              </dl>
-              <Link className="secondary-button full" to={`/app/policies/${policy.id}`}>
-                معاينة السياسة
-              </Link>
-            </article>
+                <span>{group.policies.length} سياسة</span>
+              </header>
+              <div className="library-grid">
+                {group.policies.map((policy) => (
+                  <article className="library-card" key={policy.id}>
+                    <span>{resolvePolicyDepartment(policy).label}</span>
+                    <h3>{policy.policy_metadata?.extracted_title ?? policy.title}</h3>
+                    <p>
+                      {policy.policy_number ??
+                        policy.policy_metadata?.extracted_policy_number ??
+                        "بدون رقم"}
+                    </p>
+                    <dl>
+                      <div>
+                        <dt>تاريخ الاعتماد</dt>
+                        <dd>{formatDate(policy.approved_at)}</dd>
+                      </div>
+                      <div>
+                        <dt>المراجعة القادمة</dt>
+                        <dd>{formatDate(policy.next_review_at)}</dd>
+                      </div>
+                    </dl>
+                    <Link className="secondary-button full" to={`/app/policies/${policy.id}`}>
+                      معاينة السياسة
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}
