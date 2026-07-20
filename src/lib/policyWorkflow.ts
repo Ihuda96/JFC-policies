@@ -305,6 +305,50 @@ export async function markNotificationRead(notificationId: string) {
   }
 }
 
+const workflowErrorPatterns: { test: RegExp; message: string }[] = [
+  {
+    test: /schema cache|could not find the function|does not exist|42883|pgrst202/i,
+    message:
+      "هذه الميزة غير مفعّلة على الخادم بعد. يرجى التواصل مع الدعم الفني لتفعيلها.",
+  },
+  {
+    test: /not allowed|permission denied|row-level security|42501/i,
+    message: "لا تملك صلاحية تنفيذ هذا الإجراء.",
+  },
+  {
+    test: /already archived/i,
+    message: "تم حذف هذه السياسة مسبقًا.",
+  },
+  {
+    test: /policy not found/i,
+    message: "لم يتم العثور على السياسة.",
+  },
+  {
+    test: /active authenticated profile|not authenticated|jwt/i,
+    message: "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.",
+  },
+  {
+    test: /policy version is required/i,
+    message: "لا يمكن حذف السياسة لعدم وجود نسخة مرتبطة بها.",
+  },
+];
+
+// Turn raw database/network errors into clear Arabic messages, and never leak
+// internal technical details (function names, schema cache, SQL codes) to users.
 export function readableWorkflowError(error: unknown) {
-  return errorMessage(error);
+  const raw = errorMessage(error);
+
+  for (const pattern of workflowErrorPatterns) {
+    if (pattern.test.test(raw)) {
+      return pattern.message;
+    }
+  }
+
+  // Our own validation messages are written in Arabic; anything else is a raw
+  // technical error, so fall back to a friendly generic message.
+  if (/[؀-ۿ]/.test(raw)) {
+    return raw;
+  }
+
+  return "تعذّر إكمال العملية. يرجى المحاولة مرة أخرى، وإذا استمرت المشكلة تواصل مع الدعم الفني.";
 }
