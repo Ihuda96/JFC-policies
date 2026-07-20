@@ -27,7 +27,7 @@ export function createDetachedSupabaseClient() {
 
 export function assertSupabase() {
   if (!supabase) {
-    throw new Error("Supabase public browser configuration is missing.");
+    throw new Error("الخدمة غير متاحة حاليًا. يرجى المحاولة لاحقًا.");
   }
 
   return supabase;

@@ -20,7 +20,7 @@ export function LoginPage() {
   const from = (location.state as { from?: string } | null)?.from ?? "/app";
 
   if (!hasSupabaseConfig || !supabase) {
-    return <SetupRequired message="أضف قيم VITE_SUPABASE_URL و VITE_SUPABASE_PUBLISHABLE_KEY محليًا قبل اختبار الدخول." />;
+    return <SetupRequired />;
   }
 
   if (session) {
