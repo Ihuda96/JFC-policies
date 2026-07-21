@@ -1052,6 +1052,24 @@ dd {
   font-weight: 700;
 }
 
+.scan-sample {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+.scan-sample code {
+  font-family: inherit;
+  direction: ltr;
+  text-align: left;
+  color: var(--ink);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
