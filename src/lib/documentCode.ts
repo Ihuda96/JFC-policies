@@ -53,88 +53,23 @@ export function extractCodeFromText(text: string | null | undefined): string | n
   return segments.join("-");
 }
 
-async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
-  const stream = new Blob([data as BlobPart])
-    .stream()
-    .pipeThrough(new DecompressionStream("deflate-raw"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-
-interface ZipEntry {
-  name: string;
-  method: number;
-  compressedSize: number;
-  localOffset: number;
-}
-
-function listZipEntries(buffer: ArrayBuffer): ZipEntry[] {
-  const view = new DataView(buffer);
-  const bytes = new Uint8Array(buffer);
-
-  let eocd = -1;
-  for (let i = bytes.length - 22; i >= 0; i--) {
-    if (view.getUint32(i, true) === 0x06054b50) {
-      eocd = i;
-      break;
-    }
-  }
-  if (eocd < 0) {
-    return [];
-  }
-
-  const centralOffset = view.getUint32(eocd + 16, true);
-  const entryCount = view.getUint16(eocd + 10, true);
-  const entries: ZipEntry[] = [];
-
-  let pointer = centralOffset;
-  for (let n = 0; n < entryCount; n++) {
-    if (view.getUint32(pointer, true) !== 0x02014b50) {
-      break;
-    }
-
-    const method = view.getUint16(pointer + 10, true);
-    const compressedSize = view.getUint32(pointer + 20, true);
-    const nameLength = view.getUint16(pointer + 28, true);
-    const extraLength = view.getUint16(pointer + 30, true);
-    const commentLength = view.getUint16(pointer + 32, true);
-    const localOffset = view.getUint32(pointer + 42, true);
-    const name = new TextDecoder().decode(
-      bytes.subarray(pointer + 46, pointer + 46 + nameLength),
-    );
-
-    entries.push({ name, method, compressedSize, localOffset });
-    pointer += 46 + nameLength + extraLength + commentLength;
-  }
-
-  return entries;
-}
-
-async function readEntry(buffer: ArrayBuffer, entry: ZipEntry): Promise<Uint8Array> {
-  const view = new DataView(buffer);
-  const bytes = new Uint8Array(buffer);
-  const localNameLength = view.getUint16(entry.localOffset + 26, true);
-  const localExtraLength = view.getUint16(entry.localOffset + 28, true);
-  const dataStart = entry.localOffset + 30 + localNameLength + localExtraLength;
-  const compressed = bytes.subarray(dataStart, dataStart + entry.compressedSize);
-  return entry.method === 0 ? compressed : await inflateRaw(compressed);
-}
-
 // The policy code usually lives in the letterhead header table, which Word
 // stores in word/header*.xml — not word/document.xml — so scan every text part.
 const DOCX_TEXT_PART = /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/i;
 
+// Use JSZip to unzip the document — it handles every Word quirk (data
+// descriptors, ordering, compression) that a hand-rolled parser gets wrong.
 async function docxTextParts(buffer: ArrayBuffer): Promise<string[]> {
-  const entries = listZipEntries(buffer).filter((entry) => DOCX_TEXT_PART.test(entry.name));
-  entries.sort((a, b) => {
-    const aHeader = a.name.includes("header") ? 0 : 1;
-    const bHeader = b.name.includes("header") ? 0 : 1;
-    return aHeader - bHeader;
-  });
+  const { default: JSZip } = await import("jszip");
+  const zip = await JSZip.loadAsync(buffer);
+  const names = Object.keys(zip.files)
+    .filter((name) => DOCX_TEXT_PART.test(name))
+    .sort((a, b) => (a.includes("header") ? 0 : 1) - (b.includes("header") ? 0 : 1));
 
   const parts: string[] = [];
-  for (const entry of entries) {
+  for (const name of names) {
     try {
-      const xml = new TextDecoder().decode(await readEntry(buffer, entry));
+      const xml = await zip.files[name].async("string");
       parts.push(xml.replace(/<[^>]+>/g, " "));
     } catch {
       // Skip unreadable parts.
