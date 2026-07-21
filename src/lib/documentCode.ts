@@ -130,32 +130,63 @@ function joinCodeSegments(segments: string[]): string | null {
   return segs.length >= 3 ? segs.join("-") : null;
 }
 
-// Read the full code out of the "Code:" field. Handles a serial Word split
-// across runs (e.g. "…PP- 0 32" → …-032) and the reversed order that RTL PDFs
-// produce (e.g. "030-PP-APP-HRO-HRD-JFHC" → JFHC-HRD-HRO-APP-PP-030).
-function codeFromField(value: string | undefined): string | null {
-  if (!value) {
+// Collect segments forward from a "JFHC…serial" run, tolerating serials/segments
+// Word split across runs (e.g. "HP D" → HPD, "0 8" → 08). Stops at the serial.
+function collectForward(fromJfhc: string): string | null {
+  const parts = fromJfhc.split(/\s*-\s*/);
+  const segs: string[] = [];
+  for (const raw of parts) {
+    const part = raw.trim();
+    if (segs.length > 0 && /^\d/.test(part)) {
+      const serial = (part.match(/^[\d\s]+/) ?? [""])[0].replace(/\s+/g, "");
+      if (serial) segs.push(serial);
+      break;
+    }
+    const alnum = part.replace(/\s+/g, "").match(/^[A-Z0-9]{1,6}/);
+    if (!alnum) break;
+    segs.push(alnum[0]);
+    if (segs.length >= 8) break;
+  }
+  return joinCodeSegments(segs);
+}
+
+// Collect a code that runs backward into JFHC (reversed RTL order).
+function collectReversed(endingAtJfhc: string): string | null {
+  const parts = endingAtJfhc.split(/\s*-\s*/).filter((p) => p.trim());
+  const segs: string[] = [];
+  for (let k = parts.length - 1; k >= 0; k--) {
+    const part = parts[k].trim();
+    if (segs.length >= 2) {
+      const serial = part.match(/(\d[\d\s]*)$/);
+      if (serial) {
+        segs.push(serial[1].replace(/\s+/g, ""));
+        break;
+      }
+    }
+    const alnum = part.replace(/\s+/g, "").match(/[A-Z0-9]{1,6}$/);
+    if (!alnum) break;
+    segs.push(alnum[0]);
+    if (segs.length >= 8) break;
+  }
+  return joinCodeSegments(segs);
+}
+
+// Read the policy's own code from the FIRST JFHC occurrence (the letterhead is
+// always at the top), ignoring reference-document codes that appear later in
+// the body. Handles Word run-splits and the reversed order of RTL PDFs.
+function readPolicyCode(text: string | undefined): string | null {
+  if (!text) {
     return null;
   }
-  const cleaned = normalizeForCode(value).replace(/\s+/g, "").toUpperCase();
-
-  const normal = cleaned.match(/JFHC(?:-[A-Z0-9]{1,6}){2,6}/);
-  if (normal) {
-    const code = joinCodeSegments(normal[0].split("-"));
-    if (code) {
-      return code;
-    }
+  const upper = normalizeForCode(stripMarks(text)).toUpperCase();
+  const index = upper.indexOf("JFHC");
+  if (index === -1) {
+    return null;
   }
-
-  const reversed = cleaned.match(/(?:[A-Z0-9]{1,6}-){2,6}JFHC/);
-  if (reversed) {
-    const code = joinCodeSegments(reversed[0].split("-").reverse());
-    if (code) {
-      return code;
-    }
-  }
-
-  return null;
+  return (
+    collectForward(upper.slice(index)) ??
+    collectReversed(upper.slice(Math.max(0, index - 70), index + 4))
+  );
 }
 
 function dateFromField(value: string | undefined): string | null {
@@ -181,7 +212,7 @@ export function parsePolicyHeader(text: string): PolicyHeader {
   const [titleEnRaw, titleArRaw] = titleField.split(/العنوان|Title/i);
 
   return {
-    code: codeFromField(fields["code"]),
+    code: readPolicyCode(text),
     titleEn: (titleEnRaw ?? "").trim() || null,
     titleAr: (titleArRaw ?? "").trim() || null,
     department: stripArabicLabel(fields["department"], "الإدارة", "الادارة", "القسم"),
@@ -196,22 +227,11 @@ export function parsePolicyHeader(text: string): PolicyHeader {
 
 async function extractFromDocx(buffer: ArrayBuffer): Promise<string | null> {
   const parts = await docxParts(buffer);
-
-  // Prefer the exact value from the "Code:" field in the letterhead header.
-  const fromField =
-    codeFromField(labeledFields(headerText(parts))["code"]) ??
-    codeFromField(labeledFields(parts.map((part) => part.text).join(" "))["code"]);
-  if (fromField) {
-    return fromField;
-  }
-
-  for (const part of parts) {
-    const code = extractCodeFromText(part.text);
-    if (code) {
-      return code;
-    }
-  }
-  return null;
+  // Read from the letterhead header first so body reference codes are ignored.
+  return (
+    readPolicyCode(headerText(parts)) ??
+    readPolicyCode(parts.map((part) => part.text).join(" "))
+  );
 }
 
 // Parse the full policy header (code, title, department, dates) from a file.
@@ -385,7 +405,7 @@ async function pdfjsText(buffer: ArrayBuffer): Promise<string> {
 
 async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
   const text = (await pdfjsText(buffer)) || (await pdfText(buffer));
-  return codeFromField(labeledFields(text)["code"]) ?? extractCodeFromText(text);
+  return readPolicyCode(text);
 }
 
 async function extractFromBuffer(

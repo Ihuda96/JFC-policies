@@ -27,11 +27,7 @@ import {
   uploadRevision,
 } from "../lib/policyWorkflow";
 import { policyReference } from "../lib/departments";
-import {
-  extractPolicyCodeFromBuffer,
-  extractPolicyHeaderFromBuffer,
-  type PolicyHeader,
-} from "../lib/documentCode";
+import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
 import { isSetupError, supabase } from "../lib/supabase";
 import type {
   ApprovalAction,
@@ -57,7 +53,6 @@ export function PolicyDetailPage() {
   const [returnComment, setReturnComment] = useState("");
   const [archiveReason, setArchiveReason] = useState("");
   const [codeInput, setCodeInput] = useState("");
-  const [header, setHeader] = useState<PolicyHeader | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -138,13 +133,12 @@ export function PolicyDetailPage() {
     selectedVersionFiles.find((file) => file.file_kind === "original") ?? null;
   const selectedFile = originalFile;
 
-  // Read the policy letterhead from the document to show its full details and,
-  // if the code was never stored, save it so the policy classifies correctly.
+  // If the full code was never stored, read it from the document and save it
+  // so the policy classifies automatically and shows its full number.
   useEffect(() => {
     const original =
       policy?.policy_files?.find((file) => file.file_kind === "original") ?? null;
-    if (!policy || !original) {
-      setHeader(null);
+    if (!policy || policy.policy_number || !original) {
       return;
     }
     if (backfillAttempted.current === policy.id) {
@@ -156,16 +150,8 @@ export function PolicyDetailPage() {
     void (async () => {
       try {
         const buffer = await downloadPolicyFileBytes(original);
-        const parsed = await extractPolicyHeaderFromBuffer(buffer, original.file_name);
-        if (cancelled) {
-          return;
-        }
-        if (parsed) {
-          setHeader(parsed);
-        }
-        const code =
-          parsed?.code ?? (await extractPolicyCodeFromBuffer(buffer, original.file_name));
-        if (!policy.policy_number && code && !cancelled) {
+        const code = await extractPolicyCodeFromBuffer(buffer, original.file_name);
+        if (code && !cancelled) {
           await setPolicyReference(policy.id, code);
           if (!cancelled) {
             await load({ silent: true });
@@ -407,62 +393,6 @@ export function PolicyDetailPage() {
                 حفظ الرمز
               </button>
             </form>
-          ) : null}
-
-          {header &&
-          (header.code ||
-            header.department ||
-            header.titleAr ||
-            header.issueDate ||
-            header.effectiveDate ||
-            header.reviewDate) ? (
-            <div className="info-card">
-              <h2>بيانات الترويسة</h2>
-              <dl>
-                {header.code ? (
-                  <div>
-                    <dt>الرمز</dt>
-                    <dd dir="ltr">{header.code}</dd>
-                  </div>
-                ) : null}
-                {header.department ? (
-                  <div>
-                    <dt>الإدارة</dt>
-                    <dd>{header.department}</dd>
-                  </div>
-                ) : null}
-                {header.titleAr ? (
-                  <div>
-                    <dt>العنوان</dt>
-                    <dd>{header.titleAr}</dd>
-                  </div>
-                ) : null}
-                {header.issueNumber ? (
-                  <div>
-                    <dt>رقم الإصدار</dt>
-                    <dd>{header.issueNumber}</dd>
-                  </div>
-                ) : null}
-                {header.issueDate ? (
-                  <div>
-                    <dt>تاريخ الإصدار</dt>
-                    <dd dir="ltr">{header.issueDate}</dd>
-                  </div>
-                ) : null}
-                {header.effectiveDate ? (
-                  <div>
-                    <dt>تاريخ التفعيل</dt>
-                    <dd dir="ltr">{header.effectiveDate}</dd>
-                  </div>
-                ) : null}
-                {header.reviewDate ? (
-                  <div>
-                    <dt>تاريخ المراجعة</dt>
-                    <dd dir="ltr">{header.reviewDate}</dd>
-                  </div>
-                ) : null}
-              </dl>
-            </div>
           ) : null}
 
           <div className="info-card">
