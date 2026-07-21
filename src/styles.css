@@ -2048,3 +2048,121 @@ code {
 .action-row:hover { border-color: var(--blue-700); }
 .action-row strong { color: var(--blue-950); display: block; }
 .action-row span { color: var(--muted); font-size: 0.85rem; }
+
+/* ── Reports: brief & compliance heatmap ────────────────── */
+.brief-section .brief-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.brief-section .brief-list li {
+  position: relative;
+  padding-inline-start: 18px;
+  color: var(--ink);
+  line-height: 1.8;
+}
+.brief-section .brief-list li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 11px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--blue-700);
+}
+
+.heatmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid var(--line);
+}
+.legend-chip svg { width: 15px; height: 15px; }
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.heatmap-tile {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--hm, var(--line));
+  border-radius: 10px;
+  background: var(--white);
+}
+.heatmap-tile header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.heatmap-tile h3 {
+  margin: 0 0 4px;
+  color: var(--blue-950);
+  font-size: 1rem;
+}
+.heatmap-tile code {
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--blue-700);
+}
+.tile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--hm);
+}
+.tile-status svg { width: 15px; height: 15px; }
+.tile-total {
+  font-size: 2rem;
+  color: var(--blue-950);
+  line-height: 1;
+}
+.tile-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+}
+.tile-breakdown dt { color: var(--muted); font-size: 0.78rem; }
+.tile-breakdown dd { margin: 0; font-weight: 700; color: var(--ink); }
+.heatmap-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Status palette — paired with icon + label, never colour alone */
+.hm-good { --hm: #2f7d33; }
+.hm-attention { --hm: #b7791f; }
+.hm-risk { --hm: #b23c12; }
+.legend-chip.hm-good,
+.legend-chip.hm-attention,
+.legend-chip.hm-risk {
+  color: var(--hm);
+  border-color: color-mix(in srgb, var(--hm) 40%, var(--line));
+  background: color-mix(in srgb, var(--hm) 8%, var(--white));
+}
