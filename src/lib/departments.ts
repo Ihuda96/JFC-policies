@@ -23,6 +23,7 @@ const DOCUMENT_TOKENS = new Set([
 // cover every department precisely.
 const DEPARTMENT_NAMES: Record<string, string> = {
   HRD: "إدارة الموارد البشرية",
+  BSS: "دعم حلول الأعمال",
   IPC: "إدارة مكافحة العدوى",
   QM: "إدارة الجودة وسلامة المرضى",
   QPS: "إدارة الجودة وسلامة المرضى",
@@ -90,6 +91,51 @@ export function departmentName(code: string) {
 
 export function subsectionName(code: string) {
   return SUBSECTIONS[code]?.name ?? `تصنيف ${code}`;
+}
+
+// Derive a policy reference like "HPD 07" from free text (usually the title)
+// by finding a department/sub code immediately followed by a serial number.
+function deriveReferenceFromText(text: string | null | undefined): string | null {
+  if (!text) {
+    return null;
+  }
+
+  const pattern = /([A-Z]{2,6})[\s\-_]?(\d{1,4})/g;
+  const upper = text.toUpperCase();
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(upper)) !== null) {
+    const code = match[1];
+    if (CLUSTER_PREFIXES.has(code) || DOCUMENT_TOKENS.has(code)) {
+      continue;
+    }
+    return `${code} ${match[2].padStart(2, "0")}`;
+  }
+
+  return null;
+}
+
+// Best available policy reference: the stored number first, otherwise the
+// number extracted from the policy title so the card never shows "no number"
+// when the code is clearly present in the title.
+export function policyReference(policy: {
+  policy_number?: string | null;
+  title?: string | null;
+  policy_metadata?: {
+    extracted_policy_number?: string | null;
+    extracted_title?: string | null;
+  } | null;
+}): string | null {
+  const explicit =
+    cleanText(policy.policy_number) ??
+    cleanText(policy.policy_metadata?.extracted_policy_number);
+  if (explicit) {
+    return explicit;
+  }
+
+  return (
+    deriveReferenceFromText(policy.policy_metadata?.extracted_title) ??
+    deriveReferenceFromText(policy.title)
+  );
 }
 
 export interface PolicyClassification {

@@ -6,6 +6,7 @@ import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
+import { policyReference } from "../lib/departments";
 import { formatDate, roleLabels } from "../lib/format";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { Policy } from "../lib/types";
@@ -104,7 +105,7 @@ export function DashboardPage() {
                 <tr key={policy.id}>
                   <td>
                     <strong>{policy.title}</strong>
-                    <span>{policy.policy_number ?? "بدون رقم"}</span>
+                    <span>{policyReference(policy) ?? "بدون رقم"}</span>
                   </td>
                   <td><StatusBadge status={policy.status} /></td>
                   <td>{formatDate(policy.updated_at)}</td>

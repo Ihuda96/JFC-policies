@@ -7,6 +7,7 @@ import { SetupRequired } from "../components/SetupRequired";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../lib/format";
+import { policyReference } from "../lib/departments";
 import { archivePolicy, readableWorkflowError } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { Policy } from "../lib/types";
@@ -108,7 +109,7 @@ export function WorkspacePage() {
               <div>
                 <StatusBadge status={policy.status} />
                 <h2>{policy.title}</h2>
-                <p>{policy.policy_number ?? "لم يتم استخراج رقم السياسة بعد"}</p>
+                <p>{policyReference(policy) ?? "لم يتم استخراج رقم السياسة بعد"}</p>
               </div>
               <dl>
                 <div>
