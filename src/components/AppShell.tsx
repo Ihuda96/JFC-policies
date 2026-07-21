@@ -157,6 +157,33 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      <nav className="bottom-nav" aria-label="التنقل السريع">
+        <NavLink to="/app" end>
+          <LayoutDashboard aria-hidden="true" />
+          <span>الرئيسية</span>
+        </NavLink>
+        <NavLink to="/app/library">
+          <BookOpen aria-hidden="true" />
+          <span>المكتبة</span>
+        </NavLink>
+        <NavLink to="/app/actions">
+          <span className="bottom-nav-icon">
+            <ListChecks aria-hidden="true" />
+            {actionCount ? <span className="nav-dot" /> : null}
+          </span>
+          <span>المهام</span>
+        </NavLink>
+        <NavLink to="/app/workspace">
+          <FileText aria-hidden="true" />
+          <span>سياساتي</span>
+        </NavLink>
+        <button type="button" onClick={() => setOpen(true)}>
+          <Menu aria-hidden="true" />
+          <span>القائمة</span>
+        </button>
+      </nav>
+
       {open ? <button className="scrim" aria-label="إغلاق القائمة" onClick={() => setOpen(false)} /> : null}
       <CommandPalette />
     </div>
