@@ -1038,11 +1038,28 @@ dd {
 
 .library-toolbar {
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 
 .library-toolbar .text-button {
   gap: 6px;
+}
+
+.library-scan-notice {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 .library-department-head {

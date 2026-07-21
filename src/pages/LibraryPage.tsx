@@ -4,17 +4,20 @@ import {
   ChevronLeft,
   FolderTree,
   Minimize2,
+  RefreshCw,
   Search,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
 import { groupPoliciesByDepartment, policyReference } from "../lib/departments";
+import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
 import { formatDate } from "../lib/format";
+import { downloadPolicyFileBytes, setPolicyReference } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
-import type { PolicyBundle } from "../lib/types";
+import type { PolicyBundle, PolicyFile } from "../lib/types";
 
 export function LibraryPage() {
   const [policies, setPolicies] = useState<PolicyBundle[]>([]);
@@ -23,6 +26,9 @@ export function LibraryPage() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState({ done: 0, total: 0 });
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
 
   function toggle(key: string) {
     setCollapsed((current) => {
@@ -36,31 +42,91 @@ export function LibraryPage() {
     });
   }
 
-  useEffect(() => {
-    async function load() {
-      if (!supabase) {
-        return;
-      }
-
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("policies")
-        .select("*, policy_metadata:policy_metadata!policy_metadata_policy_id_fkey(*)")
-        .eq("status", "approved")
-        .order("approved_at", { ascending: false });
-
-      if (error) {
-        if (isSetupError(error)) {
-          setSetupError(error.message);
-        }
-      } else {
-        setPolicies((data as PolicyBundle[]) ?? []);
-      }
-      setLoading(false);
+  const load = useCallback(async (options: { silent?: boolean } = {}) => {
+    if (!supabase) {
+      return;
     }
 
-    void load();
+    if (!options.silent) {
+      setLoading(true);
+    }
+    const { data, error } = await supabase
+      .from("policies")
+      .select("*, policy_metadata:policy_metadata!policy_metadata_policy_id_fkey(*)")
+      .eq("status", "approved")
+      .order("approved_at", { ascending: false });
+
+    if (error) {
+      if (isSetupError(error)) {
+        setSetupError(error.message);
+      }
+    } else {
+      setPolicies((data as PolicyBundle[]) ?? []);
+    }
+    if (!options.silent) {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Read the full code from the document of every unclassified policy and save
+  // it, so the whole library is organised in one pass.
+  async function scanLibrary() {
+    if (!supabase || scanning) {
+      return;
+    }
+
+    const targets = policies.filter((policy) => !policy.policy_number);
+    if (targets.length === 0) {
+      setScanNotice("جميع السياسات مصنّفة بالفعل.");
+      return;
+    }
+
+    setScanning(true);
+    setScanNotice(null);
+    setScanProgress({ done: 0, total: targets.length });
+
+    let updated = 0;
+    for (const policy of targets) {
+      try {
+        const { data: files } = await supabase
+          .from("policy_files")
+          .select("bucket_id,storage_path,file_name,file_kind,created_at")
+          .eq("policy_id", policy.id)
+          .eq("file_kind", "original")
+          .order("created_at", { ascending: true })
+          .limit(1);
+
+        const file = (files as Pick<
+          PolicyFile,
+          "bucket_id" | "storage_path" | "file_name"
+        >[] | null)?.[0];
+
+        if (file) {
+          const buffer = await downloadPolicyFileBytes(file);
+          const code = await extractPolicyCodeFromBuffer(buffer, file.file_name);
+          if (code) {
+            await setPolicyReference(policy.id, code);
+            updated += 1;
+          }
+        }
+      } catch {
+        // Skip policies that cannot be read; keep scanning the rest.
+      }
+      setScanProgress((prev) => ({ ...prev, done: prev.done + 1 }));
+    }
+
+    await load({ silent: true });
+    setScanning(false);
+    setScanNotice(
+      updated > 0
+        ? `تم تصنيف ${updated} سياسة من أصل ${targets.length} بعد قراءة رموزها من الملفات.`
+        : "تعذّر استخراج رموز جديدة من ملفات السياسات غير المصنّفة.",
+    );
+  }
 
   const searched = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -168,16 +234,30 @@ export function LibraryPage() {
         </div>
       ) : null}
 
-      {hasResults ? (
+      {policies.length > 0 ? (
         <div className="library-toolbar">
           <button
             type="button"
-            className="text-button"
-            onClick={everythingCollapsed ? expandAll : collapseAll}
+            className="secondary-button"
+            onClick={() => void scanLibrary()}
+            disabled={scanning}
           >
-            <Minimize2 aria-hidden="true" />
-            {everythingCollapsed ? "توسيع الكل" : "طي الكل"}
+            <RefreshCw aria-hidden="true" className={scanning ? "spin" : undefined} />
+            {scanning
+              ? `جاري الفحص… ${scanProgress.done}/${scanProgress.total}`
+              : "فحص وتصنيف الملفات"}
           </button>
+          {hasResults ? (
+            <button
+              type="button"
+              className="text-button"
+              onClick={everythingCollapsed ? expandAll : collapseAll}
+            >
+              <Minimize2 aria-hidden="true" />
+              {everythingCollapsed ? "توسيع الكل" : "طي الكل"}
+            </button>
+          ) : null}
+          {scanNotice ? <span className="library-scan-notice">{scanNotice}</span> : null}
         </div>
       ) : null}
 
