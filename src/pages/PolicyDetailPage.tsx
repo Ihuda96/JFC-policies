@@ -52,6 +52,7 @@ export function PolicyDetailPage() {
   const [revisionNote, setRevisionNote] = useState("");
   const [returnComment, setReturnComment] = useState("");
   const [archiveReason, setArchiveReason] = useState("");
+  const [codeInput, setCodeInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -264,6 +265,30 @@ export function PolicyDetailPage() {
     }
   }
 
+  async function savePolicyCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!policy) {
+      return;
+    }
+
+    const value = codeInput.trim();
+    if (!value) {
+      return;
+    }
+
+    setActionLoading(true);
+    setError(null);
+    try {
+      await setPolicyReference(policy.id, value);
+      setCodeInput("");
+      await load();
+    } catch (err) {
+      setError(readableWorkflowError(err));
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   async function archiveCurrentPolicy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!policy) {
@@ -315,6 +340,11 @@ export function PolicyDetailPage() {
     policy.status !== "archived" &&
     (profile?.role === "quality_manager" ||
       (policy.owner_id === profile?.id && ["draft", "returned_for_revision"].includes(policy.status)));
+  const canSetCode =
+    !policy.policy_number &&
+    (profile?.role === "quality_manager" ||
+      profile?.role === "system_admin" ||
+      policy.owner_id === profile?.id);
   const originalIsPdf = Boolean(originalFile?.file_name.toLowerCase().endsWith(".pdf"));
 
   return (
@@ -347,6 +377,25 @@ export function PolicyDetailPage() {
       <section className="review-layout">
         <DocumentPreview file={selectedFile} />
         <aside className="review-panel">
+          {canSetCode ? (
+            <form className="info-card" onSubmit={savePolicyCode}>
+              <h2>رمز السياسة</h2>
+              <p>
+                لم يُقرأ رمز هذه السياسة من الملف تلقائيًا. أدخله يدويًا ليظهر في
+                رقم السياسة وتُصنّف تحت إدارتها (مثال: JFHC-HRD-JTA-APP-PP-02).
+              </p>
+              <input
+                value={codeInput}
+                onChange={(event) => setCodeInput(event.target.value)}
+                placeholder="JFHC-HRD-JTA-APP-PP-02"
+                dir="ltr"
+              />
+              <button className="primary-button full" disabled={actionLoading || !codeInput.trim()}>
+                حفظ الرمز
+              </button>
+            </form>
+          ) : null}
+
           <div className="info-card">
             <h2>بيانات الطلب</h2>
             <dl>
