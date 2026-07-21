@@ -1,4 +1,12 @@
-import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useParams } from "react-router-dom";
 import { CheckCircle2, Download, FileText, Send, Trash2, UploadCloud } from "lucide-react";
 import { DocumentPreview } from "../components/DocumentPreview";
@@ -10,13 +18,16 @@ import { fileSize, formatDate, versionStatusLabels } from "../lib/format";
 import {
   approvePolicyVersion,
   archivePolicy,
+  downloadPolicyFileBytes,
   readableWorkflowError,
   returnPolicyForRevision,
+  setPolicyReference,
   signedFileUrl,
   submitPolicyVersion,
   uploadRevision,
 } from "../lib/policyWorkflow";
 import { policyReference } from "../lib/departments";
+import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
 import { isSetupError, supabase } from "../lib/supabase";
 import type {
   ApprovalAction,
@@ -45,6 +56,7 @@ export function PolicyDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const backfillAttempted = useRef<string | null>(null);
 
   const load = useCallback(async (options: { silent?: boolean } = {}) => {
     if (!supabase || !policyId) {
@@ -119,6 +131,41 @@ export function PolicyDetailPage() {
   const originalFile =
     selectedVersionFiles.find((file) => file.file_kind === "original") ?? null;
   const selectedFile = originalFile;
+
+  // If the full policy code was never stored, read it from the document and
+  // save it so the policy classifies automatically and shows its full number.
+  useEffect(() => {
+    const original =
+      policy?.policy_files?.find((file) => file.file_kind === "original") ?? null;
+    if (!policy || policy.policy_number || !original) {
+      return;
+    }
+    if (backfillAttempted.current === policy.id) {
+      return;
+    }
+    backfillAttempted.current = policy.id;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const buffer = await downloadPolicyFileBytes(original);
+        const code = await extractPolicyCodeFromBuffer(buffer, original.file_name);
+        if (!code || cancelled) {
+          return;
+        }
+        await setPolicyReference(policy.id, code);
+        if (!cancelled) {
+          await load({ silent: true });
+        }
+      } catch {
+        // Best-effort backfill; ignore failures.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [policy, load]);
 
   async function submitLatest() {
     if (!policy || !selectedVersion) {
