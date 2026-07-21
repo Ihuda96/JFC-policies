@@ -9,11 +9,15 @@ import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../lib/format";
 import { policyReference } from "../lib/departments";
 import { archivePolicy, readableWorkflowError } from "../lib/policyWorkflow";
+import { useConfirm } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { Policy } from "../lib/types";
 
 export function WorkspacePage() {
   const { profile } = useAuth();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -62,9 +66,12 @@ export function WorkspacePage() {
   }
 
   async function removePolicy(policy: Policy) {
-    const confirmed = window.confirm(
-      `هل تريد حذف "${policy.title}"؟ سيتم نقلها إلى الأرشيف وإخفاؤها من القوائم.`,
-    );
+    const confirmed = await confirm({
+      title: "حذف السياسة",
+      body: `سيتم حذف "${policy.title}" ونقلها إلى الأرشيف وإخفاؤها من القوائم.`,
+      confirmLabel: "حذف",
+      danger: true,
+    });
 
     if (!confirmed) {
       return;
@@ -75,8 +82,11 @@ export function WorkspacePage() {
     try {
       await archivePolicy(policy.id);
       setPolicies((current) => current.filter((item) => item.id !== policy.id));
+      toast.success("تم حذف السياسة ونقلها إلى الأرشيف.");
     } catch (err) {
-      setActionError(readableWorkflowError(err));
+      const message = readableWorkflowError(err);
+      setActionError(message);
+      toast.error(message);
     } finally {
       setDeletingId(null);
     }

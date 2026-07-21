@@ -1,20 +1,24 @@
 import {
-  Bell,
   BookOpen,
   ClipboardCheck,
   FilePlus2,
   FileText,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   Menu,
   ScrollText,
+  Search,
   Settings,
   Shield,
   Users,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useAppData } from "../context/AppDataContext";
+import { CommandPalette } from "./CommandPalette";
+import { NotificationBell } from "./NotificationBell";
 import { initials, roleLabels } from "../lib/format";
 import type { AppRole } from "../lib/types";
 
@@ -23,31 +27,44 @@ type NavItem = {
   label: string;
   icon: typeof LayoutDashboard;
   roles?: AppRole[];
+  badge?: number;
 };
-
-const baseItems: NavItem[] = [
-  { to: "/app", label: "الرئيسية", icon: LayoutDashboard },
-  { to: "/app/upload", label: "إضافة سياسة", icon: FilePlus2, roles: ["quality_staff", "quality_manager"] },
-  { to: "/app/workspace", label: "سياساتي", icon: FileText },
-  { to: "/app/library", label: "المكتبة", icon: BookOpen },
-  { to: "/app/notifications", label: "الإشعارات", icon: Bell },
-];
-
-const managerItems: NavItem[] = [
-  { to: "/app/approvals", label: "طلبات الاعتماد", icon: ClipboardCheck },
-  { to: "/app/reports", label: "التقارير", icon: ScrollText },
-];
-
-const adminItems: NavItem[] = [
-  { to: "/app/admin/users", label: "المستخدمون", icon: Users },
-  { to: "/app/admin/audit", label: "سجل العمليات", icon: Shield },
-];
 
 export function AppShell() {
   const { profile, signOut } = useAuth();
+  const { actionCount } = useAppData();
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
 
   const role = profile?.role ?? "quality_staff";
+
+  const baseItems: NavItem[] = [
+    { to: "/app", label: "الرئيسية", icon: LayoutDashboard },
+    { to: "/app/upload", label: "إضافة سياسة", icon: FilePlus2, roles: ["quality_staff", "quality_manager"] },
+    { to: "/app/actions", label: "ما يحتاج إجراء", icon: ListChecks, badge: actionCount },
+    { to: "/app/workspace", label: "سياساتي", icon: FileText },
+    { to: "/app/library", label: "المكتبة", icon: BookOpen },
+  ];
+  const managerItems: NavItem[] = [
+    { to: "/app/approvals", label: "طلبات الاعتماد", icon: ClipboardCheck },
+    { to: "/app/reports", label: "التقارير", icon: ScrollText },
+  ];
+  const adminItems: NavItem[] = [
+    { to: "/app/admin/users", label: "المستخدمون", icon: Users },
+    { to: "/app/admin/audit", label: "سجل العمليات", icon: Shield },
+  ];
+
   const navItems = [
     ...baseItems,
     ...(role === "quality_manager" ? managerItems : []),
@@ -74,6 +91,7 @@ export function AppShell() {
             >
               <item.icon aria-hidden="true" />
               <span>{item.label}</span>
+              {item.badge ? <span className="nav-badge">{item.badge}</span> : null}
             </NavLink>
           ))}
         </nav>
@@ -92,15 +110,47 @@ export function AppShell() {
             <span>تجمع جدة الصحي الأول</span>
             <strong>إدارة السياسات والإجراءات</strong>
           </div>
-          <div className="account-chip">
-            <span className="avatar">{initials(profile?.full_name)}</span>
-            <div>
-              <strong>{profile?.full_name ?? profile?.email ?? "مستخدم"}</strong>
-              <span>{roleLabels[role]}</span>
-            </div>
-            <button onClick={() => void signOut()} aria-label="تسجيل الخروج">
-              <LogOut aria-hidden="true" />
+          <div className="topbar-actions">
+            <button
+              type="button"
+              className="command-trigger"
+              onClick={() => {
+                window.dispatchEvent(
+                  new KeyboardEvent("keydown", { key: "k", ctrlKey: true }),
+                );
+              }}
+              aria-label="بحث سريع"
+            >
+              <Search aria-hidden="true" />
+              <span>بحث سريع</span>
+              <kbd>Ctrl K</kbd>
             </button>
+            <NotificationBell />
+            <div className="account-chip" ref={menuRef}>
+              <button
+                type="button"
+                className="account-trigger"
+                onClick={() => setMenuOpen((value) => !value)}
+              >
+                <span className="avatar">{initials(profile?.full_name)}</span>
+                <div>
+                  <strong>{profile?.full_name ?? profile?.email ?? "مستخدم"}</strong>
+                  <span>{roleLabels[role]}</span>
+                </div>
+              </button>
+              {menuOpen ? (
+                <div className="account-menu">
+                  <NavLink to="/app/settings" onClick={() => setMenuOpen(false)}>
+                    <Settings aria-hidden="true" />
+                    الإعدادات
+                  </NavLink>
+                  <button type="button" onClick={() => void signOut()}>
+                    <LogOut aria-hidden="true" />
+                    تسجيل الخروج
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
         <main className="content-area">
@@ -108,6 +158,7 @@ export function AppShell() {
         </main>
       </div>
       {open ? <button className="scrim" aria-label="إغلاق القائمة" onClick={() => setOpen(false)} /> : null}
+      <CommandPalette />
     </div>
   );
 }

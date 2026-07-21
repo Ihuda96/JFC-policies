@@ -28,6 +28,8 @@ import {
 } from "../lib/policyWorkflow";
 import { policyReference } from "../lib/departments";
 import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
+import { useConfirm } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import { isSetupError, supabase } from "../lib/supabase";
 import type {
   ApprovalAction,
@@ -44,6 +46,8 @@ function sortedVersions(versions: PolicyVersion[] = []) {
 export function PolicyDetailPage() {
   const { policyId } = useParams();
   const { profile } = useAuth();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [policy, setPolicy] = useState<PolicyBundle | null>(null);
   const [comments, setComments] = useState<ReviewComment[]>([]);
   const [actions, setActions] = useState<ApprovalAction[]>([]);
@@ -194,8 +198,11 @@ export function PolicyDetailPage() {
     try {
       await approvePolicyVersion(policy.id, selectedVersion.id);
       await load();
+      toast.success("تم اعتماد السياسة ونشرها في المكتبة.");
     } catch (err) {
-      setError(readableWorkflowError(err));
+      const message = readableWorkflowError(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -281,8 +288,11 @@ export function PolicyDetailPage() {
       await setPolicyReference(policy.id, value);
       setCodeInput("");
       await load();
+      toast.success("تم حفظ رمز السياسة.");
     } catch (err) {
-      setError(readableWorkflowError(err));
+      const message = readableWorkflowError(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -294,11 +304,15 @@ export function PolicyDetailPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      policy.status === "approved"
-        ? "سيتم حذف السياسة المعتمدة من المكتبة ونقلها إلى الأرشيف مع حفظ سجل التدقيق. هل تريد المتابعة؟"
-        : "سيتم حذف السياسة من القوائم ونقلها إلى الأرشيف مع حفظ سجل التدقيق. هل تريد المتابعة؟",
-    );
+    const confirmed = await confirm({
+      title: "حذف السياسة",
+      body:
+        policy.status === "approved"
+          ? "سيتم حذف السياسة المعتمدة من المكتبة ونقلها إلى الأرشيف مع حفظ سجل التدقيق."
+          : "سيتم حذف السياسة من القوائم ونقلها إلى الأرشيف مع حفظ سجل التدقيق.",
+      confirmLabel: "حذف",
+      danger: true,
+    });
 
     if (!confirmed) {
       return;
@@ -310,8 +324,11 @@ export function PolicyDetailPage() {
       await archivePolicy(policy.id, archiveReason);
       setArchiveReason("");
       await load();
+      toast.success("تم حذف السياسة ونقلها إلى الأرشيف.");
     } catch (err) {
-      setError(readableWorkflowError(err));
+      const message = readableWorkflowError(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }

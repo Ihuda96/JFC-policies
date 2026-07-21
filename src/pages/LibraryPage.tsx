@@ -26,6 +26,7 @@ import { formatDate } from "../lib/format";
 import { downloadPolicyFileBytes, readableWorkflowError, setPolicyReference } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/Toast";
 import type { PolicyBundle, PolicyFile } from "../lib/types";
 
 export function LibraryPage() {
@@ -43,6 +44,7 @@ export function LibraryPage() {
   const [savingCode, setSavingCode] = useState<string | null>(null);
   const [editing, setEditing] = useState<Set<string>>(new Set());
   const { profile } = useAuth();
+  const toast = useToast();
   const canEditCodes =
     profile?.role === "quality_manager" || profile?.role === "system_admin";
 
@@ -83,8 +85,11 @@ export function LibraryPage() {
         return next;
       });
       stopEditing(policyId);
+      toast.success("تم حفظ رمز السياسة.");
     } catch (err) {
-      setScanNotice(readableWorkflowError(err));
+      const message = readableWorkflowError(err);
+      setScanNotice(message);
+      toast.error(message);
     } finally {
       setSavingCode(null);
     }
