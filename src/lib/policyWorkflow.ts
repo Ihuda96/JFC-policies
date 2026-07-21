@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { extractPolicyCode } from "./documentCode";
 import { assertSupabase, errorMessage } from "./supabase";
 import type { Policy, PolicyFile } from "./types";
 
@@ -67,9 +68,14 @@ export async function uploadPolicyDraft(input: {
   const storagePath = `${user.id}/${policyId}/${versionId}/${fileName}`;
   const policyTitle = parsed.title?.trim() || titleFromFile(input.file.name);
 
+  // Read the full policy code from the document so the policy classifies
+  // automatically and shows its full number without a separate backend step.
+  const detectedCode = await extractPolicyCode(input.file);
+
   const { error: policyError } = await supabase.from("policies").insert({
     id: policyId,
     title: policyTitle,
+    policy_number: detectedCode,
     status: "draft",
     owner_id: user.id,
     created_by: user.id,
@@ -267,6 +273,35 @@ export async function archivePolicy(policyId: string, reason?: string) {
   if (error) {
     throw error;
   }
+}
+
+export async function setPolicyReference(policyId: string, reference: string) {
+  const supabase = assertSupabase();
+  const { error } = await supabase.rpc("set_policy_reference", {
+    p_policy_id: policyId,
+    p_reference: reference,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+// Download the raw bytes of a stored file (no audit tracking) for background
+// tasks such as backfilling a missing policy code.
+export async function downloadPolicyFileBytes(
+  file: Pick<PolicyFile, "bucket_id" | "storage_path">,
+): Promise<ArrayBuffer> {
+  const supabase = assertSupabase();
+  const { data, error } = await supabase.storage
+    .from(file.bucket_id)
+    .download(file.storage_path);
+
+  if (error || !data) {
+    throw error ?? new Error("تعذر تنزيل الملف.");
+  }
+
+  return data.arrayBuffer();
 }
 
 export async function signedFileUrl(
