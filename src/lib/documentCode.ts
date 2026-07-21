@@ -13,8 +13,16 @@ const LOOSE_CODE_PATTERN =
 // Invisible formatting marks Word sprinkles around Latin runs in Arabic text:
 // zero-width chars, bidi controls, isolates, BOM and NBSP.
 const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF\u00A0]/g;
+// Zero-width / bidi marks only (NBSP excluded \u2014 it is a real space).
+const ZERO_WIDTH = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
 // Every dash / hyphen / minus variant.
 const DASHES = /[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g;
+
+// Clean text for reading: drop zero-width/bidi marks but turn NBSP into a real
+// space so words stay separated.
+function stripMarks(text: string): string {
+  return text.replace(ZERO_WIDTH, "").replace(/\u00A0/g, " ");
+}
 
 // Normalise text so a code survives no matter how it was encoded: drop the
 // invisible marks, unify dashes, and convert Arabic-Indic digits to ASCII.
@@ -59,18 +67,18 @@ const DOCX_TEXT_PART = /^word\/(document|header\d*|footer\d*|footnotes|endnotes)
 
 // Use JSZip to unzip the document — it handles every Word quirk (data
 // descriptors, ordering, compression) that a hand-rolled parser gets wrong.
-async function docxTextParts(buffer: ArrayBuffer): Promise<string[]> {
+async function docxParts(buffer: ArrayBuffer): Promise<{ name: string; text: string }[]> {
   const { default: JSZip } = await import("jszip");
   const zip = await JSZip.loadAsync(buffer);
   const names = Object.keys(zip.files)
     .filter((name) => DOCX_TEXT_PART.test(name))
     .sort((a, b) => (a.includes("header") ? 0 : 1) - (b.includes("header") ? 0 : 1));
 
-  const parts: string[] = [];
+  const parts: { name: string; text: string }[] = [];
   for (const name of names) {
     try {
       const xml = await zip.files[name].async("string");
-      parts.push(xml.replace(/<[^>]+>/g, " "));
+      parts.push({ name, text: xml.replace(/<[^>]+>/g, " ") });
     } catch {
       // Skip unreadable parts.
     }
@@ -78,14 +86,136 @@ async function docxTextParts(buffer: ArrayBuffer): Promise<string[]> {
   return parts;
 }
 
+async function docxTextParts(buffer: ArrayBuffer): Promise<string[]> {
+  return (await docxParts(buffer)).map((part) => part.text);
+}
+
+// Only the letterhead header parts carry the labelled field table.
+function headerText(parts: { name: string; text: string }[]): string {
+  const headers = parts.filter((part) => part.name.includes("header"));
+  return (headers.length > 0 ? headers : parts).map((part) => part.text).join(" ");
+}
+
+// The policy letterhead is a bilingual labelled table. Split the header text
+// on its English labels to read each field's value precisely.
+const HEADER_LABELS =
+  /(Department|Issue\s*Date|Issue\s*Nu|Effective\s*Date|Code|Review\s*Date|Title|Page)\s*:/gi;
+
+export interface PolicyHeader {
+  code: string | null;
+  titleAr: string | null;
+  titleEn: string | null;
+  department: string | null;
+  issueDate: string | null;
+  effectiveDate: string | null;
+  reviewDate: string | null;
+  issueNumber: string | null;
+}
+
+function labeledFields(rawText: string): Record<string, string> {
+  const text = stripMarks(rawText);
+  const fields: Record<string, string> = {};
+  const matches = [...text.matchAll(HEADER_LABELS)];
+  for (let i = 0; i < matches.length; i++) {
+    const key = matches[i][1].toLowerCase().replace(/\s+/g, "");
+    const start = (matches[i].index ?? 0) + matches[i][0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index ?? text.length : text.length;
+    fields[key] = text.slice(start, end).replace(/\s+/g, " ").trim();
+  }
+  return fields;
+}
+
+// Read the full code out of the "Code:" field, joining a serial that Word
+// split across runs (e.g. "JFHC-HRD-HRO-APP-PP- 0 32" → JFHC-HRD-HRO-APP-PP-032).
+function codeFromField(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const cleaned = normalizeForCode(value).replace(/\s+/g, "");
+  const match = cleaned.match(/JFHC[-A-Z0-9]+/i);
+  if (!match) {
+    return null;
+  }
+  const code = match[0]
+    .toUpperCase()
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return code.split("-").filter(Boolean).length >= 3 ? code : null;
+}
+
+function dateFromField(value: string | undefined): string | null {
+  const match = value?.replace(/\s+/g, "").match(/\d{1,2}\/\d{1,2}\/\d{2,4}/);
+  return match ? match[0] : null;
+}
+
+function stripArabicLabel(value: string | undefined, ...labels: string[]): string | null {
+  if (!value) {
+    return null;
+  }
+  let out = value;
+  for (const label of labels) {
+    out = out.replace(label, " ");
+  }
+  out = out.replace(/\s+/g, " ").trim();
+  return out || null;
+}
+
+export function parsePolicyHeader(text: string): PolicyHeader {
+  const fields = labeledFields(text);
+  const titleField = fields["title"] ?? "";
+  const [titleEnRaw, titleArRaw] = titleField.split(/العنوان|Title/i);
+
+  return {
+    code: codeFromField(fields["code"]),
+    titleEn: (titleEnRaw ?? "").trim() || null,
+    titleAr: (titleArRaw ?? "").trim() || null,
+    department: stripArabicLabel(fields["department"], "الإدارة", "الادارة", "القسم"),
+    issueDate: dateFromField(fields["issuedate"]),
+    effectiveDate: dateFromField(fields["effectivedate"]),
+    reviewDate: dateFromField(fields["reviewdate"]),
+    issueNumber:
+      stripArabicLabel(fields["issuenu"], "رقم الإصدار", "رقم الاصدار")?.match(/\d+/)?.[0] ??
+      null,
+  };
+}
+
 async function extractFromDocx(buffer: ArrayBuffer): Promise<string | null> {
-  for (const part of await docxTextParts(buffer)) {
-    const code = extractCodeFromText(part);
+  const parts = await docxParts(buffer);
+
+  // Prefer the exact value from the "Code:" field in the letterhead header.
+  const fromField =
+    codeFromField(labeledFields(headerText(parts))["code"]) ??
+    codeFromField(labeledFields(parts.map((part) => part.text).join(" "))["code"]);
+  if (fromField) {
+    return fromField;
+  }
+
+  for (const part of parts) {
+    const code = extractCodeFromText(part.text);
     if (code) {
       return code;
     }
   }
   return null;
+}
+
+// Parse the full policy header (code, title, department, dates) from a file.
+export async function extractPolicyHeaderFromBuffer(
+  buffer: ArrayBuffer,
+  fileName: string,
+): Promise<PolicyHeader | null> {
+  try {
+    const name = fileName.toLowerCase();
+    let text = "";
+    if (name.endsWith(".docx")) {
+      text = headerText(await docxParts(buffer));
+    } else if (name.endsWith(".pdf")) {
+      text = (await pdfjsText(buffer)) || (await pdfText(buffer));
+    }
+    return text ? parsePolicyHeader(text) : null;
+  } catch {
+    return null;
+  }
 }
 
 // Decode the visible text out of a PDF content stream by concatenating the
