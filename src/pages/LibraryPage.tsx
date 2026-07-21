@@ -12,14 +12,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
-import { groupPoliciesByDepartment, policyReference } from "../lib/departments";
+import {
+  UNCLASSIFIED_LABEL,
+  groupPoliciesByDepartment,
+  policyReference,
+} from "../lib/departments";
 import {
   extractPolicyCodeFromBuffer,
   extractPolicyTextSample,
 } from "../lib/documentCode";
 import { formatDate } from "../lib/format";
-import { downloadPolicyFileBytes, setPolicyReference } from "../lib/policyWorkflow";
+import { downloadPolicyFileBytes, readableWorkflowError, setPolicyReference } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 import type { PolicyBundle, PolicyFile } from "../lib/types";
 
 export function LibraryPage() {
@@ -33,6 +38,38 @@ export function LibraryPage() {
   const [scanProgress, setScanProgress] = useState({ done: 0, total: 0 });
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [scanSample, setScanSample] = useState<{ title: string; text: string } | null>(null);
+  const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>({});
+  const [savingCode, setSavingCode] = useState<string | null>(null);
+  const { profile } = useAuth();
+  const canEditCodes =
+    profile?.role === "quality_manager" || profile?.role === "system_admin";
+
+  async function saveCardCode(policyId: string) {
+    const value = (codeDrafts[policyId] ?? "").trim();
+    if (!value || savingCode) {
+      return;
+    }
+
+    setSavingCode(policyId);
+    setScanNotice(null);
+    try {
+      await setPolicyReference(policyId, value);
+      setPolicies((current) =>
+        current.map((policy) =>
+          policy.id === policyId ? { ...policy, policy_number: value } : policy,
+        ),
+      );
+      setCodeDrafts((current) => {
+        const next = { ...current };
+        delete next[policyId];
+        return next;
+      });
+    } catch (err) {
+      setScanNotice(readableWorkflowError(err));
+    } finally {
+      setSavingCode(null);
+    }
+  }
 
   function toggle(key: string) {
     setCollapsed((current) => {
@@ -395,6 +432,37 @@ export function LibraryPage() {
                                   >
                                     معاينة السياسة
                                   </Link>
+                                  {canEditCodes && department.key === UNCLASSIFIED_LABEL ? (
+                                    <form
+                                      className="card-code-editor"
+                                      onSubmit={(event) => {
+                                        event.preventDefault();
+                                        void saveCardCode(policy.id);
+                                      }}
+                                    >
+                                      <input
+                                        value={codeDrafts[policy.id] ?? ""}
+                                        onChange={(event) =>
+                                          setCodeDrafts((current) => ({
+                                            ...current,
+                                            [policy.id]: event.target.value,
+                                          }))
+                                        }
+                                        placeholder="أدخل رمز السياسة"
+                                        dir="ltr"
+                                      />
+                                      <button
+                                        type="submit"
+                                        className="primary-button"
+                                        disabled={
+                                          savingCode === policy.id ||
+                                          !(codeDrafts[policy.id] ?? "").trim()
+                                        }
+                                      >
+                                        حفظ
+                                      </button>
+                                    </form>
+                                  ) : null}
                                 </article>
                               ))}
                             </div>
