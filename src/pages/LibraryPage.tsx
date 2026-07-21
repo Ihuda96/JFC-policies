@@ -13,7 +13,10 @@ import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
 import { groupPoliciesByDepartment, policyReference } from "../lib/departments";
-import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
+import {
+  extractPolicyCodeFromBuffer,
+  extractPolicyTextSample,
+} from "../lib/documentCode";
 import { formatDate } from "../lib/format";
 import { downloadPolicyFileBytes, setPolicyReference } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
@@ -29,6 +32,7 @@ export function LibraryPage() {
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState({ done: 0, total: 0 });
   const [scanNotice, setScanNotice] = useState<string | null>(null);
+  const [scanSample, setScanSample] = useState<{ title: string; text: string } | null>(null);
 
   function toggle(key: string) {
     setCollapsed((current) => {
@@ -87,12 +91,14 @@ export function LibraryPage() {
 
     setScanning(true);
     setScanNotice(null);
+    setScanSample(null);
     setScanProgress({ done: 0, total: targets.length });
 
     const foundCodes = new Map<string, string>();
     let noCode = 0;
     let openFailed = 0;
     let saveFailed = 0;
+    let sample: { title: string; text: string } | null = null;
 
     for (const policy of targets) {
       try {
@@ -116,6 +122,12 @@ export function LibraryPage() {
           const code = await extractPolicyCodeFromBuffer(buffer, file.file_name);
           if (!code) {
             noCode += 1;
+            if (!sample) {
+              const text = await extractPolicyTextSample(buffer, file.file_name);
+              if (text) {
+                sample = { title: policy.title, text };
+              }
+            }
           } else {
             foundCodes.set(policy.id, code);
             // Persist so it survives a reload; ignore if the DB function is
@@ -163,6 +175,7 @@ export function LibraryPage() {
         " — التصنيف ظاهر الآن لكنه لن يُحفظ بعد إعادة التحميل حتى يتم تفعيل الحفظ في قاعدة البيانات.";
     }
     setScanNotice(notice);
+    setScanSample(noCode > 0 ? sample : null);
   }
 
   const searched = useMemo(() => {
@@ -295,6 +308,14 @@ export function LibraryPage() {
             </button>
           ) : null}
           {scanNotice ? <span className="library-scan-notice">{scanNotice}</span> : null}
+        </div>
+      ) : null}
+
+      {scanSample ? (
+        <div className="scan-sample">
+          <strong>نموذج من نص ملف لم يُقرأ منه رمز:</strong>
+          <span>{scanSample.title}</span>
+          <code>{scanSample.text || "(لم يُقرأ أي نص — قد يكون الملف صورة ممسوحة ضوئيًا)"}</code>
         </div>
       ) : null}
 

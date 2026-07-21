@@ -2,19 +2,37 @@
 // from an uploaded document, so policies classify automatically and show the
 // full code even when the title only carries a short reference.
 
-// Match the cluster code followed by dash-separated segments ending in a
-// serial number, e.g. JFHC-HRD-HPD-APP-PP-01. A dash/slash/underscore is
-// required between segments (optionally padded with spaces from run splitting)
-// so trailing words are not swallowed.
+// The cluster code followed by dash-separated segments ending in a serial.
 const FULL_CODE_PATTERN =
-  /JFHC(?:\s*[-–/_]\s*[A-Z0-9]{1,6}){1,5}\s*[-–/_]\s*\d{1,4}/i;
+  /JFHC(?:\s*[-/_]\s*[A-Z0-9]{1,6}){1,5}\s*[-/_]\s*\d{1,4}/i;
+
+// Any cluster code chain even without the JFHC prefix, e.g. HRD-HPD-APP-PP-01.
+const LOOSE_CODE_PATTERN =
+  /\b[A-Z]{2,6}(?:\s*[-/_]\s*[A-Z0-9]{1,6}){2,5}\s*[-/_]\s*\d{1,4}\b/;
+
+// Invisible formatting marks Word sprinkles around Latin runs in Arabic text:
+// zero-width chars, bidi controls, isolates, BOM and NBSP.
+const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF\u00A0]/g;
+// Every dash / hyphen / minus variant.
+const DASHES = /[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g;
+
+// Normalise text so a code survives no matter how it was encoded: drop the
+// invisible marks, unify dashes, and convert Arabic-Indic digits to ASCII.
+export function normalizeForCode(text: string): string {
+  return text
+    .replace(INVISIBLE, "")
+    .replace(DASHES, "-")
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+}
 
 export function extractCodeFromText(text: string | null | undefined): string | null {
   if (!text) {
     return null;
   }
 
-  const match = text.match(FULL_CODE_PATTERN);
+  const cleaned = normalizeForCode(text);
+  const match = cleaned.match(FULL_CODE_PATTERN) ?? cleaned.match(LOOSE_CODE_PATTERN);
   if (!match) {
     return null;
   }
@@ -26,6 +44,10 @@ export function extractCodeFromText(text: string | null | undefined): string | n
 
   if (segments.length < 3) {
     return null;
+  }
+
+  if (segments[0] !== "JFHC") {
+    segments.unshift("JFHC");
   }
 
   return segments.join("-");
@@ -45,8 +67,6 @@ interface ZipEntry {
   localOffset: number;
 }
 
-// Enumerate the entries of a ZIP archive (DOCX/XLSX are ZIP files) from its
-// central directory, using only native browser APIs.
 function listZipEntries(buffer: ArrayBuffer): ZipEntry[] {
   const view = new DataView(buffer);
   const bytes = new Uint8Array(buffer);
@@ -103,35 +123,38 @@ async function readEntry(buffer: ArrayBuffer, entry: ZipEntry): Promise<Uint8Arr
 // stores in word/header*.xml — not word/document.xml — so scan every text part.
 const DOCX_TEXT_PART = /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/i;
 
-async function extractFromDocx(buffer: ArrayBuffer): Promise<string | null> {
+async function docxTextParts(buffer: ArrayBuffer): Promise<string[]> {
   const entries = listZipEntries(buffer).filter((entry) => DOCX_TEXT_PART.test(entry.name));
-  // Headers first — the code is normally in the letterhead.
   entries.sort((a, b) => {
     const aHeader = a.name.includes("header") ? 0 : 1;
     const bHeader = b.name.includes("header") ? 0 : 1;
     return aHeader - bHeader;
   });
 
+  const parts: string[] = [];
   for (const entry of entries) {
     try {
       const xml = new TextDecoder().decode(await readEntry(buffer, entry));
-      const text = xml.replace(/<[^>]+>/g, " ");
-      const code = extractCodeFromText(text);
-      if (code) {
-        return code;
-      }
+      parts.push(xml.replace(/<[^>]+>/g, " "));
     } catch {
       // Skip unreadable parts.
     }
   }
+  return parts;
+}
 
+async function extractFromDocx(buffer: ArrayBuffer): Promise<string | null> {
+  for (const part of await docxTextParts(buffer)) {
+    const code = extractCodeFromText(part);
+    if (code) {
+      return code;
+    }
+  }
   return null;
 }
 
 // Decode the visible text out of a PDF content stream by concatenating the
 // string literals — "(...)" and hex "<...>" — that the text operators draw.
-// This reconstructs codes even when a PDF writes them character by character,
-// e.g. (J)(F)(H)(C)(-)(H)(R)(D)… or [(JFHC)-40(-HRD)]TJ.
 function pdfLiteralsToText(content: string): string {
   let out = "";
   let i = 0;
@@ -194,22 +217,15 @@ function pdfLiteralsToText(content: string): string {
   return out;
 }
 
-// Best-effort scan of a PDF: read the string literals from the raw bytes and
-// from every inflated FlateDecode content stream.
-async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
+async function pdfText(buffer: ArrayBuffer): Promise<string> {
   const bytes = new Uint8Array(buffer);
   const raw = new TextDecoder("latin1").decode(bytes);
-
-  const rawText = pdfLiteralsToText(raw);
-  const direct = extractCodeFromText(rawText) ?? extractCodeFromText(raw);
-  if (direct) {
-    return direct;
-  }
+  let combined = pdfLiteralsToText(raw);
 
   const marker = "stream";
   let index = raw.indexOf(marker);
   let attempts = 0;
-  while (index !== -1 && attempts < 600) {
+  while (index !== -1 && attempts < 800) {
     attempts += 1;
     let start = index + marker.length;
     if (bytes[start] === 0x0d) start += 1;
@@ -226,11 +242,7 @@ async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
           .stream()
           .pipeThrough(new DecompressionStream("deflate")),
       ).text();
-      const found =
-        extractCodeFromText(pdfLiteralsToText(inflated)) ?? extractCodeFromText(inflated);
-      if (found) {
-        return found;
-      }
+      combined += " " + pdfLiteralsToText(inflated) + " " + inflated;
     } catch {
       // Not a zlib stream or not text; skip.
     }
@@ -238,7 +250,11 @@ async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
     index = raw.indexOf(marker, end + 1);
   }
 
-  return null;
+  return combined;
+}
+
+async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
+  return extractCodeFromText(await pdfText(buffer));
 }
 
 async function extractFromBuffer(
@@ -263,8 +279,6 @@ export async function extractPolicyCode(file: File): Promise<string | null> {
   }
 }
 
-// Extract the code from an already-downloaded file (used to backfill existing
-// policies whose stored number is missing).
 export async function extractPolicyCodeFromBuffer(
   buffer: ArrayBuffer,
   fileName: string,
@@ -273,5 +287,27 @@ export async function extractPolicyCodeFromBuffer(
     return await extractFromBuffer(buffer, fileName);
   } catch {
     return null;
+  }
+}
+
+// Diagnostic: return a readable snippet of the text actually read from a file,
+// so a stubborn document's real format can be seen and matched.
+export async function extractPolicyTextSample(
+  buffer: ArrayBuffer,
+  fileName: string,
+  limit = 400,
+): Promise<string> {
+  try {
+    const name = fileName.toLowerCase();
+    let text = "";
+    if (name.endsWith(".docx")) {
+      text = (await docxTextParts(buffer)).join(" ");
+    } else if (name.endsWith(".pdf")) {
+      text = await pdfText(buffer);
+    }
+    const collapsed = normalizeForCode(text).replace(/\s+/g, " ").trim();
+    return collapsed.slice(0, limit);
+  } catch {
+    return "";
   }
 }
