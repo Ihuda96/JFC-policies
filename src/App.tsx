@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ActionCenterPage } from "./pages/ActionCenterPage";
 import { AdminUsersPage } from "./pages/AdminUsersPage";
 import { ApprovalsPage } from "./pages/ApprovalsPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
@@ -27,6 +28,7 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="upload" element={<UploadPolicyPage />} />
           <Route path="workspace" element={<WorkspacePage />} />
+          <Route path="actions" element={<ActionCenterPage />} />
           <Route path="approvals" element={<ApprovalsPage />} />
           <Route path="library" element={<LibraryPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
