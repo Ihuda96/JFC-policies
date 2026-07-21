@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
-import { groupPoliciesByDepartment } from "../lib/departments";
+import { groupPoliciesByDepartment, policyReference } from "../lib/departments";
 import { formatDate } from "../lib/format";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { PolicyBundle } from "../lib/types";
@@ -163,11 +163,7 @@ export function LibraryPage() {
                       <article className="library-card" key={policy.id}>
                         <span>{section.label ?? department.label}</span>
                         <h4>{policy.policy_metadata?.extracted_title ?? policy.title}</h4>
-                        <p>
-                          {policy.policy_number ??
-                            policy.policy_metadata?.extracted_policy_number ??
-                            "بدون رقم"}
-                        </p>
+                        <p>{policyReference(policy) ?? "بدون رقم"}</p>
                         <dl>
                           <div>
                             <dt>تاريخ الاعتماد</dt>

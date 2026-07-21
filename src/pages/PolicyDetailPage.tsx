@@ -16,6 +16,7 @@ import {
   submitPolicyVersion,
   uploadRevision,
 } from "../lib/policyWorkflow";
+import { policyReference } from "../lib/departments";
 import { isSetupError, supabase } from "../lib/supabase";
 import type {
   ApprovalAction,
@@ -276,7 +277,7 @@ export function PolicyDetailPage() {
           <StatusBadge status={policy.status} />
           <h1>{policy.title}</h1>
           <p>
-            رقم السياسة: {policy.policy_number ?? "لم يستخرج بعد"} · آخر تحديث{" "}
+            رقم السياسة: {policyReference(policy) ?? "لم يستخرج بعد"} · آخر تحديث{" "}
             {formatDate(policy.updated_at)}
           </p>
         </div>
