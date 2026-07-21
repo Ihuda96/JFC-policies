@@ -128,20 +128,88 @@ async function extractFromDocx(buffer: ArrayBuffer): Promise<string | null> {
   return null;
 }
 
-// Best-effort scan of a PDF: search the raw bytes, then try inflating any
-// FlateDecode content streams and search those too.
+// Decode the visible text out of a PDF content stream by concatenating the
+// string literals — "(...)" and hex "<...>" — that the text operators draw.
+// This reconstructs codes even when a PDF writes them character by character,
+// e.g. (J)(F)(H)(C)(-)(H)(R)(D)… or [(JFHC)-40(-HRD)]TJ.
+function pdfLiteralsToText(content: string): string {
+  let out = "";
+  let i = 0;
+  const n = content.length;
+
+  while (i < n) {
+    const ch = content[i];
+
+    if (ch === "(") {
+      let depth = 1;
+      i += 1;
+      while (i < n && depth > 0) {
+        const c = content[i];
+        if (c === "\\") {
+          const next = content[i + 1];
+          if (next >= "0" && next <= "7") {
+            let oct = "";
+            let k = i + 1;
+            while (k < n && content[k] >= "0" && content[k] <= "7" && oct.length < 3) {
+              oct += content[k];
+              k += 1;
+            }
+            out += String.fromCharCode(parseInt(oct, 8) & 0xff);
+            i = k;
+            continue;
+          }
+          const map: Record<string, string> = { n: "\n", r: "\r", t: "\t", b: "\b", f: "\f" };
+          out += map[next] ?? next ?? "";
+          i += 2;
+          continue;
+        }
+        if (c === "(") {
+          depth += 1;
+          out += c;
+        } else if (c === ")") {
+          depth -= 1;
+          if (depth > 0) out += c;
+        } else {
+          out += c;
+        }
+        i += 1;
+      }
+    } else if (ch === "<" && content[i + 1] !== "<") {
+      let j = i + 1;
+      let hex = "";
+      while (j < n && content[j] !== ">") {
+        hex += content[j];
+        j += 1;
+      }
+      hex = hex.replace(/[^0-9A-Fa-f]/g, "");
+      for (let k = 0; k + 1 < hex.length; k += 2) {
+        out += String.fromCharCode(parseInt(hex.slice(k, k + 2), 16) & 0xff);
+      }
+      i = j + 1;
+    } else {
+      i += 1;
+    }
+  }
+
+  return out;
+}
+
+// Best-effort scan of a PDF: read the string literals from the raw bytes and
+// from every inflated FlateDecode content stream.
 async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
-  const raw = new TextDecoder("latin1").decode(new Uint8Array(buffer));
-  const direct = extractCodeFromText(raw);
+  const bytes = new Uint8Array(buffer);
+  const raw = new TextDecoder("latin1").decode(bytes);
+
+  const rawText = pdfLiteralsToText(raw);
+  const direct = extractCodeFromText(rawText) ?? extractCodeFromText(raw);
   if (direct) {
     return direct;
   }
 
-  const bytes = new Uint8Array(buffer);
   const marker = "stream";
   let index = raw.indexOf(marker);
   let attempts = 0;
-  while (index !== -1 && attempts < 400) {
+  while (index !== -1 && attempts < 600) {
     attempts += 1;
     let start = index + marker.length;
     if (bytes[start] === 0x0d) start += 1;
@@ -158,7 +226,8 @@ async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
           .stream()
           .pipeThrough(new DecompressionStream("deflate")),
       ).text();
-      const found = extractCodeFromText(inflated);
+      const found =
+        extractCodeFromText(pdfLiteralsToText(inflated)) ?? extractCodeFromText(inflated);
       if (found) {
         return found;
       }
