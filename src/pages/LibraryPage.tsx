@@ -1,4 +1,11 @@
-import { Building2, FolderTree, Search } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  ChevronLeft,
+  FolderTree,
+  Minimize2,
+  Search,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../components/EmptyState";
@@ -13,8 +20,21 @@ export function LibraryPage() {
   const [policies, setPolicies] = useState<PolicyBundle[]>([]);
   const [query, setQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [setupError, setSetupError] = useState<string | null>(null);
+
+  function toggle(key: string) {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
 
   useEffect(() => {
     async function load() {
@@ -87,6 +107,22 @@ export function LibraryPage() {
 
   const hasResults = visibleDepartments.length > 0;
 
+  function collapseAll() {
+    const keys = new Set<string>();
+    for (const department of visibleDepartments) {
+      keys.add(department.key);
+    }
+    setCollapsed(keys);
+  }
+
+  function expandAll() {
+    setCollapsed(new Set());
+  }
+
+  const everythingCollapsed =
+    visibleDepartments.length > 0 &&
+    visibleDepartments.every((department) => collapsed.has(department.key));
+
   return (
     <div className="page-stack">
       <section className="page-hero compact">
@@ -132,58 +168,105 @@ export function LibraryPage() {
         </div>
       ) : null}
 
+      {hasResults ? (
+        <div className="library-toolbar">
+          <button
+            type="button"
+            className="text-button"
+            onClick={everythingCollapsed ? expandAll : collapseAll}
+          >
+            <Minimize2 aria-hidden="true" />
+            {everythingCollapsed ? "توسيع الكل" : "طي الكل"}
+          </button>
+        </div>
+      ) : null}
+
       {!hasResults ? (
         <EmptyState title="لا توجد نتائج" body="لا توجد سياسات معتمدة تطابق البحث أو الإدارة المحددة." />
       ) : (
         <div className="library-departments">
-          {visibleDepartments.map((department) => (
-            <section className="library-department" key={department.key}>
-              <header className="library-department-head">
-                <div>
-                  <Building2 aria-hidden="true" />
-                  <h2>{department.label}</h2>
-                  {department.code ? <code>{department.code}</code> : null}
-                </div>
-                <span>{department.count} سياسة</span>
-              </header>
-
-              {department.sections.map((section) => (
-                <div className="library-section" key={section.key}>
-                  {section.label ? (
-                    <h3 className="library-section-head">
-                      <FolderTree aria-hidden="true" />
-                      {section.label}
-                      {section.code ? <code>{section.code}</code> : null}
-                      <span>{section.policies.length}</span>
-                    </h3>
-                  ) : null}
-
-                  <div className="library-grid">
-                    {section.policies.map((policy) => (
-                      <article className="library-card" key={policy.id}>
-                        <span>{section.label ?? department.label}</span>
-                        <h4>{policy.policy_metadata?.extracted_title ?? policy.title}</h4>
-                        <p>{policyReference(policy) ?? "بدون رقم"}</p>
-                        <dl>
-                          <div>
-                            <dt>تاريخ الاعتماد</dt>
-                            <dd>{formatDate(policy.approved_at)}</dd>
-                          </div>
-                          <div>
-                            <dt>المراجعة القادمة</dt>
-                            <dd>{formatDate(policy.next_review_at)}</dd>
-                          </div>
-                        </dl>
-                        <Link className="secondary-button full" to={`/app/policies/${policy.id}`}>
-                          معاينة السياسة
-                        </Link>
-                      </article>
-                    ))}
+          {visibleDepartments.map((department) => {
+            const departmentCollapsed = collapsed.has(department.key);
+            return (
+              <section className="library-department" key={department.key}>
+                <button
+                  type="button"
+                  className="library-department-head"
+                  aria-expanded={!departmentCollapsed}
+                  onClick={() => toggle(department.key)}
+                >
+                  <div>
+                    {departmentCollapsed ? (
+                      <ChevronLeft aria-hidden="true" />
+                    ) : (
+                      <ChevronDown aria-hidden="true" />
+                    )}
+                    <Building2 aria-hidden="true" />
+                    <h2>{department.label}</h2>
+                    {department.code ? <code>{department.code}</code> : null}
                   </div>
-                </div>
-              ))}
-            </section>
-          ))}
+                  <span>{department.count} سياسة</span>
+                </button>
+
+                {departmentCollapsed
+                  ? null
+                  : department.sections.map((section) => {
+                      const sectionKey = `${department.key}//${section.key}`;
+                      const sectionCollapsed = collapsed.has(sectionKey);
+                      return (
+                        <div className="library-section" key={section.key}>
+                          {section.label ? (
+                            <button
+                              type="button"
+                              className="library-section-head"
+                              aria-expanded={!sectionCollapsed}
+                              onClick={() => toggle(sectionKey)}
+                            >
+                              {sectionCollapsed ? (
+                                <ChevronLeft aria-hidden="true" />
+                              ) : (
+                                <ChevronDown aria-hidden="true" />
+                              )}
+                              <FolderTree aria-hidden="true" />
+                              {section.label}
+                              {section.code ? <code>{section.code}</code> : null}
+                              <span>{section.policies.length}</span>
+                            </button>
+                          ) : null}
+
+                          {sectionCollapsed ? null : (
+                            <div className="library-grid">
+                              {section.policies.map((policy) => (
+                                <article className="library-card" key={policy.id}>
+                                  <span>{section.label ?? department.label}</span>
+                                  <h4>{policy.policy_metadata?.extracted_title ?? policy.title}</h4>
+                                  <p>{policyReference(policy) ?? "بدون رقم"}</p>
+                                  <dl>
+                                    <div>
+                                      <dt>تاريخ الاعتماد</dt>
+                                      <dd>{formatDate(policy.approved_at)}</dd>
+                                    </div>
+                                    <div>
+                                      <dt>المراجعة القادمة</dt>
+                                      <dd>{formatDate(policy.next_review_at)}</dd>
+                                    </div>
+                                  </dl>
+                                  <Link
+                                    className="secondary-button full"
+                                    to={`/app/policies/${policy.id}`}
+                                  >
+                                    معاينة السياسة
+                                  </Link>
+                                </article>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+              </section>
+            );
+          })}
         </div>
       )}
     </div>

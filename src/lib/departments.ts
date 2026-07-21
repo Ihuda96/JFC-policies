@@ -19,34 +19,117 @@ const DOCUMENT_TOKENS = new Set([
   "WI",
 ]);
 
-// Department code → full Arabic name. Extend with the official JFC list to
-// cover every department precisely.
-const DEPARTMENT_NAMES: Record<string, string> = {
-  HRD: "إدارة الموارد البشرية",
+// Official JFC department & unit codes → full Arabic name.
+// Source: JFC "Department Codes" reference sheet.
+const CODE_NAMES: Record<string, string> = {
+  INA: "المراجعة الداخلية",
+  LEA: "الشئون القانونية",
+  STP: "الإستراتيجية والتحول ومكتب إدارة المشاريع",
+  STA: "إدارة الاستراتيجية والتحول",
+  PMO: "مكتب إدارة المشاريع",
+  CCM: "التواصل وإدارة التغيير",
+  COM: "إدارة التواصل",
+  CHM: "إدارة التغيير",
+  MAR: "إدارة التسويق",
+  GRC: "الحوكمة والإلتزام والمخاطر",
+  GOV: "إدارة الحوكمة",
+  ERM: "إدارة المخاطر المؤسسية",
+  CPC: "إدارة الالتزام",
+  MEC: "المدينة الطبية",
+  HES: "الخدمات الصحية",
+  ALH: "الخدمات الصحية المساندة",
+  NUR: "التمريض",
+  PHM: "الصحة السكانية",
+  MOC: "نموذج الرعاية الصحية",
+  SEL: "مسار الخدمات الإكلينيكية",
+  PCH: "الصحة العامة والمجتمعية",
+  CPM: "الأداء الإكلينيكي",
+  HDO: "تقديم الرعاية الصحية",
+  SPC: "المراكز المتخصصة",
+  URH: "المستشفيات العامة",
+  URP: "مراكز الرعاية الأولية الحضرية",
+  LEH: "المستشفيات المرجعية",
+  RUH: "المستشفيات الطرفية",
+  RUP: "مراكز الرعاية الأولية الريفية",
+  CSL: "مسار تخصص الرعاية القلبية",
+  ESL: "مسار تخصص الرعاية الطارئة",
+  GSL: "مسار تخصص النساء والولادة",
+  QAP: "الجودة والأداء",
+  PSR: "الجودة وسلامة المرضى",
+  QAA: "الجودة والإعتماد",
+  PAO: "الأداء والمخرجات",
+  PED: "تجربة المستفيد",
+  OPE: "التشغيل",
+  FAP: "المنشآت",
+  CPD: "العقود والمشتريات",
+  EAD: "الهندسة والصيانة",
+  SUS: "الخدمات المساندة",
+  SES: "الأمن والسلامة",
+  DTT: "الصحة الرقمية",
+  DSA: "الإستراتيجية الرقمية والبنية المؤسسية",
+  DMA: "مكتب البيانات",
+  CLS: "الأنظمة الإكلينيكية",
+  BUS: "حلول الأعمال",
   BSS: "دعم حلول الأعمال",
-  IPC: "إدارة مكافحة العدوى",
-  QM: "إدارة الجودة وسلامة المرضى",
-  QPS: "إدارة الجودة وسلامة المرضى",
-  PSQ: "إدارة الجودة وسلامة المرضى",
-  IT: "إدارة تقنية المعلومات",
-  ICT: "إدارة تقنية المعلومات",
-  HIT: "إدارة تقنية المعلومات الصحية",
-  FIN: "الإدارة المالية",
-  NUR: "إدارة التمريض",
-  PHARM: "إدارة الصيدلة",
-  PHR: "إدارة الصيدلة",
-  LAB: "إدارة المختبرات",
-  RAD: "إدارة الأشعة",
-  PHC: "إدارة الرعاية الصحية الأولية",
-  SCM: "إدارة سلسلة الإمداد",
+  INO: "البنية التحتية والتشغيل",
+  FIN: "المالية",
+  BFP: "التخطيط المالي والميزانية",
+  FIO: "عمليات الحسابات",
+  SEO: "مكتب كفاءة الإنفاق",
+  RVM: "إدارة الإيرادات",
+  REC: "السجلات",
+  FIT: "التحول المالي",
+  HRD: "الموارد البشرية",
+  PYR: "الرواتب",
+  HPD: "تخطيط وتطوير الموارد البشرية",
+  HRO: "عمليات الموارد البشرية",
+  JTA: "الوظائف والنقل والتكليف",
+  HCR: "التوظيف",
+  TAA: "الشئون الأكاديمية والتدريب",
+  AAD: "الشئون الأكاديمية",
+  REP: "الأبحاث",
+  MEA: "الأكاديمية الطبية",
 };
 
-// Sub-section / unit code → full Arabic name and its parent department code.
-// This lets a lone sub-code (e.g. "HPD 01" in a title) still resolve to its
-// department (HRD). Extend with the official JFC unit list.
-const SUBSECTIONS: Record<string, { name: string; parent: string }> = {
-  HPD: { name: "تخطيط وتطوير الموارد البشرية", parent: "HRD" },
-  HRO: { name: "عمليات الموارد البشرية", parent: "HRD" },
+// Unit code → parent department code. Used to roll a stand-alone unit code
+// (e.g. only "HPD 01" in a title) up to its department (HRD).
+const UNIT_PARENTS: Record<string, string> = {
+  STA: "STP",
+  PMO: "STP",
+  COM: "CCM",
+  CHM: "CCM",
+  MAR: "CCM",
+  GOV: "GRC",
+  ERM: "GRC",
+  CPC: "GRC",
+  CSL: "SEL",
+  ESL: "SEL",
+  GSL: "SEL",
+  PSR: "QAP",
+  QAA: "QAP",
+  PAO: "QAP",
+  PED: "QAP",
+  FAP: "OPE",
+  CPD: "OPE",
+  EAD: "OPE",
+  SUS: "OPE",
+  SES: "OPE",
+  DSA: "DTT",
+  DMA: "DTT",
+  CLS: "DTT",
+  BUS: "DTT",
+  INO: "DTT",
+  BFP: "FIN",
+  FIO: "FIN",
+  SEO: "FIN",
+  RVM: "FIN",
+  REC: "FIN",
+  FIT: "FIN",
+  PYR: "HRD",
+  HPD: "HRD",
+  HRO: "HRD",
+  JTA: "HRD",
+  HCR: "HRD",
 };
 
 export const UNCLASSIFIED_LABEL = "غير مصنف";
@@ -86,11 +169,11 @@ function firstNonEmpty(...lists: string[][]): string[] {
 }
 
 export function departmentName(code: string) {
-  return DEPARTMENT_NAMES[code] ?? `قسم ${code}`;
+  return CODE_NAMES[code] ?? `قسم ${code}`;
 }
 
 export function subsectionName(code: string) {
-  return SUBSECTIONS[code]?.name ?? `تصنيف ${code}`;
+  return CODE_NAMES[code] ?? `تصنيف ${code}`;
 }
 
 // Derive a policy reference like "HPD 07" from free text (usually the title)
@@ -114,9 +197,9 @@ function deriveReferenceFromText(text: string | null | undefined): string | null
   return null;
 }
 
-// Best available policy reference: the stored number first, otherwise the
-// number extracted from the policy title so the card never shows "no number"
-// when the code is clearly present in the title.
+// Best available policy reference. The stored policy number is the full code
+// (e.g. JFHC-HRD-HPD-APP-PP-01) and is shown as-is; otherwise the code is
+// derived from the title so the number is never blank when it is present.
 export function policyReference(policy: {
   policy_number?: string | null;
   title?: string | null;
@@ -159,11 +242,11 @@ export function classifyPolicy(policy: PolicyBundle): PolicyClassification {
   let departmentCode = codes[0] ?? null;
   let sectionCode = codes[1] ?? null;
 
-  // A single code that is actually a sub-section (e.g. only "HPD" in the
-  // title): promote its parent department and keep it as the sub-section.
-  if (departmentCode && !sectionCode && SUBSECTIONS[departmentCode]) {
+  // A single code that is actually a unit (e.g. only "HPD" in the title):
+  // promote its parent department and keep it as the sub-section.
+  if (departmentCode && !sectionCode && UNIT_PARENTS[departmentCode]) {
     sectionCode = departmentCode;
-    departmentCode = SUBSECTIONS[departmentCode].parent;
+    departmentCode = UNIT_PARENTS[departmentCode];
   }
 
   if (departmentCode) {
@@ -262,7 +345,10 @@ export function groupPoliciesByDepartment(policies: PolicyBundle[]): DepartmentG
     section.policies.push(policy);
   }
 
-  const sortByLabel = (a: { label: string | null; key: string }, b: { label: string | null; key: string }) => {
+  const sortByLabel = (
+    a: { label: string | null; key: string },
+    b: { label: string | null; key: string },
+  ) => {
     if (a.key === NO_SECTION_KEY) {
       return 1;
     }

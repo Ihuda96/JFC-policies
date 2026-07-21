@@ -1036,13 +1036,32 @@ dd {
   gap: 16px;
 }
 
+.library-toolbar {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.library-toolbar .text-button {
+  gap: 6px;
+}
+
 .library-department-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 12px;
+  width: 100%;
+  padding: 0 0 12px;
+  border: 0;
   border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.library-department-head:hover h2 {
+  color: var(--blue-700);
 }
 
 .library-department-head > div {
@@ -1089,9 +1108,16 @@ dd {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   font-size: 1rem;
+  font-weight: 700;
   color: var(--blue-900);
+  text-align: start;
+  cursor: pointer;
 }
 
 .library-section-head svg {
