@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   FolderTree,
   Minimize2,
+  Pencil,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -40,9 +41,26 @@ export function LibraryPage() {
   const [scanSample, setScanSample] = useState<{ title: string; text: string } | null>(null);
   const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>({});
   const [savingCode, setSavingCode] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Set<string>>(new Set());
   const { profile } = useAuth();
   const canEditCodes =
     profile?.role === "quality_manager" || profile?.role === "system_admin";
+
+  function startEditing(policy: PolicyBundle) {
+    setCodeDrafts((current) => ({
+      ...current,
+      [policy.id]: current[policy.id] ?? policyReference(policy) ?? "",
+    }));
+    setEditing((current) => new Set(current).add(policy.id));
+  }
+
+  function stopEditing(policyId: string) {
+    setEditing((current) => {
+      const next = new Set(current);
+      next.delete(policyId);
+      return next;
+    });
+  }
 
   async function saveCardCode(policyId: string) {
     const value = (codeDrafts[policyId] ?? "").trim();
@@ -64,6 +82,7 @@ export function LibraryPage() {
         delete next[policyId];
         return next;
       });
+      stopEditing(policyId);
     } catch (err) {
       setScanNotice(readableWorkflowError(err));
     } finally {
@@ -441,13 +460,30 @@ export function LibraryPage() {
                                       <dd>{formatDate(policy.next_review_at)}</dd>
                                     </div>
                                   </dl>
-                                  <Link
-                                    className="secondary-button full"
-                                    to={`/app/policies/${policy.id}`}
-                                  >
-                                    معاينة السياسة
-                                  </Link>
-                                  {canEditCodes && department.key === UNCLASSIFIED_LABEL ? (
+                                  <div className="card-actions">
+                                    <Link
+                                      className="secondary-button full"
+                                      to={`/app/policies/${policy.id}`}
+                                    >
+                                      معاينة السياسة
+                                    </Link>
+                                    {canEditCodes &&
+                                    department.key !== UNCLASSIFIED_LABEL &&
+                                    !editing.has(policy.id) ? (
+                                      <button
+                                        type="button"
+                                        className="icon-button"
+                                        onClick={() => startEditing(policy)}
+                                        aria-label="تعديل رمز السياسة"
+                                        title="تعديل رمز السياسة"
+                                      >
+                                        <Pencil aria-hidden="true" />
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                  {canEditCodes &&
+                                  (department.key === UNCLASSIFIED_LABEL ||
+                                    editing.has(policy.id)) ? (
                                     <form
                                       className="card-code-editor"
                                       onSubmit={(event) => {
@@ -463,7 +499,7 @@ export function LibraryPage() {
                                             [policy.id]: event.target.value,
                                           }))
                                         }
-                                        placeholder="أدخل رمز السياسة"
+                                        placeholder="أدخل رمز السياسة الصحيح"
                                         dir="ltr"
                                       />
                                       <button
@@ -476,6 +512,15 @@ export function LibraryPage() {
                                       >
                                         حفظ
                                       </button>
+                                      {editing.has(policy.id) ? (
+                                        <button
+                                          type="button"
+                                          className="secondary-button"
+                                          onClick={() => stopEditing(policy.id)}
+                                        >
+                                          إلغاء
+                                        </button>
+                                      ) : null}
                                     </form>
                                   ) : null}
                                 </article>
