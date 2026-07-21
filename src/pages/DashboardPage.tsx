@@ -1,21 +1,44 @@
-import { AlertCircle, CheckCircle2, Clock, FilePlus2, FileText } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Building2,
+  Clock,
+  FilePlus2,
+  FileStack,
+  Timer,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { MetricCard } from "../components/MetricCard";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
 import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
+import { buildExecutiveSummary } from "../lib/analytics";
 import { policyReference } from "../lib/departments";
 import { formatDate, roleLabels } from "../lib/format";
 import { isSetupError, supabase } from "../lib/supabase";
-import type { Policy } from "../lib/types";
+import type { PolicyBundle } from "../lib/types";
+
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "صباح الخير";
+  if (hour < 17) return "طاب يومك";
+  return "مساء الخير";
+}
+
+const todayLabel = new Intl.DateTimeFormat("ar", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+}).format(new Date());
 
 export function DashboardPage() {
   const { profile } = useAuth();
-  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [policies, setPolicies] = useState<PolicyBundle[]>([]);
   const [loading, setLoading] = useState(true);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -24,19 +47,21 @@ export function DashboardPage() {
       }
 
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error: queryError } = await supabase
         .from("policies")
-        .select("*")
-        .neq("status", "archived")
-        .order("updated_at", { ascending: false })
-        .limit(12);
+        .select(
+          "id,title,status,policy_number,owner_department,owner_id,created_at,updated_at,submitted_at,approved_at,next_review_at",
+        )
+        .neq("status", "archived");
 
-      if (error) {
-        if (isSetupError(error)) {
-          setSetupError(error.message);
+      if (queryError) {
+        if (isSetupError(queryError)) {
+          setSetupError(queryError.message);
+        } else {
+          setError(queryError.message);
         }
       } else {
-        setPolicies((data as Policy[]) ?? []);
+        setPolicies((data as PolicyBundle[]) ?? []);
       }
       setLoading(false);
     }
@@ -44,14 +69,9 @@ export function DashboardPage() {
     void load();
   }, []);
 
-  const stats = useMemo(
-    () => ({
-      total: policies.length,
-      pending: policies.filter((policy) => ["pending_approval", "resubmitted"].includes(policy.status)).length,
-      returned: policies.filter((policy) => policy.status === "returned_for_revision").length,
-      approved: policies.filter((policy) => policy.status === "approved").length,
-    }),
-    [policies],
+  const summary = useMemo(
+    () => buildExecutiveSummary(policies, profile?.id, profile?.role),
+    [policies, profile],
   );
 
   if (setupError) {
@@ -62,13 +82,37 @@ export function DashboardPage() {
     return <LoadingState />;
   }
 
+  const firstName = (profile?.full_name ?? "").split(" ")[0];
+
+  const kpis = [
+    { icon: FileStack, label: "السياسات النشطة", value: summary.total, sub: `${summary.approved} معتمدة` },
+    { icon: Clock, label: "بانتظار الاعتماد", value: summary.pending, sub: `${summary.returned} معادة للتعديل` },
+    {
+      icon: AlertTriangle,
+      label: "مراجعة متأخرة",
+      value: summary.overdue,
+      sub: `${summary.dueSoon} تقترب من المراجعة`,
+      tone: summary.overdue > 0 ? "risk" : undefined,
+    },
+    { icon: Building2, label: "الإدارات المغطاة", value: summary.departmentsCovered, sub: "إدارة نشطة" },
+    {
+      icon: Timer,
+      label: "متوسط زمن الاعتماد",
+      value: summary.avgTurnaroundDays ?? "—",
+      sub: summary.avgTurnaroundDays != null ? "يوم" : "لا توجد بيانات كافية",
+    },
+  ];
+
   return (
     <div className="page-stack">
       <section className="page-hero compact">
         <div>
           <p className="eyebrow">{profile ? roleLabels[profile.role] : "مستخدم"}</p>
-          <h1>الرئيسية</h1>
-          <p>متابعة السياسات التي تحتاج رفعًا أو مراجعة أو اعتمادًا.</p>
+          <h1>
+            {greeting()}
+            {firstName ? `، ${firstName}` : ""}
+          </h1>
+          <p>{todayLabel}</p>
         </div>
         {profile?.role !== "system_admin" ? (
           <Link className="primary-button" to="/app/upload">
@@ -78,11 +122,95 @@ export function DashboardPage() {
         ) : null}
       </section>
 
-      <section className="metrics-grid">
-        <MetricCard icon={FileText} title="إجمالي السياسات" value={stats.total} />
-        <MetricCard icon={Clock} title="بانتظار الاعتماد" value={stats.pending} />
-        <MetricCard icon={AlertCircle} title="معادة للتعديل" value={stats.returned} />
-        <MetricCard icon={CheckCircle2} title="معتمدة" value={stats.approved} />
+      {error ? <p className="inline-error">{error}</p> : null}
+
+      <section className="exec-kpis">
+        {kpis.map((kpi) => (
+          <article className={`kpi-card ${kpi.tone === "risk" ? "kpi-risk" : ""}`} key={kpi.label}>
+            <span className="kpi-icon">
+              <kpi.icon aria-hidden="true" />
+            </span>
+            <strong className="kpi-value">{kpi.value}</strong>
+            <span className="kpi-label">{kpi.label}</span>
+            <em className="kpi-sub">{kpi.sub}</em>
+          </article>
+        ))}
+      </section>
+
+      {summary.actions.length > 0 ? (
+        <section className="data-section">
+          <div className="section-title-row">
+            <h2>ما يحتاج إجراء</h2>
+            <Link to="/app/actions">عرض الكل</Link>
+          </div>
+          <div className="dash-actions">
+            {summary.actions.map((action) => (
+              <Link className="dash-action" to={action.to} key={action.key}>
+                <strong>{action.count}</strong>
+                <span>{action.title}</span>
+                <ArrowLeft aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="exec-charts">
+        <article className="chart-card">
+          <h2>توزيع الحالات</h2>
+          {summary.statusBars.length === 0 ? (
+            <p className="chart-empty">لا توجد بيانات.</p>
+          ) : (
+            <div className="bar-list">
+              {summary.statusBars.map((bar) => (
+                <div className="bar-row" key={bar.key} title={`${bar.label}: ${bar.count}`}>
+                  <span className="bar-label">{bar.label}</span>
+                  <span className="bar-track">
+                    <span className="bar-fill" style={{ inlineSize: `${Math.max(bar.pct, 3)}%` }} />
+                  </span>
+                  <span className="bar-value">{bar.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+
+        <article className="chart-card">
+          <h2>أكثر الإدارات نشاطًا</h2>
+          {summary.departmentBars.length === 0 ? (
+            <p className="chart-empty">لا توجد بيانات.</p>
+          ) : (
+            <div className="bar-list">
+              {summary.departmentBars.map((bar) => (
+                <div className="bar-row" key={bar.key} title={`${bar.label}: ${bar.count}`}>
+                  <span className="bar-label">{bar.label}</span>
+                  <span className="bar-track">
+                    <span className="bar-fill" style={{ inlineSize: `${Math.max(bar.pct, 3)}%` }} />
+                  </span>
+                  <span className="bar-value">{bar.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+
+        <article className="chart-card">
+          <h2>اعتمادات آخر ٦ أشهر</h2>
+          <div className="mini-bars" role="img" aria-label="اعتمادات الأشهر الستة الأخيرة">
+            {summary.trend.map((point, index) => (
+              <div className="mini-bar-col" key={index} title={`${point.label}: ${point.count}`}>
+                <span className="mini-bar-value">{point.count}</span>
+                <span className="mini-bar-track">
+                  <span
+                    className="mini-bar-fill"
+                    style={{ blockSize: `${point.count > 0 ? Math.max(point.pct, 6) : 2}%` }}
+                  />
+                </span>
+                <em className="mini-bar-label">{point.label}</em>
+              </div>
+            ))}
+          </div>
+        </article>
       </section>
 
       <section className="data-section">
@@ -101,18 +229,22 @@ export function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {policies.map((policy) => (
+              {summary.recent.map((policy) => (
                 <tr key={policy.id}>
                   <td>
                     <strong>{policy.title}</strong>
                     <span>{policyReference(policy) ?? "بدون رقم"}</span>
                   </td>
-                  <td><StatusBadge status={policy.status} /></td>
+                  <td>
+                    <StatusBadge status={policy.status} />
+                  </td>
                   <td>{formatDate(policy.updated_at)}</td>
-                  <td><Link to={`/app/policies/${policy.id}`}>فتح</Link></td>
+                  <td>
+                    <Link to={`/app/policies/${policy.id}`}>فتح</Link>
+                  </td>
                 </tr>
               ))}
-              {policies.length === 0 ? (
+              {summary.recent.length === 0 ? (
                 <tr>
                   <td colSpan={4}>لا توجد سياسات مسجلة حتى الآن.</td>
                 </tr>
