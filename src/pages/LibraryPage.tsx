@@ -89,7 +89,11 @@ export function LibraryPage() {
     setScanNotice(null);
     setScanProgress({ done: 0, total: targets.length });
 
-    let updated = 0;
+    const foundCodes = new Map<string, string>();
+    let noCode = 0;
+    let openFailed = 0;
+    let saveFailed = 0;
+
     for (const policy of targets) {
       try {
         const { data: files } = await supabase
@@ -105,27 +109,60 @@ export function LibraryPage() {
           "bucket_id" | "storage_path" | "file_name"
         >[] | null)?.[0];
 
-        if (file) {
+        if (!file) {
+          openFailed += 1;
+        } else {
           const buffer = await downloadPolicyFileBytes(file);
           const code = await extractPolicyCodeFromBuffer(buffer, file.file_name);
-          if (code) {
-            await setPolicyReference(policy.id, code);
-            updated += 1;
+          if (!code) {
+            noCode += 1;
+          } else {
+            foundCodes.set(policy.id, code);
+            // Persist so it survives a reload; ignore if the DB function is
+            // not installed — the in-memory result still organises the view.
+            try {
+              await setPolicyReference(policy.id, code);
+            } catch {
+              saveFailed += 1;
+            }
           }
         }
       } catch {
-        // Skip policies that cannot be read; keep scanning the rest.
+        openFailed += 1;
       }
       setScanProgress((prev) => ({ ...prev, done: prev.done + 1 }));
     }
 
-    await load({ silent: true });
+    // Apply detected codes to the current view so the library reorganises
+    // immediately, whether or not the save succeeded.
+    if (foundCodes.size > 0) {
+      setPolicies((current) =>
+        current.map((policy) =>
+          foundCodes.has(policy.id)
+            ? { ...policy, policy_number: foundCodes.get(policy.id) ?? policy.policy_number }
+            : policy,
+        ),
+      );
+    }
+
     setScanning(false);
-    setScanNotice(
-      updated > 0
-        ? `تم تصنيف ${updated} سياسة من أصل ${targets.length} بعد قراءة رموزها من الملفات.`
-        : "تعذّر استخراج رموز جديدة من ملفات السياسات غير المصنّفة.",
-    );
+
+    const parts: string[] = [];
+    if (foundCodes.size > 0) {
+      parts.push(`تم تصنيف ${foundCodes.size} سياسة`);
+    }
+    if (noCode > 0) {
+      parts.push(`${noCode} بدون رمز واضح داخل الملف`);
+    }
+    if (openFailed > 0) {
+      parts.push(`${openFailed} تعذّر فتح ملفها`);
+    }
+    let notice = parts.length > 0 ? parts.join(" · ") : "لم يتم العثور على سياسات للفحص.";
+    if (saveFailed > 0) {
+      notice +=
+        " — التصنيف ظاهر الآن لكنه لن يُحفظ بعد إعادة التحميل حتى يتم تفعيل الحفظ في قاعدة البيانات.";
+    }
+    setScanNotice(notice);
   }
 
   const searched = useMemo(() => {

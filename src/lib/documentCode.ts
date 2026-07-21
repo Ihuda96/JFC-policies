@@ -38,9 +38,16 @@ async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-// Read a single entry out of a ZIP archive (DOCX/XLSX are ZIP files) using
-// only native browser APIs.
-async function readZipEntry(buffer: ArrayBuffer, name: string): Promise<Uint8Array | null> {
+interface ZipEntry {
+  name: string;
+  method: number;
+  compressedSize: number;
+  localOffset: number;
+}
+
+// Enumerate the entries of a ZIP archive (DOCX/XLSX are ZIP files) from its
+// central directory, using only native browser APIs.
+function listZipEntries(buffer: ArrayBuffer): ZipEntry[] {
   const view = new DataView(buffer);
   const bytes = new Uint8Array(buffer);
 
@@ -52,11 +59,12 @@ async function readZipEntry(buffer: ArrayBuffer, name: string): Promise<Uint8Arr
     }
   }
   if (eocd < 0) {
-    return null;
+    return [];
   }
 
   const centralOffset = view.getUint32(eocd + 16, true);
   const entryCount = view.getUint16(eocd + 10, true);
+  const entries: ZipEntry[] = [];
 
   let pointer = centralOffset;
   for (let n = 0; n < entryCount; n++) {
@@ -70,33 +78,54 @@ async function readZipEntry(buffer: ArrayBuffer, name: string): Promise<Uint8Arr
     const extraLength = view.getUint16(pointer + 30, true);
     const commentLength = view.getUint16(pointer + 32, true);
     const localOffset = view.getUint32(pointer + 42, true);
-    const entryName = new TextDecoder().decode(
+    const name = new TextDecoder().decode(
       bytes.subarray(pointer + 46, pointer + 46 + nameLength),
     );
 
-    if (entryName === name) {
-      const localNameLength = view.getUint16(localOffset + 26, true);
-      const localExtraLength = view.getUint16(localOffset + 28, true);
-      const dataStart = localOffset + 30 + localNameLength + localExtraLength;
-      const compressed = bytes.subarray(dataStart, dataStart + compressedSize);
-      return method === 0 ? compressed : await inflateRaw(compressed);
-    }
-
+    entries.push({ name, method, compressedSize, localOffset });
     pointer += 46 + nameLength + extraLength + commentLength;
   }
 
-  return null;
+  return entries;
 }
 
+async function readEntry(buffer: ArrayBuffer, entry: ZipEntry): Promise<Uint8Array> {
+  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  const localNameLength = view.getUint16(entry.localOffset + 26, true);
+  const localExtraLength = view.getUint16(entry.localOffset + 28, true);
+  const dataStart = entry.localOffset + 30 + localNameLength + localExtraLength;
+  const compressed = bytes.subarray(dataStart, dataStart + entry.compressedSize);
+  return entry.method === 0 ? compressed : await inflateRaw(compressed);
+}
+
+// The policy code usually lives in the letterhead header table, which Word
+// stores in word/header*.xml — not word/document.xml — so scan every text part.
+const DOCX_TEXT_PART = /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/i;
+
 async function extractFromDocx(buffer: ArrayBuffer): Promise<string | null> {
-  const documentXml = await readZipEntry(buffer, "word/document.xml");
-  if (!documentXml) {
-    return null;
+  const entries = listZipEntries(buffer).filter((entry) => DOCX_TEXT_PART.test(entry.name));
+  // Headers first — the code is normally in the letterhead.
+  entries.sort((a, b) => {
+    const aHeader = a.name.includes("header") ? 0 : 1;
+    const bHeader = b.name.includes("header") ? 0 : 1;
+    return aHeader - bHeader;
+  });
+
+  for (const entry of entries) {
+    try {
+      const xml = new TextDecoder().decode(await readEntry(buffer, entry));
+      const text = xml.replace(/<[^>]+>/g, " ");
+      const code = extractCodeFromText(text);
+      if (code) {
+        return code;
+      }
+    } catch {
+      // Skip unreadable parts.
+    }
   }
 
-  const xml = new TextDecoder().decode(documentXml);
-  const text = xml.replace(/<[^>]+>/g, " ");
-  return extractCodeFromText(text);
+  return null;
 }
 
 // Best-effort scan of a PDF: search the raw bytes, then try inflating any
@@ -112,7 +141,7 @@ async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
   const marker = "stream";
   let index = raw.indexOf(marker);
   let attempts = 0;
-  while (index !== -1 && attempts < 200) {
+  while (index !== -1 && attempts < 400) {
     attempts += 1;
     let start = index + marker.length;
     if (bytes[start] === 0x0d) start += 1;
@@ -143,20 +172,26 @@ async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
   return null;
 }
 
-export async function extractPolicyCode(file: File): Promise<string | null> {
-  try {
-    const name = file.name.toLowerCase();
-    const buffer = await file.arrayBuffer();
-    if (name.endsWith(".docx")) {
-      return await extractFromDocx(buffer);
-    }
-    if (name.endsWith(".pdf")) {
-      return await extractFromPdf(buffer);
-    }
-  } catch {
-    // Extraction is best-effort; never block the caller on failure.
+async function extractFromBuffer(
+  buffer: ArrayBuffer,
+  fileName: string,
+): Promise<string | null> {
+  const name = fileName.toLowerCase();
+  if (name.endsWith(".docx")) {
+    return extractFromDocx(buffer);
+  }
+  if (name.endsWith(".pdf")) {
+    return extractFromPdf(buffer);
   }
   return null;
+}
+
+export async function extractPolicyCode(file: File): Promise<string | null> {
+  try {
+    return await extractFromBuffer(await file.arrayBuffer(), file.name);
+  } catch {
+    return null;
+  }
 }
 
 // Extract the code from an already-downloaded file (used to backfill existing
@@ -166,15 +201,8 @@ export async function extractPolicyCodeFromBuffer(
   fileName: string,
 ): Promise<string | null> {
   try {
-    const name = fileName.toLowerCase();
-    if (name.endsWith(".docx")) {
-      return await extractFromDocx(buffer);
-    }
-    if (name.endsWith(".pdf")) {
-      return await extractFromPdf(buffer);
-    }
+    return await extractFromBuffer(buffer, fileName);
   } catch {
-    // best-effort
+    return null;
   }
-  return null;
 }
