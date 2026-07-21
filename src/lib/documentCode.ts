@@ -253,8 +253,61 @@ async function pdfText(buffer: ArrayBuffer): Promise<string> {
   return combined;
 }
 
+// pdf.js decodes text through each font's ToUnicode map, so it recovers codes
+// from subset/encoded-font PDFs that raw literal scanning turns into gibberish.
+// It is loaded lazily so it never weighs down the initial page load.
+let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
+
+async function loadPdfjs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = (async () => {
+      const pdfjs = await import("pdfjs-dist");
+      try {
+        const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+        pdfjs.GlobalWorkerOptions.workerSrc = (worker as { default: string }).default;
+      } catch {
+        // Fall back to the default worker resolution.
+      }
+      return pdfjs;
+    })();
+  }
+  return pdfjsPromise;
+}
+
+async function pdfjsText(buffer: ArrayBuffer): Promise<string> {
+  try {
+    const pdfjs = await loadPdfjs();
+    const doc = await pdfjs.getDocument({
+      data: new Uint8Array(buffer.slice(0)),
+      isEvalSupported: false,
+      disableFontFace: true,
+    }).promise;
+
+    let text = "";
+    const pages = Math.min(doc.numPages, 6);
+    for (let p = 1; p <= pages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      text +=
+        content.items
+          .map((item) => ("str" in item ? item.str : ""))
+          .join(" ") + " ";
+      if (extractCodeFromText(text)) {
+        break;
+      }
+    }
+    await doc.destroy();
+    return text;
+  } catch {
+    return "";
+  }
+}
+
 async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
-  return extractCodeFromText(await pdfText(buffer));
+  return (
+    extractCodeFromText(await pdfjsText(buffer)) ??
+    extractCodeFromText(await pdfText(buffer))
+  );
 }
 
 async function extractFromBuffer(
@@ -303,10 +356,10 @@ export async function extractPolicyTextSample(
     if (name.endsWith(".docx")) {
       text = (await docxTextParts(buffer)).join(" ");
     } else if (name.endsWith(".pdf")) {
-      text = await pdfText(buffer);
+      text = (await pdfjsText(buffer)) || (await pdfText(buffer));
     }
     const collapsed = normalizeForCode(text).replace(/\s+/g, " ").trim();
-    return collapsed.slice(0, limit);
+    return `[${fileName}] ${collapsed}`.slice(0, limit + fileName.length + 3);
   } catch {
     return "";
   }
