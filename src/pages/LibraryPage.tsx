@@ -113,14 +113,16 @@ export function LibraryPage() {
     void load();
   }, [load]);
 
-  // Read the full code from the document of every unclassified policy and save
-  // it, so the whole library is organised in one pass.
-  async function scanLibrary() {
+  // Read the full code from the document and save it, organising the library in
+  // one pass. `rescanAll` re-reads every policy to correct codes stored earlier.
+  async function scanLibrary(rescanAll = false) {
     if (!supabase || scanning) {
       return;
     }
 
-    const targets = policies.filter((policy) => !policy.policy_number);
+    const targets = rescanAll
+      ? policies
+      : policies.filter((policy) => !policy.policy_number);
     if (targets.length === 0) {
       setScanNotice("جميع السياسات مصنّفة بالفعل.");
       return;
@@ -198,7 +200,11 @@ export function LibraryPage() {
 
     const parts: string[] = [];
     if (foundCodes.size > 0) {
-      parts.push(`تم تصنيف ${foundCodes.size} سياسة`);
+      parts.push(
+        rescanAll
+          ? `تمت قراءة رمز ${foundCodes.size} سياسة`
+          : `تم تصنيف ${foundCodes.size} سياسة`,
+      );
     }
     if (noCode > 0) {
       parts.push(`${noCode} بدون رمز واضح داخل الملف`);
@@ -326,13 +332,22 @@ export function LibraryPage() {
           <button
             type="button"
             className="secondary-button"
-            onClick={() => void scanLibrary()}
+            onClick={() => void scanLibrary(false)}
             disabled={scanning}
           >
             <RefreshCw aria-hidden="true" className={scanning ? "spin" : undefined} />
             {scanning
               ? `جاري الفحص… ${scanProgress.done}/${scanProgress.total}`
-              : "فحص وتصنيف الملفات"}
+              : "فحص غير المصنّفة"}
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => void scanLibrary(true)}
+            disabled={scanning}
+          >
+            <RefreshCw aria-hidden="true" className={scanning ? "spin" : undefined} />
+            إعادة فحص الكل وتصحيح الرموز
           </button>
           {hasResults ? (
             <button

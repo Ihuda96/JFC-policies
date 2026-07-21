@@ -47,7 +47,8 @@ begin
     raise exception 'not allowed to update this policy';
   end if;
 
-  if nullif(trim(coalesce(v_policy.policy_number, '')), '') is not null then
+  -- Overwrite is allowed so a rescan can correct a previously stored code.
+  if v_reference = coalesce(v_policy.policy_number, '') then
     return;
   end if;
 

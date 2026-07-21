@@ -125,22 +125,37 @@ function labeledFields(rawText: string): Record<string, string> {
   return fields;
 }
 
-// Read the full code out of the "Code:" field, joining a serial that Word
-// split across runs (e.g. "JFHC-HRD-HRO-APP-PP- 0 32" → JFHC-HRD-HRO-APP-PP-032).
+function joinCodeSegments(segments: string[]): string | null {
+  const segs = segments.filter(Boolean);
+  return segs.length >= 3 ? segs.join("-") : null;
+}
+
+// Read the full code out of the "Code:" field. Handles a serial Word split
+// across runs (e.g. "…PP- 0 32" → …-032) and the reversed order that RTL PDFs
+// produce (e.g. "030-PP-APP-HRO-HRD-JFHC" → JFHC-HRD-HRO-APP-PP-030).
 function codeFromField(value: string | undefined): string | null {
   if (!value) {
     return null;
   }
-  const cleaned = normalizeForCode(value).replace(/\s+/g, "");
-  const match = cleaned.match(/JFHC[-A-Z0-9]+/i);
-  if (!match) {
-    return null;
+  const cleaned = normalizeForCode(value).replace(/\s+/g, "").toUpperCase();
+
+  const normal = cleaned.match(/JFHC(?:-[A-Z0-9]{1,6}){2,6}/);
+  if (normal) {
+    const code = joinCodeSegments(normal[0].split("-"));
+    if (code) {
+      return code;
+    }
   }
-  const code = match[0]
-    .toUpperCase()
-    .replace(/-{2,}/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return code.split("-").filter(Boolean).length >= 3 ? code : null;
+
+  const reversed = cleaned.match(/(?:[A-Z0-9]{1,6}-){2,6}JFHC/);
+  if (reversed) {
+    const code = joinCodeSegments(reversed[0].split("-").reverse());
+    if (code) {
+      return code;
+    }
+  }
+
+  return null;
 }
 
 function dateFromField(value: string | undefined): string | null {
@@ -369,10 +384,8 @@ async function pdfjsText(buffer: ArrayBuffer): Promise<string> {
 }
 
 async function extractFromPdf(buffer: ArrayBuffer): Promise<string | null> {
-  return (
-    extractCodeFromText(await pdfjsText(buffer)) ??
-    extractCodeFromText(await pdfText(buffer))
-  );
+  const text = (await pdfjsText(buffer)) || (await pdfText(buffer));
+  return codeFromField(labeledFields(text)["code"]) ?? extractCodeFromText(text);
 }
 
 async function extractFromBuffer(
