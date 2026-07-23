@@ -329,8 +329,8 @@ export function LibraryPage() {
 
   return (
     <div className="page-stack">
-      <section className="page-hero compact">
-        <div>
+      <section className="dash-hero">
+        <div className="dash-hero-text">
           <p className="eyebrow">المكتبة المعتمدة</p>
           <h1>مكتبة السياسات</h1>
           <p>تظهر السياسات المعتمدة مرتبة حسب الإدارة المسؤولة ثم التصنيف الفرعي.</p>

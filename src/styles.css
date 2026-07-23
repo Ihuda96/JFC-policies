@@ -3126,3 +3126,132 @@ select,
   .exec-kpis .kpi-card:first-child .kpi-label { grid-area: label; }
   .exec-kpis .kpi-card:first-child .kpi-sub { grid-area: sub; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Library & My Policies — mobile premium pass
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Department filter chips: a single swipeable row on phones */
+@media (max-width: 640px) {
+  .library-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding-block: 2px;
+    /* bleed to the screen edges so the row reads as swipeable */
+    margin-inline: -16px;
+    padding-inline: 16px;
+    scrollbar-width: none;
+  }
+  .library-filters::-webkit-scrollbar {
+    display: none;
+  }
+  .dept-chip {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    min-height: 38px;
+  }
+
+  /* Scan / collapse toolbar: full-width, tidy stack */
+  .library-toolbar {
+    gap: 8px;
+  }
+  .library-toolbar > .secondary-button {
+    width: 100%;
+  }
+  .library-toolbar .text-button {
+    margin-inline-start: auto;
+  }
+  .library-scan-notice {
+    flex-basis: 100%;
+    font-size: 0.86rem;
+  }
+}
+
+/* Department group header: give it presence as a real section header */
+.library-department-head {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border-bottom: 0;
+  background: color-mix(in srgb, var(--blue-700) 5%, var(--white));
+  border: 1px solid var(--line);
+}
+.library-department-head > div svg:last-of-type {
+  color: var(--blue-700);
+}
+
+/* Library cards: tighten meta so it reads left-to-right, not centered */
+.library-card dl {
+  gap: 8px 22px;
+}
+.library-card > span {
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .library-departments {
+    gap: 20px;
+  }
+  .library-department {
+    gap: 14px;
+  }
+  .library-card {
+    padding: 16px;
+  }
+  .library-card h4 {
+    font-size: 1.02rem;
+    line-height: 1.35;
+  }
+}
+
+/* ── My Policies cards: cleaner mobile list rows ────────────── */
+@media (max-width: 640px) {
+  .policy-card {
+    gap: 14px;
+    padding: 16px;
+  }
+  .policy-card h2 {
+    font-size: 1.08rem;
+    line-height: 1.35;
+    margin: 8px 0 4px;
+  }
+  .policy-card dl {
+    gap: 6px 22px;
+  }
+  .policy-card .card-actions {
+    gap: 8px;
+  }
+  .policy-card .card-actions .secondary-button {
+    flex: 1;
+  }
+}
+
+/* Keep the department code chip intact (was breaking "HRD" → "HR/D") */
+.library-department-head code,
+.library-section-head code {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.library-department-head > div {
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.library-department-head h2 {
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .library-department-head {
+    align-items: flex-start;
+  }
+  .library-department-head h2 {
+    font-size: 1.12rem;
+  }
+  .library-department-head > span {
+    font-size: 0.82rem;
+    padding-top: 2px;
+  }
+}
