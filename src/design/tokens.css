@@ -1,13 +1,17 @@
 @font-face {
   font-family: "Janna LT";
-  src: url("/brand/JannaLT-Regular.ttf") format("truetype");
+  src:
+    url("/brand/JannaLT-Regular.woff2") format("woff2"),
+    url("/brand/JannaLT-Regular.ttf") format("truetype");
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
   font-family: "Janna LT";
-  src: url("/brand/Janna-LT-Bold.ttf") format("truetype");
+  src:
+    url("/brand/Janna-LT-Bold.woff2") format("woff2"),
+    url("/brand/Janna-LT-Bold.ttf") format("truetype");
   font-weight: 700;
   font-display: swap;
 }
@@ -199,8 +203,10 @@
   --jfc-feedback-info-bg: var(--jfc-status-info-bg);
   --jfc-feedback-info-fg: var(--jfc-status-info-fg);
 
-  --jfc-font-family-heading: "Janna LT", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
-  --jfc-font-family-body: "Janna LT", "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  --jfc-font-family-heading: "Janna LT", -apple-system, BlinkMacSystemFont, "SF Arabic",
+    "Segoe UI", "Noto Sans Arabic", Arial, sans-serif;
+  --jfc-font-family-body: "Janna LT", -apple-system, BlinkMacSystemFont, "SF Arabic",
+    "Segoe UI", "Noto Sans Arabic", Arial, sans-serif;
   --jfc-font-weight-regular: 400;
   --jfc-font-weight-bold: 700;
 
