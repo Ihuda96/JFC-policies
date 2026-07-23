@@ -2579,3 +2579,42 @@ body {
     height: 150px;
   }
 }
+
+/* ── Duplicate policy-number label ──────────────────────── */
+.card-number {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--red-600);
+  white-space: nowrap;
+}
+.dup-badge svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ── Bell header actions ────────────────────────────────── */
+.bell-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bell-header-actions button {
+  border: 0;
+  background: transparent;
+  color: var(--blue-700);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.82rem;
+}

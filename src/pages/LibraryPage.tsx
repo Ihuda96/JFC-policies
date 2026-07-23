@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Building2,
   ChevronDown,
   ChevronLeft,
@@ -45,8 +46,7 @@ export function LibraryPage() {
   const [editing, setEditing] = useState<Set<string>>(new Set());
   const { profile } = useAuth();
   const toast = useToast();
-  const canEditCodes =
-    profile?.role === "quality_manager" || profile?.role === "system_admin";
+  const canEditCodes = Boolean(profile);
 
   function startEditing(policy: PolicyBundle) {
     setCodeDrafts((current) => ({
@@ -85,7 +85,14 @@ export function LibraryPage() {
         return next;
       });
       stopEditing(policyId);
-      toast.success("تم حفظ رمز السياسة.");
+      const clashes = policies.some(
+        (policy) => policy.id !== policyId && policyReference(policy) === value,
+      );
+      if (clashes) {
+        toast.error("تم الحفظ، لكن هذا الرقم مكرر مع سياسة أخرى.");
+      } else {
+        toast.success("تم حفظ رمز السياسة.");
+      }
     } catch (err) {
       const message = readableWorkflowError(err);
       setScanNotice(message);
@@ -272,6 +279,20 @@ export function LibraryPage() {
   // while searching.
   const departments = useMemo(() => groupPoliciesByDepartment(policies), [policies]);
 
+  // Policy numbers shared by more than one approved policy — flagged as duplicates.
+  const duplicateRefs = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const policy of policies) {
+      const ref = policyReference(policy);
+      if (ref) {
+        counts.set(ref, (counts.get(ref) ?? 0) + 1);
+      }
+    }
+    return new Set(
+      [...counts.entries()].filter(([, count]) => count > 1).map(([ref]) => ref),
+    );
+  }, [policies]);
+
   const visibleDepartments = useMemo(() => {
     const groups = groupPoliciesByDepartment(searched);
     if (!selectedDepartment) {
@@ -454,7 +475,18 @@ export function LibraryPage() {
                                 <article className="library-card" key={policy.id}>
                                   <span>{section.label ?? department.label}</span>
                                   <h4>{policy.policy_metadata?.extracted_title ?? policy.title}</h4>
-                                  <p>{policyReference(policy) ?? "بدون رقم"}</p>
+                                  <p className="card-number">
+                                    <span>{policyReference(policy) ?? "بدون رقم"}</span>
+                                    {(() => {
+                                      const ref = policyReference(policy);
+                                      return ref && duplicateRefs.has(ref) ? (
+                                        <span className="dup-badge" title="هذا الرقم مستخدم في أكثر من سياسة">
+                                          <AlertTriangle aria-hidden="true" />
+                                          رقم مكرر
+                                        </span>
+                                      ) : null;
+                                    })()}
+                                  </p>
                                   <dl>
                                     <div>
                                       <dt>تاريخ الاعتماد</dt>
