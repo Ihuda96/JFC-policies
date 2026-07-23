@@ -102,8 +102,8 @@ export function WorkspacePage() {
 
   return (
     <div className="page-stack">
-      <section className="page-hero compact">
-        <div>
+      <section className="dash-hero">
+        <div className="dash-hero-text">
           <p className="eyebrow">السياسات قيد العمل</p>
           <h1>سياساتي</h1>
           <p>تعرض القائمة السياسات المتاحة لك حسب صلاحياتك.</p>

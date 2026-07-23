@@ -116,7 +116,7 @@ export function DocumentPreview({ file }: { file?: PolicyFile | null }) {
         </div>
       </div>
 
-      {loading ? <LoadingState label="جاري إنشاء رابط معاينة مؤقت..." /> : null}
+      {loading ? <LoadingState label="جاري إنشاء رابط معاينة مؤقت..." inline /> : null}
       {error ? <p className="inline-error">{error}</p> : null}
       {!loading && !error && isPdf && url ? (
         <iframe className="pdf-frame" src={url} title={file.file_name} />

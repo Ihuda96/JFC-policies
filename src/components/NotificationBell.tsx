@@ -63,7 +63,14 @@ export function NotificationBell() {
         {unreadCount > 0 ? <span className="bell-badge">{unreadCount}</span> : null}
       </button>
       {open ? (
-        <div className="bell-menu">
+        <>
+          <button
+            type="button"
+            className="sheet-backdrop"
+            aria-label="إغلاق"
+            onClick={() => setOpen(false)}
+          />
+          <div className="bell-menu">
           <header>
             <strong>الإشعارات</strong>
             <div className="bell-header-actions">
@@ -95,7 +102,8 @@ export function NotificationBell() {
               ))
             )}
           </div>
-        </div>
+          </div>
+        </>
       ) : null}
     </div>
   );

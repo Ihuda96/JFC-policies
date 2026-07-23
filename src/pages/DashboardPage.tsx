@@ -105,8 +105,8 @@ export function DashboardPage() {
 
   return (
     <div className="page-stack">
-      <section className="page-hero compact">
-        <div>
+      <section className="dash-hero">
+        <div className="dash-hero-text">
           <p className="eyebrow">{profile ? roleLabels[profile.role] : "مستخدم"}</p>
           <h1>
             {greeting()}
@@ -115,9 +115,9 @@ export function DashboardPage() {
           <p>{todayLabel}</p>
         </div>
         {profile?.role !== "system_admin" ? (
-          <Link className="primary-button" to="/app/upload">
+          <Link className="dash-hero-cta" to="/app/upload">
             <FilePlus2 aria-hidden="true" />
-            إضافة سياسة
+            <span>إضافة سياسة</span>
           </Link>
         ) : null}
       </section>
@@ -218,40 +218,26 @@ export function DashboardPage() {
           <h2>آخر النشاطات</h2>
           <Link to="/app/workspace">عرض الكل</Link>
         </div>
-        <div className="table-card">
-          <table>
-            <thead>
-              <tr>
-                <th>السياسة</th>
-                <th>الحالة</th>
-                <th>آخر تحديث</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {summary.recent.map((policy) => (
-                <tr key={policy.id}>
-                  <td>
+        {summary.recent.length === 0 ? (
+          <div className="activity-empty">لا توجد سياسات مسجلة حتى الآن.</div>
+        ) : (
+          <ul className="activity-list">
+            {summary.recent.map((policy) => (
+              <li key={policy.id}>
+                <Link to={`/app/policies/${policy.id}`} className="activity-row">
+                  <div className="activity-main">
                     <strong>{policy.title}</strong>
-                    <span>{policyReference(policy) ?? "بدون رقم"}</span>
-                  </td>
-                  <td>
-                    <StatusBadge status={policy.status} />
-                  </td>
-                  <td>{formatDate(policy.updated_at)}</td>
-                  <td>
-                    <Link to={`/app/policies/${policy.id}`}>فتح</Link>
-                  </td>
-                </tr>
-              ))}
-              {summary.recent.length === 0 ? (
-                <tr>
-                  <td colSpan={4}>لا توجد سياسات مسجلة حتى الآن.</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+                    <span className="activity-meta">
+                      {policyReference(policy) ?? "بدون رقم"} · {formatDate(policy.updated_at)}
+                    </span>
+                  </div>
+                  <StatusBadge status={policy.status} />
+                  <ArrowLeft className="activity-chevron" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

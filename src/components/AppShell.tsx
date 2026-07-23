@@ -35,6 +35,7 @@ export function AppShell() {
   const { actionCount } = useAppData();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,6 +46,14 @@ export function AppShell() {
     }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 8);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const role = profile?.role ?? "quality_staff";
@@ -102,7 +111,7 @@ export function AppShell() {
       </aside>
 
       <div className="main-shell">
-        <header className="topbar">
+        <header className={scrolled ? "topbar scrolled" : "topbar"}>
           <button className="icon-button mobile-only" onClick={() => setOpen(true)} aria-label="فتح القائمة">
             <Menu aria-hidden="true" />
           </button>
@@ -138,16 +147,24 @@ export function AppShell() {
                 </div>
               </button>
               {menuOpen ? (
-                <div className="account-menu">
-                  <NavLink to="/app/settings" onClick={() => setMenuOpen(false)}>
-                    <Settings aria-hidden="true" />
-                    الإعدادات
-                  </NavLink>
-                  <button type="button" onClick={() => void signOut()}>
-                    <LogOut aria-hidden="true" />
-                    تسجيل الخروج
-                  </button>
-                </div>
+                <>
+                  <button
+                    type="button"
+                    className="sheet-backdrop"
+                    aria-label="إغلاق"
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div className="account-menu">
+                    <NavLink to="/app/settings" onClick={() => setMenuOpen(false)}>
+                      <Settings aria-hidden="true" />
+                      الإعدادات
+                    </NavLink>
+                    <button type="button" onClick={() => void signOut()}>
+                      <LogOut aria-hidden="true" />
+                      تسجيل الخروج
+                    </button>
+                  </div>
+                </>
               ) : null}
             </div>
           </div>
