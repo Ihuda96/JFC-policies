@@ -356,11 +356,7 @@ export function PolicyDetailPage() {
     policy.status !== "archived" &&
     (profile?.role === "quality_manager" ||
       (policy.owner_id === profile?.id && ["draft", "returned_for_revision"].includes(policy.status)));
-  const canSetCode =
-    !policy.policy_number &&
-    (profile?.role === "quality_manager" ||
-      profile?.role === "system_admin" ||
-      policy.owner_id === profile?.id);
+  const canSetCode = !policy.policy_number && Boolean(profile);
   const originalIsPdf = Boolean(originalFile?.file_name.toLowerCase().endsWith(".pdf"));
 
   return (

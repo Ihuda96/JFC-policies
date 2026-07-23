@@ -1,7 +1,9 @@
+import { CheckCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
+import { useToast } from "../components/Toast";
 import { formatDate } from "../lib/format";
 import { markNotificationRead, readableWorkflowError } from "../lib/policyWorkflow";
 import { isSetupError, supabase } from "../lib/supabase";
@@ -12,6 +14,8 @@ export function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [markingAll, setMarkingAll] = useState(false);
+  const toast = useToast();
 
   async function load() {
     if (!supabase) {
@@ -49,6 +53,27 @@ export function NotificationsPage() {
     }
   }
 
+  async function markAllRead() {
+    const unread = items.filter((item) => !item.read_at);
+    if (unread.length === 0 || markingAll) {
+      return;
+    }
+
+    setMarkingAll(true);
+    setError(null);
+    try {
+      await Promise.all(unread.map((item) => markNotificationRead(item.id)));
+      await load();
+      toast.success("تم تعليم جميع الإشعارات كمقروءة.");
+    } catch (err) {
+      const message = readableWorkflowError(err);
+      setError(message);
+      toast.error(message);
+    } finally {
+      setMarkingAll(false);
+    }
+  }
+
   if (setupError) {
     return <SetupRequired message={setupError} />;
   }
@@ -65,6 +90,17 @@ export function NotificationsPage() {
           <h1>الإشعارات</h1>
           <p>كل إشعار مرتبط بإجراء مباشر أو سياسة محددة.</p>
         </div>
+        {items.some((item) => !item.read_at) ? (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => void markAllRead()}
+            disabled={markingAll}
+          >
+            <CheckCheck aria-hidden="true" />
+            {markingAll ? "جارٍ التعليم..." : "تعليم الكل كمقروء"}
+          </button>
+        ) : null}
       </section>
       {error ? <p className="inline-error">{error}</p> : null}
       <div className="cards-list">

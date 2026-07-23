@@ -37,16 +37,7 @@ begin
     raise exception 'policy not found';
   end if;
 
-  -- Owners, the assigned manager, quality managers and system admins may set
-  -- the reference, and only when it is not already filled.
-  if not (
-    public.current_app_role() in ('quality_manager', 'system_admin')
-    or v_policy.owner_id = v_actor
-    or v_policy.assigned_manager_id = v_actor
-  ) then
-    raise exception 'not allowed to update this policy';
-  end if;
-
+  -- Any active employee may set or correct the policy code/number.
   -- Overwrite is allowed so a rescan can correct a previously stored code.
   if v_reference = coalesce(v_policy.policy_number, '') then
     return;

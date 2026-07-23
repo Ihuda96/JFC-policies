@@ -123,7 +123,6 @@ export function AppShell() {
             >
               <Search aria-hidden="true" />
               <span>بحث سريع</span>
-              <kbd>Ctrl K</kbd>
             </button>
             <NotificationBell />
             <div className="account-chip" ref={menuRef}>

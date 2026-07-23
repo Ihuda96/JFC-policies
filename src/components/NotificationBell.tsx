@@ -38,6 +38,19 @@ export function NotificationBell() {
     }
   }
 
+  async function markAllRead() {
+    const unread = notifications.filter((item) => !item.read_at);
+    if (unread.length === 0) {
+      return;
+    }
+    try {
+      await Promise.all(unread.map((item) => markNotificationRead(item.id)));
+      await refresh();
+    } catch {
+      // ignore
+    }
+  }
+
   return (
     <div className="bell" ref={ref}>
       <button
@@ -53,9 +66,16 @@ export function NotificationBell() {
         <div className="bell-menu">
           <header>
             <strong>الإشعارات</strong>
-            <button type="button" onClick={() => { setOpen(false); navigate("/app/notifications"); }}>
-              عرض الكل
-            </button>
+            <div className="bell-header-actions">
+              {unreadCount > 0 ? (
+                <button type="button" onClick={() => void markAllRead()}>
+                  تعليم الكل كمقروء
+                </button>
+              ) : null}
+              <button type="button" onClick={() => { setOpen(false); navigate("/app/notifications"); }}>
+                عرض الكل
+              </button>
+            </div>
           </header>
           <div className="bell-list">
             {notifications.length === 0 ? (
