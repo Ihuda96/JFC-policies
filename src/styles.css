@@ -3358,3 +3358,86 @@ select,
     font-size: 1.4rem;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Super-admin "full access" chip — luxury shiny purple, shown only
+   for the designated super account.
+   ═══════════════════════════════════════════════════════════════ */
+.super-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(120deg, #6d28d9 0%, #9333ea 35%, #c084fc 52%, #9333ea 68%, #6d28d9 100%);
+  background-size: 220% 100%;
+  box-shadow:
+    0 4px 14px -4px rgba(124, 58, 237, 0.65),
+    0 1px 2px rgba(76, 29, 149, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 2px rgba(76, 29, 149, 0.45);
+  animation: super-sheen 6s ease-in-out infinite;
+}
+.super-chip svg {
+  width: 13px;
+  height: 13px;
+  filter: drop-shadow(0 1px 1px rgba(76, 29, 149, 0.6));
+}
+/* Moving glare sweep */
+.super-chip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 48%,
+    rgba(255, 255, 255, 0.15) 55%,
+    transparent 62%
+  );
+  transform: translateX(-130%);
+  animation: super-glare 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes super-sheen {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes super-glare {
+  0% { transform: translateX(-130%); }
+  55%, 100% { transform: translateX(230%); }
+}
+
+/* Glossy purple ring on the avatar for the super account */
+.avatar.avatar-super {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #fff;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 4px #9333ea,
+    0 6px 16px -6px rgba(124, 58, 237, 0.7);
+}
+
+/* Chip row inside the account bottom-sheet / dropdown */
+.account-menu-super {
+  display: flex;
+  justify-content: center;
+  padding: 8px 6px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .super-chip { animation: none; }
+  .super-chip::after { animation: none; opacity: 0; }
+}
