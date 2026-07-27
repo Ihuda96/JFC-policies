@@ -78,6 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: effectiveRole as AppRole,
         };
       }
+      // A designated platform super admin (email allowlist or super-admin
+      // claim) holds every capability at once, not just system_admin.
+      const { data: superFlag } = await supabase.rpc("is_platform_superadmin");
+      nextProfile = {
+        ...nextProfile,
+        is_super_admin: superFlag === true || isPlatformSuperAdminMetadata(appMetadata),
+      };
     }
     setProfile(nextProfile);
   }, []);

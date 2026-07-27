@@ -208,6 +208,7 @@ export function buildExecutiveSummary(
   policies: PolicyBundle[],
   profileId: string | undefined,
   role: AppRole | undefined,
+  canManage = false,
 ): ExecutiveSummary {
   const now = Date.now();
   const soon = now + 90 * 24 * 60 * 60 * 1000;
@@ -307,7 +308,7 @@ export function buildExecutiveSummary(
 
   // Role-aware action items
   const actions: DashAction[] = [];
-  if (role === "quality_manager" && pending > 0) {
+  if ((role === "quality_manager" || canManage) && pending > 0) {
     actions.push({ key: "approvals", title: "بانتظار اعتمادك", count: pending, to: "/app/approvals" });
   }
   const mineReturned = policies.filter(

@@ -15,6 +15,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { buildExecutiveSummary } from "../lib/analytics";
 import { policyReference } from "../lib/departments";
+import { canAuthorPolicies, canManageQuality } from "../lib/permissions";
 import { formatDate, roleLabels } from "../lib/format";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { PolicyBundle } from "../lib/types";
@@ -70,7 +71,7 @@ export function DashboardPage() {
   }, []);
 
   const summary = useMemo(
-    () => buildExecutiveSummary(policies, profile?.id, profile?.role),
+    () => buildExecutiveSummary(policies, profile?.id, profile?.role, canManageQuality(profile)),
     [policies, profile],
   );
 
@@ -114,7 +115,7 @@ export function DashboardPage() {
           </h1>
           <p>{todayLabel}</p>
         </div>
-        {profile?.role !== "system_admin" ? (
+        {canAuthorPolicies(profile) ? (
           <Link className="dash-hero-cta" to="/app/upload">
             <FilePlus2 aria-hidden="true" />
             <span>إضافة سياسة</span>

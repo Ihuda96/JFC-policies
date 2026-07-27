@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { policyReference } from "../lib/departments";
+import { isSuperAdmin } from "../lib/permissions";
 import { supabase } from "../lib/supabase";
 import type { AppRole, Policy } from "../lib/types";
 
@@ -79,12 +80,13 @@ export function CommandPalette() {
   }, [open, loaded]);
 
   const role = profile?.role ?? "quality_staff";
+  const superAdmin = isSuperAdmin(profile);
   const navResults = useMemo(
     () =>
-      NAV_COMMANDS.filter((command) => !command.roles || command.roles.includes(role)).filter(
-        (command) => command.label.includes(query.trim()),
-      ),
-    [query, role],
+      NAV_COMMANDS.filter(
+        (command) => !command.roles || superAdmin || command.roles.includes(role),
+      ).filter((command) => command.label.includes(query.trim())),
+    [query, role, superAdmin],
   );
 
   const policyResults = useMemo(() => {
