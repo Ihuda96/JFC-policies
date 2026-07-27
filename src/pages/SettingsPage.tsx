@@ -3,6 +3,7 @@ import { Save, ShieldPlus } from "lucide-react";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
 import { useAuth } from "../context/AuthContext";
+import { canAdminister } from "../lib/permissions";
 import { errorMessage, isSetupError, supabase } from "../lib/supabase";
 
 interface AppSetting {
@@ -32,7 +33,7 @@ function formText(form: FormData, key: string) {
 
 export function SettingsPage() {
   const { profile } = useAuth();
-  const isSystemAdmin = profile?.role === "system_admin";
+  const isSystemAdmin = canAdminister(profile);
   const [settings, setSettings] = useState<AppSetting[]>([]);
   const [adminOverrides, setAdminOverrides] = useState<SystemAdminOverride[]>([]);
   const [loading, setLoading] = useState(true);

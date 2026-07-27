@@ -27,6 +27,7 @@ import {
   uploadRevision,
 } from "../lib/policyWorkflow";
 import { policyReference } from "../lib/departments";
+import { canManageQuality } from "../lib/permissions";
 import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
@@ -347,14 +348,14 @@ export function PolicyDetailPage() {
   }
 
   const canManagerAct =
-    profile?.role === "quality_manager" &&
+    canManageQuality(profile) &&
     ["pending_approval", "resubmitted"].includes(policy.status);
   const canOwnerRevise =
     policy.owner_id === profile?.id &&
     ["draft", "returned_for_revision"].includes(policy.status);
   const canArchive =
     policy.status !== "archived" &&
-    (profile?.role === "quality_manager" ||
+    (canManageQuality(profile) ||
       (policy.owner_id === profile?.id && ["draft", "returned_for_revision"].includes(policy.status)));
   const canSetCode = !policy.policy_number && Boolean(profile);
   const originalIsPdf = Boolean(originalFile?.file_name.toLowerCase().endsWith(".pdf"));

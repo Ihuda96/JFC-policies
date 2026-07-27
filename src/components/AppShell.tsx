@@ -20,6 +20,7 @@ import { useAppData } from "../context/AppDataContext";
 import { CommandPalette } from "./CommandPalette";
 import { NotificationBell } from "./NotificationBell";
 import { initials, roleLabels } from "../lib/format";
+import { canAdminister, canAuthorPolicies, canManageQuality } from "../lib/permissions";
 import type { AppRole } from "../lib/types";
 
 type NavItem = {
@@ -60,7 +61,9 @@ export function AppShell() {
 
   const baseItems: NavItem[] = [
     { to: "/app", label: "الرئيسية", icon: LayoutDashboard },
-    { to: "/app/upload", label: "إضافة سياسة", icon: FilePlus2, roles: ["quality_staff", "quality_manager"] },
+    ...(canAuthorPolicies(profile)
+      ? [{ to: "/app/upload", label: "إضافة سياسة", icon: FilePlus2 } as NavItem]
+      : []),
     { to: "/app/actions", label: "ما يحتاج إجراء", icon: ListChecks, badge: actionCount },
     { to: "/app/workspace", label: "سياساتي", icon: FileText },
     { to: "/app/library", label: "المكتبة", icon: BookOpen },
@@ -76,9 +79,9 @@ export function AppShell() {
 
   const navItems = [
     ...baseItems,
-    ...(role === "quality_manager" ? managerItems : []),
-    ...(role === "system_admin" ? adminItems : []),
-  ].filter((item) => !item.roles || item.roles.includes(role));
+    ...(canManageQuality(profile) ? managerItems : []),
+    ...(canAdminister(profile) ? adminItems : []),
+  ];
 
   return (
     <div className="app-layout">

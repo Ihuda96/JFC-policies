@@ -8,6 +8,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../lib/format";
 import { policyReference } from "../lib/departments";
+import { canManageQuality } from "../lib/permissions";
 import { archivePolicy, readableWorkflowError } from "../lib/policyWorkflow";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
@@ -55,7 +56,7 @@ export function WorkspacePage() {
       return false;
     }
 
-    if (profile?.role === "quality_manager") {
+    if (canManageQuality(profile)) {
       return true;
     }
 

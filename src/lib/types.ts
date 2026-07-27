@@ -39,6 +39,9 @@ export interface Profile {
   phone: string | null;
   created_at: string;
   updated_at: string;
+  /** Designated platform super admin (email allowlist / super-admin claim):
+   *  holds every capability — quality employee, manager, and system admin. */
+  is_super_admin?: boolean;
 }
 
 export interface Policy {
