@@ -19,8 +19,9 @@ import { useAuth } from "../context/AuthContext";
 import { useAppData } from "../context/AppDataContext";
 import { CommandPalette } from "./CommandPalette";
 import { NotificationBell } from "./NotificationBell";
+import { SuperAdminChip } from "./SuperAdminChip";
 import { initials, roleLabels } from "../lib/format";
-import { canAdminister, canAuthorPolicies, canManageQuality } from "../lib/permissions";
+import { canAdminister, canAuthorPolicies, canManageQuality, isSuperAdmin } from "../lib/permissions";
 import type { AppRole } from "../lib/types";
 
 type NavItem = {
@@ -58,6 +59,7 @@ export function AppShell() {
   }, []);
 
   const role = profile?.role ?? "quality_staff";
+  const superAdmin = isSuperAdmin(profile);
 
   const baseItems: NavItem[] = [
     { to: "/app", label: "الرئيسية", icon: LayoutDashboard },
@@ -143,10 +145,12 @@ export function AppShell() {
                 className="account-trigger"
                 onClick={() => setMenuOpen((value) => !value)}
               >
-                <span className="avatar">{initials(profile?.full_name)}</span>
+                <span className={superAdmin ? "avatar avatar-super" : "avatar"}>
+                  {initials(profile?.full_name)}
+                </span>
                 <div>
                   <strong>{profile?.full_name ?? profile?.email ?? "مستخدم"}</strong>
-                  <span>{roleLabels[role]}</span>
+                  {superAdmin ? <SuperAdminChip /> : <span>{roleLabels[role]}</span>}
                 </div>
               </button>
               {menuOpen ? (
@@ -158,6 +162,11 @@ export function AppShell() {
                     onClick={() => setMenuOpen(false)}
                   />
                   <div className="account-menu">
+                    {superAdmin ? (
+                      <div className="account-menu-super">
+                        <SuperAdminChip />
+                      </div>
+                    ) : null}
                     <NavLink to="/app/settings" onClick={() => setMenuOpen(false)}>
                       <Settings aria-hidden="true" />
                       الإعدادات
