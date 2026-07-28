@@ -37,7 +37,7 @@ export function formatDate(value?: string | null) {
     return "غير محدد";
   }
 
-  return new Intl.DateTimeFormat("ar-SA", {
+  return new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
     dateStyle: "medium",
     timeStyle: value.includes("T") ? "short" : undefined,
   }).format(new Date(value));
