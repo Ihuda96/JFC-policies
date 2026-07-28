@@ -27,7 +27,7 @@ import {
   uploadRevision,
 } from "../lib/policyWorkflow";
 import { policyReference } from "../lib/departments";
-import { canManageQuality } from "../lib/permissions";
+import { canManageQuality, canReviewPolicies } from "../lib/permissions";
 import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
@@ -348,7 +348,7 @@ export function PolicyDetailPage() {
   }
 
   const canManagerAct =
-    canManageQuality(profile) &&
+    canReviewPolicies(profile) &&
     ["pending_approval", "resubmitted"].includes(policy.status);
   const canOwnerRevise =
     policy.owner_id === profile?.id &&

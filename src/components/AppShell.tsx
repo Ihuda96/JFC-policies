@@ -21,7 +21,13 @@ import { CommandPalette } from "./CommandPalette";
 import { NotificationBell } from "./NotificationBell";
 import { SuperAdminChip } from "./SuperAdminChip";
 import { initials, roleLabels } from "../lib/format";
-import { canAdminister, canAuthorPolicies, canManageQuality, isSuperAdmin } from "../lib/permissions";
+import {
+  canAdminister,
+  canAuthorPolicies,
+  canManageQuality,
+  canReviewPolicies,
+  isSuperAdmin,
+} from "../lib/permissions";
 import type { AppRole } from "../lib/types";
 
 type NavItem = {
@@ -70,8 +76,10 @@ export function AppShell() {
     { to: "/app/workspace", label: "سياساتي", icon: FileText },
     { to: "/app/library", label: "المكتبة", icon: BookOpen },
   ];
-  const managerItems: NavItem[] = [
+  const reviewItems: NavItem[] = [
     { to: "/app/approvals", label: "طلبات الاعتماد", icon: ClipboardCheck },
+  ];
+  const managerItems: NavItem[] = [
     { to: "/app/reports", label: "التقارير", icon: ScrollText },
   ];
   const adminItems: NavItem[] = [
@@ -81,6 +89,7 @@ export function AppShell() {
 
   const navItems = [
     ...baseItems,
+    ...(canReviewPolicies(profile) ? reviewItems : []),
     ...(canManageQuality(profile) ? managerItems : []),
     ...(canAdminister(profile) ? adminItems : []),
   ];

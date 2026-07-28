@@ -1,4 +1,9 @@
-export type AppRole = "quality_staff" | "quality_manager" | "system_admin";
+export type AppRole =
+  | "quality_staff"
+  | "quality_manager"
+  | "system_admin"
+  | "department_staff"
+  | "ceo";
 
 export type ProfileStatus = "pending" | "active" | "disabled";
 
@@ -35,8 +40,12 @@ export interface Profile {
   role: AppRole;
   status: ProfileStatus;
   department: string | null;
+  /** Structured department code (e.g. HRD) used for access checks. */
+  department_code?: string | null;
   job_title: string | null;
   phone: string | null;
+  /** Set when an administrator issued the password and it must be replaced. */
+  must_change_password?: boolean;
   created_at: string;
   updated_at: string;
   /** Designated platform super admin (email allowlist / super-admin claim):
@@ -62,6 +71,9 @@ export interface Policy {
   approved_at: string | null;
   next_review_at: string | null;
   archived_at: string | null;
+  /** Set when the executive office gives the final approval. */
+  final_approved_at?: string | null;
+  final_approved_by?: string | null;
   profiles?: Pick<Profile, "full_name" | "email"> | null;
 }
 

@@ -129,6 +129,9 @@ export function LoginPage() {
         <button className="text-button" onClick={() => setMode(mode === "login" ? "reset" : "login")}>
           {mode === "login" ? "نسيت كلمة المرور؟" : "العودة لتسجيل الدخول"}
         </button>
+        <p className="login-alt">
+          موظف إدارة ولا تملك حسابًا؟ <Link to="/register">سجّل الآن</Link>
+        </p>
       </section>
     </main>
   );

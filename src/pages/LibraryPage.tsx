@@ -473,7 +473,14 @@ export function LibraryPage() {
                             <div className="library-grid">
                               {section.policies.map((policy) => (
                                 <article className="library-card" key={policy.id}>
-                                  <span>{section.label ?? department.label}</span>
+                                  <div className="library-card-top">
+                                    <span>{section.label ?? department.label}</span>
+                                    {policy.final_approved_at ? (
+                                      <span className="final-seal" title="اعتماد نهائي من المكتب التنفيذي">
+                                        معتمدة نهائيًا
+                                      </span>
+                                    ) : null}
+                                  </div>
                                   <h4>{policy.policy_metadata?.extracted_title ?? policy.title}</h4>
                                   <p className="card-number">
                                     <span>{policyReference(policy) ?? "بدون رقم"}</span>

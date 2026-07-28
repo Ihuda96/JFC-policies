@@ -4,6 +4,8 @@ export const roleLabels: Record<AppRole, string> = {
   quality_staff: "موظف جودة",
   quality_manager: "مدير جودة",
   system_admin: "مدير نظام",
+  department_staff: "موظف إدارة",
+  ceo: "الرئيس التنفيذي",
 };
 
 export const profileStatusLabels: Record<ProfileStatus, string> = {

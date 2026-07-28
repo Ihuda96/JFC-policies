@@ -49,5 +49,10 @@ export function ProtectedRoute() {
     );
   }
 
+  // The executive office has its own portal.
+  if (profile.role === "ceo") {
+    return <Navigate to="/executive" replace />;
+  }
+
   return <Outlet />;
 }
