@@ -3919,104 +3919,702 @@ select,
 }
 
 
+
 /* ═══════════════════════════════════════════════════════════════
-   Executive office — light, JFC-branded, single continuous page.
-   Reuses dash-hero / kpi-card / chart-card / bar-list / mini-bars /
-   activity-list / policy-card exactly as the rest of the app so the
-   identity is one system, not a separate theme.
+   Executive page — "Ministerial Green & Brass" design system,
+   applied exactly as specified for this page only. Tokens, component
+   anatomy, and the brass-rule / seal signature motif are taken
+   directly from the supplied system; everything is scoped under
+   .exec-portal so no other page is touched.
    ═══════════════════════════════════════════════════════════════ */
+.exec-portal {
+  /* — Palette — */
+  --ink: #16211d;
+  --pine: #17423a;
+  --pine-deep: #0f2e28;
+  --porcelain: #fafaf6;
+  --mist: #edf1ec;
+  --slate: #59665f;
+  --line: #dde3dd;
+  --champagne: #b08d57;
+  --champagne-soft: #d9c29a;
+  /* Text-safe brass: the source token (#B08D57) is 2.95:1 on porcelain,
+     below WCAG AA even at large sizes. Used only for non-text hairlines,
+     borders and rings below; this darker step carries brass-colored TEXT
+     (eyebrows, the emphasized KPI value) at 5.7:1. */
+  --champagne-text: #7d5e33;
+  --success: #3e7c5a;
+  --warning: #b0803a;
+  --danger: #9e4b41;
+  --info: #3e6478;
+
+  /* — Spacing: 8pt base — */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 128px;
+
+  /* — Radius — */
+  --r-sm: 2px; --r-md: 6px; --r-lg: 12px; --r-pill: 999px;
+
+  /* — Elevation: ink-tinted, never pure black — */
+  --e-1: 0 1px 2px rgba(22, 33, 29, 0.05);
+  --e-2: 0 6px 18px rgba(22, 33, 29, 0.06);
+  --e-3: 0 16px 40px rgba(22, 33, 29, 0.08);
+
+  /* — Motion — */
+  --ease-authority: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --d-1: 120ms; --d-2: 200ms; --d-3: 320ms; --d-4: 520ms; --d-5: 720ms;
+  --reveal-shift: 12px;
+
+  min-height: 100vh;
+  background: var(--porcelain);
+  color: var(--ink);
+  line-height: 1.8;
+  font-variant-numeric: tabular-nums;
+}
+.exec-portal * {
+  letter-spacing: 0 !important;
+}
 .exec-portal-loading {
   display: grid;
   place-items: center;
-  min-height: 100vh;
 }
 
-.exec-inline-search {
-  flex: 0 1 320px;
-  min-height: 40px;
-  padding: 0 12px;
+/* ── Type roles ──────────────────────────────────────────────── */
+.exec-portal .display-l,
+.exec-portal h1,
+.exec-portal h2,
+.exec-portal h3 {
+  font-weight: 400;
+  color: var(--ink);
 }
-.exec-inline-search input {
-  font-size: 0.92rem;
-}
-
-.exec-review-dept {
-  display: block;
-  color: var(--blue-700);
+.exec-portal h2,
+.exec-portal h3 {
   font-weight: 700;
+}
+.exec-portal .display-l {
+  font-size: 3.375rem;
+  line-height: 1.18;
+  margin-block: var(--s-4) var(--s-5);
+}
+.exec-portal h1 {
+  font-size: 2.5rem;
+  line-height: 1.25;
+}
+.exec-portal h2 {
+  font-size: 1.875rem;
+  line-height: 1.35;
+}
+.exec-portal h3 {
+  font-size: 1.375rem;
+  line-height: 1.3;
+}
+.exec-portal .lede {
+  color: var(--slate);
+  font-size: 1.125rem;
+  max-inline-size: 46ch;
+}
+.exec-portal .caption {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--slate);
+}
+.exec-portal .muted {
+  color: var(--slate);
+}
+.exec-portal .eyebrow {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--champagne-text);
+  display: inline-block;
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.exec-portal .wrap {
+  max-inline-size: 1120px;
+  margin-inline: auto;
+  padding-inline: var(--s-5);
+}
+.exec-portal .band {
+  padding-block: var(--s-8);
+  border-block-end: 1px solid var(--line);
+}
+.exec-portal .band:last-of-type {
+  border-block-end: none;
+}
+.exec-portal .section-head {
+  margin-block-end: var(--s-6);
+  max-inline-size: 60ch;
+}
+.exec-portal .section-head h2 {
+  margin-block-start: var(--s-3);
+}
+.exec-portal .grid {
+  display: grid;
+  gap: var(--s-5);
+}
+.exec-portal .grid-2 { grid-template-columns: repeat(2, 1fr); }
+.exec-portal .grid-3 { grid-template-columns: repeat(3, 1fr); }
+.exec-portal .demo-row {
+  display: flex;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* The recurring mark of the office — a brass hairline that draws itself */
+.exec-portal .brass-rule {
+  block-size: 1px;
+  background: var(--champagne);
+  inline-size: 100%;
+  transform: scaleX(0);
+  transition: transform var(--d-4) var(--ease-authority);
+}
+html[dir="rtl"] .exec-portal .brass-rule { transform-origin: right center; }
+html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
+.exec-portal .brass-rule.in { transform: scaleX(1); }
+
+/* ── Top bar + monogram lockup ──────────────────────────────── */
+.exec-portal .topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--porcelain) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  border-block-end: 1px solid var(--line);
+}
+.exec-portal .topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  padding-block: var(--s-4);
+}
+.exec-portal .lockup {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.exec-portal .seal {
+  inline-size: 40px;
+  block-size: 40px;
+  flex: none;
+  border: 1px solid var(--champagne);
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  color: var(--pine);
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: var(--porcelain);
+}
+.exec-portal .lockup-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.exec-portal .lockup-text .primary {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--pine);
+}
+.exec-portal .lockup-text .secondary {
+  font-size: 0.7rem;
+  color: var(--slate);
+}
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.exec-portal .hero {
+  padding-block: var(--s-9) var(--s-8);
+  position: relative;
+  overflow: hidden;
+}
+.exec-portal .hero-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: var(--s-8);
+  align-items: center;
+}
+.exec-portal .hero .brass-rule {
+  margin-block-start: var(--s-6);
+  max-inline-size: 220px;
+}
+.exec-portal .hero-cta {
+  margin-block-start: var(--s-6);
+}
+
+/* Ambient seal panel — quiet, geometric, no gradient cliché */
+.exec-portal .hero-seal {
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(120% 120% at 100% 0%, var(--mist), transparent 60%),
+    var(--porcelain);
+  display: grid;
+  place-items: center;
+  position: relative;
+  box-shadow: var(--e-2);
+}
+.exec-portal .hero-seal .ring {
+  position: absolute;
+  inset: var(--s-6);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.exec-portal .hero-seal .ring.inner {
+  inset: calc(var(--s-6) + 22px);
+  border-color: var(--champagne);
+  opacity: 0.5;
+}
+.exec-portal .hero-seal .glyph {
+  font-size: 3.4rem;
+  color: var(--pine);
+  font-weight: 600;
+  z-index: 1;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.exec-portal .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding-inline: var(--s-5);
+  padding-block: var(--s-3);
+  border-radius: var(--r-md);
+  font-size: 0.92rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background var(--d-2) var(--ease-standard),
+    transform var(--d-2) var(--ease-authority), border-color var(--d-2), color var(--d-2);
+}
+.exec-portal .btn:active {
+  transform: translateY(1px);
+}
+.exec-portal .btn-primary {
+  background: var(--pine);
+  color: var(--porcelain);
+}
+.exec-portal .btn-primary:hover {
+  background: var(--pine-deep);
+  transform: translateY(-1px);
+}
+.exec-portal .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.exec-portal .btn-secondary {
+  border-color: var(--line);
+  color: var(--ink);
+  background: var(--porcelain);
+}
+.exec-portal .btn-secondary:hover {
+  border-color: var(--champagne);
+  transform: translateY(-1px);
+}
+.exec-portal .btn-quiet {
+  color: var(--slate);
+  padding-inline: var(--s-2);
+  position: relative;
+}
+.exec-portal .btn-quiet::after {
+  content: "";
+  position: absolute;
+  inset-block-end: var(--s-1);
+  inset-inline-start: var(--s-2);
+  inline-size: calc(100% - var(--s-4));
+  block-size: 1px;
+  background: var(--champagne);
+  transform: scaleX(0);
+  transition: transform var(--d-3) var(--ease-authority);
+}
+html[dir="rtl"] .exec-portal .btn-quiet::after { transform-origin: right; }
+html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
+.exec-portal .btn-quiet:hover {
+  color: var(--ink);
+}
+.exec-portal .btn-quiet:hover::after {
+  transform: scaleX(1);
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.exec-portal .card {
+  background: var(--mist);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+  box-shadow: var(--e-1);
+  transition: box-shadow var(--d-3) var(--ease-authority), transform var(--d-3) var(--ease-authority);
+}
+.exec-portal .card:hover {
+  box-shadow: var(--e-2);
+  transform: translateY(-2px);
+}
+.exec-portal .card h3 {
+  margin-block-end: var(--s-2);
+}
+.exec-portal .card p {
+  color: var(--slate);
+}
+
+/* ── KPI / Stat block ────────────────────────────────────────── */
+.exec-portal .kpi {
+  background: var(--porcelain);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+}
+.exec-portal .kpi .eyebrow {
+  margin-block-end: var(--s-3);
+}
+.exec-portal .kpi .value {
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--ink);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.exec-portal .kpi .value.brass {
+  color: var(--champagne-text);
+}
+
+/* ── Data table ──────────────────────────────────────────────── */
+.exec-portal .table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.exec-portal table.data {
+  inline-size: 100%;
+  min-inline-size: 0;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.exec-portal table.data thead th {
+  position: sticky;
+  inset-block-start: 0;
+  background: var(--pine);
+  color: var(--porcelain);
+  font-weight: 500;
+  text-align: start;
+  padding: var(--s-3) var(--s-4);
   font-size: 0.82rem;
 }
+.exec-portal table.data td {
+  padding: var(--s-3) var(--s-4);
+  border-block-start: 1px solid var(--line);
+}
+.exec-portal table.data tbody tr {
+  transition: background var(--d-2);
+}
+.exec-portal table.data tbody tr:hover {
+  background: var(--mist);
+}
+.exec-portal table.data .num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  inline-size: 1%;
+  white-space: nowrap;
+}
 
-.exec-return-inline {
-  grid-column: 1 / -1;
-  display: grid;
-  gap: 10px;
-  padding-top: 4px;
+/* ── Forms ───────────────────────────────────────────────────── */
+.exec-portal .field {
+  margin-block-end: var(--s-5);
 }
-.exec-return-inline textarea {
-  width: 100%;
+.exec-portal .field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-block-end: var(--s-2);
 }
-.exec-return-inline .danger-button {
-  justify-self: start;
-}
-
-.exec-activity-row {
-  width: 100%;
+.exec-portal .input,
+.exec-portal .textarea {
+  inline-size: 100%;
+  background: var(--porcelain);
   border: 1px solid var(--line);
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  text-align: start;
+  border-radius: var(--r-md);
+  padding-inline: var(--s-4);
+  padding-block: var(--s-3);
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-family: inherit;
+  transition: border-color var(--d-2), box-shadow var(--d-2);
+}
+.exec-portal .input:focus,
+.exec-portal .textarea:focus {
+  outline: none;
+  border-color: var(--champagne);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--champagne) 25%, transparent);
+}
+.exec-portal .textarea {
+  min-block-size: 96px;
+  resize: vertical;
 }
 
-/* ── The approval moment — a brand-teal seal, not a modal wall ──── */
-.exec-seal-stage {
+/* ── Status pills — muted, dot-prefixed, never candy-bright ──── */
+.exec-portal .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding-inline: var(--s-3);
+  padding-block: 4px;
+  border-radius: var(--r-pill);
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid;
+}
+.exec-portal .pill::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+/* Text colors below are darkened from the source tokens where the
+   original failed WCAG AA at pill scale (success 4.40:1, warning
+   3.01:1); tints/borders are unchanged. */
+.exec-portal .pill.success {
+  color: #2f6146;
+  border-color: color-mix(in srgb, var(--success) 35%, var(--line));
+  background: color-mix(in srgb, var(--success) 8%, var(--porcelain));
+}
+.exec-portal .pill.warning {
+  color: #8a5416;
+  border-color: color-mix(in srgb, var(--warning) 35%, var(--line));
+  background: color-mix(in srgb, var(--warning) 8%, var(--porcelain));
+}
+.exec-portal .pill.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+  background: color-mix(in srgb, var(--danger) 8%, var(--porcelain));
+}
+.exec-portal .pill.info {
+  color: var(--info);
+  border-color: color-mix(in srgb, var(--info) 35%, var(--line));
+  background: color-mix(in srgb, var(--info) 8%, var(--porcelain));
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.exec-portal .empty {
+  text-align: center;
+  padding: var(--s-8);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-lg);
+  background: var(--porcelain);
+}
+.exec-portal .empty .mark {
+  inline-size: 48px;
+  block-size: 48px;
+  margin-inline: auto;
+  margin-block-end: var(--s-4);
+  border: 1px solid var(--champagne);
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  color: var(--champagne-text);
+}
+.exec-portal .empty h3 {
+  margin-block-end: var(--s-2);
+}
+.exec-portal .empty p {
+  color: var(--slate);
+  max-inline-size: 40ch;
+  margin-inline: auto;
+}
+
+/* ── Trend bars (composed from tokens; magnitude-over-time reads
+     better as bars than as the doc's table component) ──────────── */
+.exec-portal .trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-3);
+  block-size: 150px;
+}
+.exec-portal .trend-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  block-size: 100%;
+}
+.exec-portal .trend-value {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.exec-portal .trend-track {
+  display: flex;
+  align-items: flex-end;
+  flex: 1;
+  inline-size: 100%;
+  border-radius: var(--r-sm);
+  background: var(--mist);
+  overflow: hidden;
+}
+.exec-portal .trend-fill {
+  display: block;
+  inline-size: 100%;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  background: var(--pine);
+  transition: block-size var(--d-4) var(--ease-authority);
+}
+.exec-portal .trend-label {
+  color: var(--slate);
+  font-size: 0.74rem;
+  font-style: normal;
+}
+
+/* ── Sticky action dock ──────────────────────────────────────── */
+.exec-portal .dock {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  padding: var(--s-4) var(--s-5);
+  padding-block-end: calc(var(--s-4) + env(safe-area-inset-bottom));
+  background: var(--pine-deep);
+  color: var(--porcelain);
+  box-shadow: var(--e-3);
+}
+.exec-portal .dock span {
+  font-size: 0.9rem;
+  color: color-mix(in srgb, var(--porcelain) 82%, transparent);
+}
+.exec-portal .dock strong {
+  color: var(--porcelain);
+}
+.exec-portal .dock .btn-primary {
+  background: var(--champagne);
+  color: var(--pine-deep);
+}
+.exec-portal .dock .btn-primary:hover {
+  background: var(--champagne-soft);
+}
+
+/* ── The approval moment — the office seal, stamped ─────────── */
+.exec-portal .seal-stage {
   position: fixed;
   inset: 0;
   z-index: 90;
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 18px;
-  background: rgba(5, 34, 51, 0.5);
+  gap: var(--s-5);
+  background: rgba(22, 33, 29, 0.5);
   backdrop-filter: blur(4px);
-  animation: exec-stage-in 0.2s ease both;
+  animation: seal-stage-in var(--d-2) var(--ease-standard) both;
 }
-@keyframes exec-stage-in {
+@keyframes seal-stage-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.exec-seal-mark {
-  display: grid;
-  place-items: center;
-  width: 108px;
-  height: 108px;
-  border-radius: 999px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--teal-500, #2ea19c), var(--blue-700));
-  box-shadow: 0 0 0 8px rgba(46, 161, 156, 0.16), 0 18px 40px -16px rgba(11, 75, 108, 0.55);
-  animation: exec-stamp 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+.exec-portal .seal-stage-mark {
+  inline-size: 160px;
+  box-shadow: var(--e-3);
+  animation: seal-stamp var(--d-4) var(--ease-authority) both;
 }
-.exec-seal-mark svg {
-  width: 50px;
-  height: 50px;
-  stroke-width: 2.5;
+@keyframes seal-stamp {
+  from { opacity: 0; transform: scale(1.3); }
+  to { opacity: 1; transform: scale(1); }
 }
-@keyframes exec-stamp {
-  0% { opacity: 0; transform: scale(1.7) rotate(-10deg); }
-  60% { opacity: 1; }
-  100% { opacity: 1; transform: scale(1) rotate(0); }
-}
-.exec-seal-stage p {
+.exec-portal .seal-stage p {
   margin: 0;
-  padding: 8px 18px;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--blue-950);
-  font-size: 1.02rem;
-  font-weight: 800;
+  padding: var(--s-2) var(--s-5);
+  border-radius: var(--r-pill);
+  background: var(--porcelain);
+  color: var(--pine);
+  font-weight: 600;
 }
 
+/* ── Motion — reveal + stagger ───────────────────────────────── */
+.exec-portal .reveal {
+  opacity: 0;
+  transform: translateY(var(--reveal-shift));
+  transition: opacity var(--d-4) var(--ease-authority), transform var(--d-4) var(--ease-authority);
+}
+.exec-portal .reveal.in {
+  opacity: 1;
+  transform: none;
+}
+.exec-portal .stagger > * {
+  opacity: 0;
+  transform: translateY(var(--reveal-shift));
+  transition: opacity var(--d-4) var(--ease-authority), transform var(--d-4) var(--ease-authority);
+}
+.exec-portal .stagger.in > * {
+  opacity: 1;
+  transform: none;
+}
+.exec-portal .stagger.in > *:nth-child(1) { transition-delay: 0ms; }
+.exec-portal .stagger.in > *:nth-child(2) { transition-delay: 75ms; }
+.exec-portal .stagger.in > *:nth-child(3) { transition-delay: 150ms; }
+.exec-portal .stagger.in > *:nth-child(4) { transition-delay: 225ms; }
+.exec-portal .stagger.in > *:nth-child(5) { transition-delay: 300ms; }
+.exec-portal .stagger.in > *:nth-child(6) { transition-delay: 375ms; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .exec-portal .display-l { font-size: 2.5rem; }
+  .exec-portal .hero-grid { grid-template-columns: 1fr; }
+  .exec-portal .hero-seal { max-inline-size: 280px; margin-inline: auto; }
+  .exec-portal .grid-2,
+  .exec-portal .grid-3 { grid-template-columns: 1fr; }
+  .exec-portal .band { padding-block: var(--s-7); }
+}
+@media (max-width: 560px) {
+  .exec-portal .lockup-text .secondary { display: none; }
+  .exec-portal .dock { flex-direction: column; align-items: stretch; }
+  .exec-portal .dock .btn-primary { width: 100%; justify-content: center; }
+}
+
+/* ── Reduced motion: a plain ≤120ms cross-fade only ─────────── */
 @media (prefers-reduced-motion: reduce) {
-  .exec-seal-stage, .exec-seal-mark { animation: none; }
+  .exec-portal * { transition-duration: 120ms !important; animation: none !important; }
+  .exec-portal .reveal,
+  .exec-portal .stagger > * { transform: none !important; }
+  .exec-portal .brass-rule { transform: scaleX(1) !important; }
+  .exec-portal .btn:hover,
+  .exec-portal .card:hover { transform: none !important; }
+}
+
+/* ── Sign-in / set-password (same system) ───────────────────── */
+.exec-portal.auth-page {
+  display: grid;
+  place-items: center;
+  padding: var(--s-5);
+}
+.exec-portal .auth-card {
+  inline-size: min(400px, 100%);
+  padding: var(--s-8);
+  border-radius: var(--r-lg);
+  background: var(--porcelain);
+  border: 1px solid var(--line);
+  box-shadow: var(--e-2);
+  text-align: center;
+}
+.exec-portal .auth-card .seal {
+  margin-inline: auto;
+  margin-block-end: var(--s-4);
+}
+.exec-portal .auth-card h1 {
+  font-size: 1.5rem;
+  margin-block-end: var(--s-6);
+}
+.exec-portal .auth-card form {
+  display: grid;
+  text-align: start;
+}
+.exec-portal .auth-card .field:last-of-type {
+  margin-block-end: var(--s-6);
+}
+.exec-portal .auth-error {
+  margin: 0 0 var(--s-4);
+  color: var(--danger);
+  font-size: 0.86rem;
 }

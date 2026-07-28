@@ -1,6 +1,5 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { KeyRound, UserRound } from "lucide-react";
 import { hasSupabaseConfig } from "../../lib/config";
 import { errorMessage, supabase } from "../../lib/supabase";
 import { SetupRequired } from "../../components/SetupRequired";
@@ -48,41 +47,40 @@ export function ExecutiveLoginPage() {
   }
 
   return (
-    <main className="login-page">
-      <section className="login-card">
-        <img src="/brand/jfc-logo-stacked-white-alt.jpg" alt="تجمع جدة الصحي الأول" />
-        <p className="eyebrow">تجمع جدة الصحي الأول</p>
-        <h1>المكتب التنفيذي</h1>
+    <main className="exec-portal auth-page">
+      <section className="auth-card">
+        <span className="seal" aria-hidden="true">
+          ج١
+        </span>
+        <h1>مكتب الرئيس التنفيذي</h1>
         <form onSubmit={submit}>
-          <label>
-            <span>اسم المستخدم</span>
-            <div className="input-shell">
-              <UserRound aria-hidden="true" />
-              <input
-                dir="ltr"
-                type="text"
-                required
-                value={identifier}
-                onChange={(event) => setIdentifier(event.target.value)}
-                autoComplete="username"
-              />
-            </div>
-          </label>
-          <label>
-            <span>كلمة الدخول</span>
-            <div className="input-shell">
-              <KeyRound aria-hidden="true" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
-          </label>
-          {error ? <p className="inline-error">{error}</p> : null}
-          <button className="primary-button full" disabled={loading}>
+          <div className="field">
+            <label htmlFor="exec-username">اسم المستخدم</label>
+            <input
+              id="exec-username"
+              className="input"
+              dir="ltr"
+              type="text"
+              required
+              value={identifier}
+              onChange={(event) => setIdentifier(event.target.value)}
+              autoComplete="username"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="exec-password">كلمة الدخول</label>
+            <input
+              id="exec-password"
+              className="input"
+              type="password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+          {error ? <p className="auth-error">{error}</p> : null}
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ justifyContent: "center" }}>
             {loading ? "جاري الدخول..." : "دخول"}
           </button>
         </form>

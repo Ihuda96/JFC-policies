@@ -1,17 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import {
-  Building2,
-  Check,
-  CheckCheck,
-  CheckCircle2,
-  Clock,
-  FileText,
-  ListChecks,
-  LogOut,
-  Search,
-  Undo2,
-} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { classifyPolicy, policyReference } from "../../lib/departments";
 import { formatDate } from "../../lib/format";
@@ -19,9 +7,9 @@ import { isExecutive } from "../../lib/permissions";
 import { readableWorkflowError, signedFileUrl } from "../../lib/policyWorkflow";
 import { errorMessage, supabase } from "../../lib/supabase";
 import { useConfirm } from "../../components/ConfirmDialog";
-import { LoadingState } from "../../components/LoadingState";
 import { useToast } from "../../components/Toast";
 import { ExecutiveSetPassword } from "./ExecutiveSetPassword";
+import { useReveal } from "./useReveal";
 import type { PolicyBundle, PolicyFile } from "../../lib/types";
 
 function greeting() {
@@ -30,13 +18,6 @@ function greeting() {
   if (hour < 17) return "طاب يومك";
   return "مساء الخير";
 }
-
-const dateLabel = new Intl.DateTimeFormat("ar", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-}).format(new Date());
 
 const monthFmt = new Intl.DateTimeFormat("ar", { month: "short" });
 
@@ -56,6 +37,16 @@ export function ExecutivePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [approvingAll, setApprovingAll] = useState(false);
   const [sealing, setSealing] = useState(false);
+
+  const heroTextRef = useReveal<HTMLDivElement>();
+  const heroSealRef = useReveal<HTMLDivElement>();
+  const kpiRef = useReveal<HTMLDivElement>();
+  const queueHeadRef = useReveal<HTMLDivElement>();
+  const queueListRef = useReveal<HTMLDivElement>();
+  const chartsHeadRef = useReveal<HTMLDivElement>();
+  const chartsGridRef = useReveal<HTMLDivElement>();
+  const registerHeadRef = useReveal<HTMLDivElement>();
+  const registerRef = useReveal<HTMLDivElement>();
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -101,25 +92,20 @@ export function ExecutivePage() {
     );
   }, [pending, query]);
 
-  const recentFinal = useMemo(() => finalised.slice(0, 10), [finalised]);
+  const recentFinal = useMemo(() => finalised.slice(0, 8), [finalised]);
 
-  /** Top departments by approved-policy volume (browsing overview). */
-  const departmentBars = useMemo(() => {
+  const departmentRows = useMemo(() => {
     const counts = new Map<string, number>();
     for (const policy of policies) {
       const label = classifyPolicy(policy).departmentLabel;
       counts.set(label, (counts.get(label) ?? 0) + 1);
     }
-    const rows = [...counts.entries()]
-      .map(([label, count]) => ({ key: label, label, count }))
+    return [...counts.entries()]
+      .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 6);
-    const max = Math.max(1, ...rows.map((row) => row.count));
-    return rows.map((row) => ({ ...row, pct: pct(row.count, max) }));
   }, [policies]);
 
-  /** Final approvals per month, oldest to newest — matches the dashboard's
-   *  trend pattern so the two pages share one visual language. */
   const trend = useMemo(() => {
     const months: { label: string; count: number }[] = [];
     const index = new Map<string, number>();
@@ -144,9 +130,9 @@ export function ExecutivePage() {
     if (!supabase || pending.length === 0) return;
 
     const confirmed = await confirm({
-      title: "الاعتماد النهائي",
-      body: `سيتم اعتماد ${pending.length} سياسة دفعة واحدة ونشرها بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.`,
-      confirmLabel: "اعتماد الكل",
+      title: "اعتماد التقارير المعلّقة",
+      body: `سيُعتمد ${pending.length} من السياسات ويُتاح نشرها. لا يمكن التراجع عن هذا الإجراء دون مراجعة.`,
+      confirmLabel: "اعتماد",
     });
     if (!confirmed) return;
 
@@ -167,7 +153,7 @@ export function ExecutivePage() {
   async function returnWithNote(policy: PolicyBundle) {
     if (!supabase) return;
     if (note.trim().length === 0) {
-      toast.error("اكتب ملاحظتك قبل الإعادة.");
+      toast.error("اكتب ملاحظة قبل المتابعة.");
       return;
     }
     setBusy(policy.id);
@@ -177,7 +163,7 @@ export function ExecutivePage() {
         p_comment: note.trim(),
       });
       if (error) throw error;
-      toast.success("أُعيدت السياسة مع ملاحظاتك.");
+      toast.success("أُعيدت السياسة مع الملاحظات.");
       setNote("");
       setOpenId(null);
       await load();
@@ -206,7 +192,7 @@ export function ExecutivePage() {
 
   if (authLoading) {
     return (
-      <main className="exec-portal-loading">
+      <main className="exec-portal exec-portal-loading">
         <span className="spinner" aria-label="جاري التحميل" />
       </main>
     );
@@ -221,250 +207,305 @@ export function ExecutivePage() {
   return (
     <div className="exec-portal">
       {sealing ? (
-        <div className="exec-seal-stage" role="status" aria-live="polite">
-          <div className="exec-seal-mark">
-            <Check aria-hidden="true" />
+        <div className="seal-stage" role="status" aria-live="polite">
+          <div className="hero-seal seal-stage-mark" aria-hidden="true">
+            <div className="ring" />
+            <div className="ring inner" />
+            <div className="glyph">ج١</div>
           </div>
-          <p>تم الاعتماد النهائي</p>
+          <p>تم الاعتماد</p>
         </div>
       ) : null}
 
       <header className="topbar">
-        <div className="topbar-title">
-          <span>تجمع جدة الصحي الأول</span>
-          <strong>المكتب التنفيذي</strong>
+        <div className="wrap topbar-inner">
+          <div className="lockup">
+            <div className="seal" aria-hidden="true">
+              ج١
+            </div>
+            <div className="lockup-text">
+              <span className="primary">تجمع جدة الصحي الأول</span>
+              <span className="secondary">مكتب الرئيس التنفيذي</span>
+            </div>
+          </div>
+          <button type="button" className="btn btn-secondary" onClick={() => void signOut()}>
+            خروج
+          </button>
         </div>
-        <button type="button" className="secondary-button" onClick={() => void signOut()}>
-          <LogOut aria-hidden="true" />
-          خروج
-        </button>
       </header>
 
-      <main className="content-area">
-        <div className="page-stack">
-          <section className="dash-hero">
-            <div className="dash-hero-text">
-              <p className="eyebrow">
-                {greeting()}
-                {firstName ? `، ${firstName}` : ""}
-              </p>
-              <h1>{pending.length} سياسة بانتظار اعتمادك</h1>
-              <p>{dateLabel}</p>
-            </div>
+      <section className="hero">
+        <div className="wrap hero-grid">
+          <div className="reveal" ref={heroTextRef}>
+            <span className="eyebrow">
+              {greeting()}
+              {firstName ? `، ${firstName}` : ""}
+            </span>
+            <h1 className="display-l">{pending.length} سياسة بانتظار الاعتماد</h1>
+            <p className="lede">راجع الوثيقة وسياقها الكامل، ثم اعتمد.</p>
+            <div className="brass-rule" data-brass />
             {pending.length > 0 ? (
               <button
                 type="button"
-                className="dash-hero-cta"
+                className="btn btn-primary hero-cta"
                 disabled={approvingAll}
                 onClick={() => void approveAll()}
               >
-                <CheckCheck aria-hidden="true" />
-                <span>
-                  {approvingAll ? "جاري الاعتماد..." : `اعتماد الكل (${pending.length})`}
-                </span>
+                {approvingAll ? "جاري الاعتماد..." : `اعتماد الكل (${pending.length})`}
               </button>
             ) : null}
-          </section>
+          </div>
 
-          <section className="exec-kpis">
-            <article className="kpi-card">
-              <span className="kpi-icon">
-                <Clock aria-hidden="true" />
-              </span>
-              <strong className="kpi-value">{pending.length}</strong>
-              <span className="kpi-label">بانتظار اعتمادك</span>
-              <em className="kpi-sub">اجتازت مراجعة الجودة</em>
-            </article>
-            <article className="kpi-card">
-              <span className="kpi-icon">
-                <CheckCircle2 aria-hidden="true" />
-              </span>
-              <strong className="kpi-value">{finalised.length}</strong>
-              <span className="kpi-label">معتمدة نهائيًا</span>
-              <em className="kpi-sub">في المكتبة النهائية</em>
-            </article>
-            <article className="kpi-card">
-              <span className="kpi-icon">
-                <ListChecks aria-hidden="true" />
-              </span>
-              <strong className="kpi-value">{completion}٪</strong>
-              <span className="kpi-label">نسبة الإنجاز</span>
-              <em className="kpi-sub">
-                {finalised.length} من {policies.length} سياسة
-              </em>
-            </article>
-            <article className="kpi-card">
-              <span className="kpi-icon">
-                <Building2 aria-hidden="true" />
-              </span>
-              <strong className="kpi-value">{departmentBars.length}</strong>
-              <span className="kpi-label">إدارات نشطة</span>
-              <em className="kpi-sub">لديها سياسات معتمدة</em>
-            </article>
-          </section>
+          <div className="hero-seal reveal" aria-hidden="true" ref={heroSealRef}>
+            <div className="ring" />
+            <div className="ring inner" />
+            <div className="glyph">ج١</div>
+          </div>
+        </div>
+      </section>
 
-          <section className="exec-charts">
-            <article className="chart-card">
-              <h2>أكثر الإدارات إصدارًا للسياسات</h2>
-              {departmentBars.length === 0 ? (
-                <p className="chart-empty">لا توجد بيانات.</p>
-              ) : (
-                <div className="bar-list">
-                  {departmentBars.map((bar) => (
-                    <div className="bar-row" key={bar.key} title={`${bar.label}: ${bar.count}`}>
-                      <span className="bar-label">{bar.label}</span>
-                      <span className="bar-track">
-                        <span className="bar-fill" style={{ inlineSize: `${Math.max(bar.pct, 3)}%` }} />
-                      </span>
-                      <span className="bar-value">{bar.count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </article>
-
-            <article className="chart-card">
-              <h2>الاعتمادات النهائية · آخر ٦ أشهر</h2>
-              <div className="mini-bars" role="img" aria-label="الاعتمادات النهائية خلال الأشهر الستة الأخيرة">
-                {trend.map((point, index) => (
-                  <div className="mini-bar-col" key={index} title={`${point.label}: ${point.count}`}>
-                    <span className="mini-bar-value">{point.count}</span>
-                    <span className="mini-bar-track">
-                      <span
-                        className="mini-bar-fill"
-                        style={{ blockSize: `${point.count > 0 ? Math.max(point.pct, 6) : 2}%` }}
-                      />
-                    </span>
-                    <em className="mini-bar-label">{point.label}</em>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </section>
-
-          <section className="data-section">
-            <div className="section-title-row">
-              <h2>بانتظار اعتمادك</h2>
-              {pending.length > 3 ? (
-                <label className="search-box exec-inline-search">
-                  <Search aria-hidden="true" />
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="ابحث عن سياسة"
-                  />
-                </label>
-              ) : null}
+      <section className="band">
+        <div className="wrap">
+          <div className="grid grid-3 stagger" ref={kpiRef}>
+            <div className="kpi">
+              <span className="eyebrow">بانتظار الاعتماد</span>
+              <div className="value brass">{pending.length}</div>
             </div>
+            <div className="kpi">
+              <span className="eyebrow">مُعتمد</span>
+              <div className="value">{finalised.length}</div>
+            </div>
+            <div className="kpi">
+              <span className="eyebrow">نسبة الإنجاز</span>
+              <div className="value">{completion}٪</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {loading ? (
-              <LoadingState label="جاري تحميل السياسات..." inline />
-            ) : visiblePending.length === 0 ? (
-              <p className="chart-empty">
-                {pending.length === 0 ? "لا شيء ينتظر اعتمادك حاليًا." : "لا توجد نتائج مطابقة."}
+      <section className="band">
+        <div className="wrap">
+          <div className="section-head reveal" ref={queueHeadRef}>
+            <span className="eyebrow">بانتظار الاعتماد</span>
+            <h2>السياسات</h2>
+            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+            {pending.length > 3 ? (
+              <div className="field" style={{ marginBlockStart: "var(--s-5)", maxInlineSize: "360px" }}>
+                <input
+                  className="input"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="ابحث عن سياسة"
+                />
+              </div>
+            ) : null}
+          </div>
+
+          {loading ? (
+            <p className="muted">جاري التحميل...</p>
+          ) : visiblePending.length === 0 ? (
+            <div className="empty">
+              <div className="mark" aria-hidden="true">
+                ✓
+              </div>
+              <h3>{pending.length === 0 ? "لا شيء بانتظار الاعتماد" : "لا توجد نتائج"}</h3>
+              <p>
+                {pending.length === 0
+                  ? "جميع السياسات معتمدة."
+                  : "جرّب كلمات بحث مختلفة."}
               </p>
-            ) : (
-              <div className="cards-list">
-                {visiblePending.map((policy) => {
-                  const classification = classifyPolicy(policy);
-                  const isOpen = openId === policy.id;
-                  return (
-                    <article className="policy-card exec-review-card" key={policy.id}>
+            </div>
+          ) : (
+            <div className="grid" ref={queueListRef}>
+              {visiblePending.map((policy) => {
+                const classification = classifyPolicy(policy);
+                const isOpen = openId === policy.id;
+                return (
+                  <article className="card" key={policy.id}>
+                    <div className="demo-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div>
-                        <span className="exec-review-dept">{classification.departmentLabel}</span>
-                        <h2>{policy.title}</h2>
-                        <p>{policyReference(policy) ?? "بدون رقم"}</p>
+                        <span className="pill warning">قيد المراجعة</span>
+                        <h3 style={{ marginBlockStart: "var(--s-3)" }}>{policy.title}</h3>
+                        <p className="caption" dir="ltr" style={{ textAlign: "start" }}>
+                          {policyReference(policy) ?? "—"}
+                        </p>
                       </div>
-                      <dl>
-                        <div>
-                          <dt>اعتماد الجودة</dt>
-                          <dd>{formatDate(policy.approved_at)}</dd>
-                        </div>
-                        <div>
-                          <dt>المراجعة القادمة</dt>
-                          <dd>{formatDate(policy.next_review_at)}</dd>
-                        </div>
-                      </dl>
-                      <div className="card-actions">
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => void openDocument(policy)}
-                        >
-                          <FileText aria-hidden="true" />
-                          عرض الوثيقة
-                        </button>
-                        <button
-                          type="button"
-                          className="text-button"
-                          onClick={() => {
-                            setOpenId(isOpen ? null : policy.id);
-                            setNote("");
-                          }}
-                        >
-                          <Undo2 aria-hidden="true" />
-                          {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
-                        </button>
+                      <span className="caption">{classification.departmentLabel}</span>
+                    </div>
+
+                    <div className="demo-row" style={{ marginBlockStart: "var(--s-5)", gap: "var(--s-7)" }}>
+                      <div>
+                        <p className="caption">اعتماد الجودة</p>
+                        <p>{formatDate(policy.approved_at)}</p>
                       </div>
-                      {isOpen ? (
-                        <div className="exec-return-inline">
+                      <div>
+                        <p className="caption">المراجعة القادمة</p>
+                        <p>{formatDate(policy.next_review_at)}</p>
+                      </div>
+                    </div>
+
+                    <div className="demo-row" style={{ marginBlockStart: "var(--s-6)" }}>
+                      <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
+                        عرض الوثيقة
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-quiet"
+                        onClick={() => {
+                          setOpenId(isOpen ? null : policy.id);
+                          setNote("");
+                        }}
+                      >
+                        {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
+                      </button>
+                    </div>
+
+                    {isOpen ? (
+                      <div style={{ marginBlockStart: "var(--s-5)" }}>
+                        <div className="field">
                           <textarea
+                            className="textarea"
                             value={note}
                             onChange={(event) => setNote(event.target.value)}
                             placeholder="سبب الإعادة"
-                            rows={3}
                           />
-                          <button
-                            type="button"
-                            className="danger-button"
-                            disabled={busy === policy.id}
-                            onClick={() => void returnWithNote(policy)}
-                          >
-                            تأكيد الإعادة
-                          </button>
                         </div>
-                      ) : null}
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <section className="data-section">
-            <div className="section-title-row">
-              <h2>آخر المعتمدة نهائيًا</h2>
-            </div>
-            {recentFinal.length === 0 ? (
-              <div className="activity-empty">لا توجد سياسات معتمدة نهائيًا بعد.</div>
-            ) : (
-              <ul className="activity-list">
-                {recentFinal.map((policy) => (
-                  <li key={policy.id}>
-                    <button
-                      type="button"
-                      className="activity-row exec-activity-row"
-                      onClick={() => void openDocument(policy)}
-                    >
-                      <div className="activity-main">
-                        <strong>{policy.title}</strong>
-                        <span className="activity-meta">
-                          {policyReference(policy) ?? "بدون رقم"} ·{" "}
-                          {formatDate(policy.final_approved_at)}
-                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          disabled={busy === policy.id}
+                          onClick={() => void returnWithNote(policy)}
+                        >
+                          تأكيد الإعادة
+                        </button>
                       </div>
-                      <span className="final-seal">
-                        <Check aria-hidden="true" />
-                        معتمدة نهائيًا
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </main>
+      </section>
+
+      <section className="band">
+        <div className="wrap">
+          <div className="section-head reveal" ref={chartsHeadRef}>
+            <span className="eyebrow">المؤشرات</span>
+            <h2>الإدارات والاعتماد</h2>
+            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+          </div>
+
+          <div className="grid grid-2 stagger" ref={chartsGridRef}>
+            <div className="table-scroll">
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>الإدارة</th>
+                    <th className="num">السياسات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {departmentRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={2}>لا توجد بيانات.</td>
+                    </tr>
+                  ) : (
+                    departmentRows.map((row) => (
+                      <tr key={row.label}>
+                        <td>{row.label}</td>
+                        <td className="num">{row.count}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="card">
+              <h3 style={{ marginBlockEnd: "var(--s-5)" }}>الاعتماد النهائي · ٦ أشهر</h3>
+              <div className="trend-bars" role="img" aria-label="الاعتماد النهائي خلال الأشهر الستة الأخيرة">
+                {trend.map((point, index) => (
+                  <div className="trend-col" key={index} title={`${point.label}: ${point.count}`}>
+                    <span className="trend-value">{point.count}</span>
+                    <span className="trend-track">
+                      <span
+                        className="trend-fill"
+                        style={{ blockSize: `${point.count > 0 ? Math.max(point.pct, 6) : 2}%` }}
+                      />
+                    </span>
+                    <em className="trend-label">{point.label}</em>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="band">
+        <div className="wrap">
+          <div className="section-head reveal" ref={registerHeadRef}>
+            <span className="eyebrow">السجل</span>
+            <h2>آخر الاعتمادات</h2>
+            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+          </div>
+
+          {recentFinal.length === 0 ? (
+            <div className="empty">
+              <h3>لا يوجد سجل بعد</h3>
+              <p>تظهر السياسات هنا فور اعتمادها.</p>
+            </div>
+          ) : (
+            <div className="table-scroll reveal" ref={registerRef}>
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>السياسة</th>
+                    <th>الرمز</th>
+                    <th>تاريخ الاعتماد</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentFinal.map((policy) => (
+                    <tr
+                      key={policy.id}
+                      onClick={() => void openDocument(policy)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>{policy.title}</td>
+                      <td dir="ltr" style={{ textAlign: "start" }}>
+                        {policyReference(policy) ?? "—"}
+                      </td>
+                      <td>{formatDate(policy.final_approved_at)}</td>
+                      <td>
+                        <span className="pill success">مُعتمد</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {pending.length > 0 ? (
+        <div className="dock">
+          <span>
+            <strong>{pending.length}</strong> سياسة بانتظار الاعتماد
+          </span>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={approvingAll}
+            onClick={() => void approveAll()}
+          >
+            {approvingAll ? "جاري الاعتماد..." : "اعتماد الكل"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
