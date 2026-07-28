@@ -43,18 +43,14 @@ export function ExecutiveSetPassword() {
   }
 
   return (
-    <main className="exec-portal exec-login">
-      <div className="exec-login-frame">
-        <div className="exec-login-brand">
-          <span className="exec-rule" />
-          <p>المكتب التنفيذي</p>
-          <h1>اختر كلمة الدخول</h1>
-        </div>
-
-        <form className="exec-login-form" onSubmit={submit}>
+    <main className="login-page">
+      <section className="login-card">
+        <p className="eyebrow">المكتب التنفيذي</p>
+        <h1>اختر كلمة الدخول</h1>
+        <form onSubmit={submit}>
           <label>
             <span>كلمة الدخول الجديدة</span>
-            <div className="exec-field">
+            <div className="input-shell">
               <KeyRound aria-hidden="true" />
               <input
                 type="password"
@@ -67,7 +63,7 @@ export function ExecutiveSetPassword() {
           </label>
           <label>
             <span>تأكيد كلمة الدخول</span>
-            <div className="exec-field">
+            <div className="input-shell">
               <KeyRound aria-hidden="true" />
               <input
                 type="password"
@@ -78,12 +74,12 @@ export function ExecutiveSetPassword() {
               />
             </div>
           </label>
-          {error ? <p className="exec-error">{error}</p> : null}
-          <button className="exec-button" disabled={loading}>
+          {error ? <p className="inline-error">{error}</p> : null}
+          <button className="primary-button full" disabled={loading}>
             {loading ? "جاري الحفظ..." : "حفظ ومتابعة"}
           </button>
         </form>
-      </div>
+      </section>
     </main>
   );
 }

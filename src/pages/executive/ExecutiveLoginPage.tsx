@@ -48,19 +48,15 @@ export function ExecutiveLoginPage() {
   }
 
   return (
-    <main className="exec-portal exec-login">
-      <div className="exec-login-frame">
-        <div className="exec-login-brand">
-          <img src="/brand/jfc-logo-stacked-white-alt.jpg" alt="تجمع جدة الصحي الأول" />
-          <span className="exec-rule" />
-          <p>تجمع جدة الصحي الأول</p>
-          <h1>المكتب التنفيذي</h1>
-        </div>
-
-        <form className="exec-login-form" onSubmit={submit}>
+    <main className="login-page">
+      <section className="login-card">
+        <img src="/brand/jfc-logo-stacked-white-alt.jpg" alt="تجمع جدة الصحي الأول" />
+        <p className="eyebrow">تجمع جدة الصحي الأول</p>
+        <h1>المكتب التنفيذي</h1>
+        <form onSubmit={submit}>
           <label>
             <span>اسم المستخدم</span>
-            <div className="exec-field">
+            <div className="input-shell">
               <UserRound aria-hidden="true" />
               <input
                 dir="ltr"
@@ -74,7 +70,7 @@ export function ExecutiveLoginPage() {
           </label>
           <label>
             <span>كلمة الدخول</span>
-            <div className="exec-field">
+            <div className="input-shell">
               <KeyRound aria-hidden="true" />
               <input
                 type="password"
@@ -85,12 +81,12 @@ export function ExecutiveLoginPage() {
               />
             </div>
           </label>
-          {error ? <p className="exec-error">{error}</p> : null}
-          <button className="exec-button" disabled={loading}>
+          {error ? <p className="inline-error">{error}</p> : null}
+          <button className="primary-button full" disabled={loading}>
             {loading ? "جاري الدخول..." : "دخول"}
           </button>
         </form>
-      </div>
+      </section>
     </main>
   );
 }
