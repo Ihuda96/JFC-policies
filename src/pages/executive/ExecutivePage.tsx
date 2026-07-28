@@ -4,12 +4,10 @@ import {
   Building2,
   Check,
   CheckCheck,
-  CheckCircle2,
-  Clock,
   FileText,
-  ListChecks,
   LogOut,
   Search,
+  ShieldCheck,
   Undo2,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -39,9 +37,22 @@ const dateLabel = new Intl.DateTimeFormat("ar", {
 }).format(new Date());
 
 const monthFmt = new Intl.DateTimeFormat("ar", { month: "short" });
+const arabicIndicNumeral = new Intl.NumberFormat("ar-SA");
+
+function sectionNumeral(n: number) {
+  return arabicIndicNumeral.format(n).padStart(2, "٠");
+}
 
 function pct(count: number, max: number) {
   return max > 0 ? Math.round((count / max) * 100) : 0;
+}
+
+function daysSince(iso: string | null) {
+  if (!iso) return null;
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return null;
+  const days = Math.max(0, Math.floor((Date.now() - then) / (24 * 60 * 60 * 1000)));
+  return days;
 }
 
 export function ExecutivePage() {
@@ -101,9 +112,16 @@ export function ExecutivePage() {
     );
   }, [pending, query]);
 
-  const recentFinal = useMemo(() => finalised.slice(0, 10), [finalised]);
+  const recentFinal = useMemo(() => finalised.slice(0, 8), [finalised]);
 
-  /** Top departments by approved-policy volume (browsing overview). */
+  const departmentsActive = useMemo(() => {
+    const set = new Set<string>();
+    for (const policy of policies) {
+      set.add(classifyPolicy(policy).departmentLabel);
+    }
+    return set.size;
+  }, [policies]);
+
   const departmentBars = useMemo(() => {
     const counts = new Map<string, number>();
     for (const policy of policies) {
@@ -118,8 +136,6 @@ export function ExecutivePage() {
     return rows.map((row) => ({ ...row, pct: pct(row.count, max) }));
   }, [policies]);
 
-  /** Final approvals per month, oldest to newest — matches the dashboard's
-   *  trend pattern so the two pages share one visual language. */
   const trend = useMemo(() => {
     const months: { label: string; count: number }[] = [];
     const index = new Map<string, number>();
@@ -145,7 +161,7 @@ export function ExecutivePage() {
 
     const confirmed = await confirm({
       title: "الاعتماد النهائي",
-      body: `سيتم اعتماد ${pending.length} سياسة دفعة واحدة ونشرها بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.`,
+      body: `سيتم اعتماد ${pending.length} سياسة بشكل نهائي ونشرها في المكتبة الرسمية. لا يمكن التراجع عن هذا القرار.`,
       confirmLabel: "اعتماد الكل",
     });
     if (!confirmed) return;
@@ -167,7 +183,7 @@ export function ExecutivePage() {
   async function returnWithNote(policy: PolicyBundle) {
     if (!supabase) return;
     if (note.trim().length === 0) {
-      toast.error("اكتب ملاحظتك قبل الإعادة.");
+      toast.error("اكتب سبب الإعادة قبل المتابعة.");
       return;
     }
     setBusy(policy.id);
@@ -177,7 +193,7 @@ export function ExecutivePage() {
         p_comment: note.trim(),
       });
       if (error) throw error;
-      toast.success("أُعيدت السياسة مع ملاحظاتك.");
+      toast.success("أُعيدت السياسة للمراجعة مع ملاحظاتك.");
       setNote("");
       setOpenId(null);
       await load();
@@ -206,7 +222,7 @@ export function ExecutivePage() {
 
   if (authLoading) {
     return (
-      <main className="exec-portal-loading">
+      <main className="exec-portal exec-portal-loading">
         <span className="spinner" aria-label="جاري التحميل" />
       </main>
     );
@@ -221,250 +237,283 @@ export function ExecutivePage() {
   return (
     <div className="exec-portal">
       {sealing ? (
-        <div className="exec-seal-stage" role="status" aria-live="polite">
-          <div className="exec-seal-mark">
+        <div className="gov-seal-stage" role="status" aria-live="polite">
+          <div className="gov-seal-mark">
             <Check aria-hidden="true" />
           </div>
-          <p>تم الاعتماد النهائي</p>
+          <p>تم تسجيل الاعتماد النهائي</p>
         </div>
       ) : null}
 
-      <header className="topbar">
-        <div className="topbar-title">
-          <span>تجمع جدة الصحي الأول</span>
-          <strong>المكتب التنفيذي</strong>
+      <header className="gov-topbar">
+        <div className="gov-topbar-brand">
+          <span className="gov-mark">JF</span>
+          <div>
+            <strong>الحوكمة التنفيذية</strong>
+            <span>تجمع جدة الصحي الأول · جلسة آمنة</span>
+          </div>
         </div>
-        <button type="button" className="secondary-button" onClick={() => void signOut()}>
+        <button type="button" className="gov-btn" onClick={() => void signOut()}>
           <LogOut aria-hidden="true" />
           خروج
         </button>
       </header>
 
-      <main className="content-area">
-        <div className="page-stack">
-          <section className="dash-hero">
-            <div className="dash-hero-text">
-              <p className="eyebrow">
-                {greeting()}
-                {firstName ? `، ${firstName}` : ""}
+      <main className="gov-content">
+        <section className="gov-hero">
+          <div className="gov-hero-ring" aria-hidden="true" />
+          <p className="gov-eyebrow">مكتب الرئيس التنفيذي · نظام الحوكمة التنفيذية للسياسات</p>
+          <h1>
+            {pending.length} سياسة بانتظار قرارك
+          </h1>
+          <p className="gov-hero-lead">
+            {greeting()}
+            {firstName ? `، ${firstName}` : ""}. راجع القرار وسياقه الكامل، ثم اعتمد بثقة.
+          </p>
+          <div className="gov-pillrow">
+            <span className="gov-pill">{dateLabel}</span>
+            <span className="gov-pill">{finalised.length} معتمدة نهائيًا</span>
+            <span className="gov-pill">{completion}٪ نسبة الإنجاز</span>
+            <span className="gov-pill">{departmentsActive} إدارة نشطة</span>
+          </div>
+          {pending.length > 0 ? (
+            <button
+              type="button"
+              className="gov-btn-primary gov-hero-cta"
+              disabled={approvingAll}
+              onClick={() => void approveAll()}
+            >
+              <CheckCheck aria-hidden="true" />
+              {approvingAll ? "جاري الاعتماد..." : `اعتماد الكل (${pending.length})`}
+            </button>
+          ) : null}
+        </section>
+
+        <section className="gov-section" aria-labelledby="gov-queue-title">
+          <div className="gov-section-head">
+            <span className="gov-num">{sectionNumeral(1)}</span>
+            <div>
+              <h2 id="gov-queue-title">قائمة القرارات</h2>
+              <p className="gov-lead">
+                سياسات اجتازت مراجعة الجودة وتنتظر اعتمادك النهائي.
               </p>
-              <h1>{pending.length} سياسة بانتظار اعتمادك</h1>
-              <p>{dateLabel}</p>
             </div>
-            {pending.length > 0 ? (
-              <button
-                type="button"
-                className="dash-hero-cta"
-                disabled={approvingAll}
-                onClick={() => void approveAll()}
-              >
-                <CheckCheck aria-hidden="true" />
-                <span>
-                  {approvingAll ? "جاري الاعتماد..." : `اعتماد الكل (${pending.length})`}
-                </span>
-              </button>
+            {pending.length > 3 ? (
+              <label className="gov-search">
+                <Search aria-hidden="true" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="ابحث عن سياسة"
+                />
+              </label>
             ) : null}
-          </section>
+          </div>
 
-          <section className="exec-kpis">
-            <article className="kpi-card">
-              <span className="kpi-icon">
-                <Clock aria-hidden="true" />
-              </span>
-              <strong className="kpi-value">{pending.length}</strong>
-              <span className="kpi-label">بانتظار اعتمادك</span>
-              <em className="kpi-sub">اجتازت مراجعة الجودة</em>
-            </article>
-            <article className="kpi-card">
-              <span className="kpi-icon">
-                <CheckCircle2 aria-hidden="true" />
-              </span>
-              <strong className="kpi-value">{finalised.length}</strong>
-              <span className="kpi-label">معتمدة نهائيًا</span>
-              <em className="kpi-sub">في المكتبة النهائية</em>
-            </article>
-            <article className="kpi-card">
-              <span className="kpi-icon">
-                <ListChecks aria-hidden="true" />
-              </span>
-              <strong className="kpi-value">{completion}٪</strong>
-              <span className="kpi-label">نسبة الإنجاز</span>
-              <em className="kpi-sub">
-                {finalised.length} من {policies.length} سياسة
-              </em>
-            </article>
-            <article className="kpi-card">
-              <span className="kpi-icon">
-                <Building2 aria-hidden="true" />
-              </span>
-              <strong className="kpi-value">{departmentBars.length}</strong>
-              <span className="kpi-label">إدارات نشطة</span>
-              <em className="kpi-sub">لديها سياسات معتمدة</em>
-            </article>
-          </section>
-
-          <section className="exec-charts">
-            <article className="chart-card">
-              <h2>أكثر الإدارات إصدارًا للسياسات</h2>
-              {departmentBars.length === 0 ? (
-                <p className="chart-empty">لا توجد بيانات.</p>
-              ) : (
-                <div className="bar-list">
-                  {departmentBars.map((bar) => (
-                    <div className="bar-row" key={bar.key} title={`${bar.label}: ${bar.count}`}>
-                      <span className="bar-label">{bar.label}</span>
-                      <span className="bar-track">
-                        <span className="bar-fill" style={{ inlineSize: `${Math.max(bar.pct, 3)}%` }} />
+          {loading ? (
+            <LoadingState label="جاري تحميل السياسات..." inline />
+          ) : visiblePending.length === 0 ? (
+            <p className="gov-empty">
+              {pending.length === 0 ? "لا شيء ينتظر قرارك حاليًا." : "لا توجد نتائج مطابقة."}
+            </p>
+          ) : (
+            <div className="gov-decision-list">
+              {visiblePending.map((policy) => {
+                const classification = classifyPolicy(policy);
+                const isOpen = openId === policy.id;
+                const waiting = daysSince(policy.approved_at);
+                return (
+                  <article className="gov-decision-card" key={policy.id}>
+                    <div className="gov-decision-head">
+                      <div className="gov-decision-title">
+                        <span className="gov-chip gov-chip-teal">اعتماد تنفيذي</span>
+                        {waiting !== null && waiting > 0 ? (
+                          <span className="gov-chip gov-chip-warning">
+                            بالانتظار {waiting} {waiting === 1 ? "يوم" : "أيام"}
+                          </span>
+                        ) : null}
+                        <h3>{policy.title}</h3>
+                        <span className="gov-decision-code" dir="ltr">
+                          {policyReference(policy) ?? "—"}
+                        </span>
+                      </div>
+                      <span className="gov-decision-dept">
+                        <Building2 aria-hidden="true" />
+                        {classification.departmentLabel}
                       </span>
-                      <span className="bar-value">{bar.count}</span>
+                    </div>
+
+                    <dl className="gov-decision-meta">
+                      <div>
+                        <dt>اعتماد الجودة</dt>
+                        <dd>{formatDate(policy.approved_at)}</dd>
+                      </div>
+                      <div>
+                        <dt>المراجعة القادمة</dt>
+                        <dd>{formatDate(policy.next_review_at)}</dd>
+                      </div>
+                    </dl>
+
+                    <p className="gov-assurance-line">
+                      <ShieldCheck aria-hidden="true" />
+                      اجتازت جميع مراجعات الجودة المطلوبة
+                    </p>
+
+                    <div className="gov-decision-actions">
+                      <button
+                        type="button"
+                        className="gov-btn"
+                        onClick={() => void openDocument(policy)}
+                      >
+                        <FileText aria-hidden="true" />
+                        عرض الوثيقة
+                      </button>
+                      <button
+                        type="button"
+                        className="gov-btn-text"
+                        onClick={() => {
+                          setOpenId(isOpen ? null : policy.id);
+                          setNote("");
+                        }}
+                      >
+                        <Undo2 aria-hidden="true" />
+                        {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
+                      </button>
+                    </div>
+
+                    {isOpen ? (
+                      <div className="gov-return-panel">
+                        <textarea
+                          value={note}
+                          onChange={(event) => setNote(event.target.value)}
+                          placeholder="سبب الإعادة — يظهر لصاحب السياسة"
+                          rows={3}
+                        />
+                        <button
+                          type="button"
+                          className="gov-btn-danger"
+                          disabled={busy === policy.id}
+                          onClick={() => void returnWithNote(policy)}
+                        >
+                          تأكيد الإعادة
+                        </button>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="gov-section" aria-labelledby="gov-snapshot-title">
+          <div className="gov-section-head">
+            <span className="gov-num">{sectionNumeral(2)}</span>
+            <div>
+              <h2 id="gov-snapshot-title">لمحة الحوكمة</h2>
+              <p className="gov-lead">أكثر الإدارات إصدارًا، ووتيرة الاعتماد النهائي.</p>
+            </div>
+          </div>
+
+          <div className="gov-panels">
+            <article className="gov-panel">
+              <h3>أكثر الإدارات إصدارًا للسياسات</h3>
+              {departmentBars.length === 0 ? (
+                <p className="gov-empty">لا توجد بيانات.</p>
+              ) : (
+                <div className="gov-bar-list">
+                  {departmentBars.map((bar) => (
+                    <div className="gov-bar-row" key={bar.key} title={`${bar.label}: ${bar.count}`}>
+                      <span className="gov-bar-label">{bar.label}</span>
+                      <span className="gov-bar-track">
+                        <span className="gov-bar-fill" style={{ inlineSize: `${Math.max(bar.pct, 3)}%` }} />
+                      </span>
+                      <span className="gov-bar-value">{bar.count}</span>
                     </div>
                   ))}
                 </div>
               )}
             </article>
 
-            <article className="chart-card">
-              <h2>الاعتمادات النهائية · آخر ٦ أشهر</h2>
-              <div className="mini-bars" role="img" aria-label="الاعتمادات النهائية خلال الأشهر الستة الأخيرة">
+            <article className="gov-panel">
+              <h3>الاعتمادات النهائية · آخر ٦ أشهر</h3>
+              <div className="gov-mini-bars" role="img" aria-label="الاعتمادات النهائية خلال الأشهر الستة الأخيرة">
                 {trend.map((point, index) => (
-                  <div className="mini-bar-col" key={index} title={`${point.label}: ${point.count}`}>
-                    <span className="mini-bar-value">{point.count}</span>
-                    <span className="mini-bar-track">
+                  <div className="gov-mini-bar-col" key={index} title={`${point.label}: ${point.count}`}>
+                    <span className="gov-mini-bar-value">{point.count}</span>
+                    <span className="gov-mini-bar-track">
                       <span
-                        className="mini-bar-fill"
+                        className="gov-mini-bar-fill"
                         style={{ blockSize: `${point.count > 0 ? Math.max(point.pct, 6) : 2}%` }}
                       />
                     </span>
-                    <em className="mini-bar-label">{point.label}</em>
+                    <em className="gov-mini-bar-label">{point.label}</em>
                   </div>
                 ))}
               </div>
             </article>
-          </section>
+          </div>
+        </section>
 
-          <section className="data-section">
-            <div className="section-title-row">
-              <h2>بانتظار اعتمادك</h2>
-              {pending.length > 3 ? (
-                <label className="search-box exec-inline-search">
-                  <Search aria-hidden="true" />
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="ابحث عن سياسة"
-                  />
-                </label>
-              ) : null}
+        <section className="gov-section" aria-labelledby="gov-register-title">
+          <div className="gov-section-head">
+            <span className="gov-num">{sectionNumeral(3)}</span>
+            <div>
+              <h2 id="gov-register-title">سجل الاعتمادات النهائية</h2>
+              <p className="gov-lead">آخر القرارات الموثّقة في المكتبة الرسمية.</p>
             </div>
+          </div>
 
-            {loading ? (
-              <LoadingState label="جاري تحميل السياسات..." inline />
-            ) : visiblePending.length === 0 ? (
-              <p className="chart-empty">
-                {pending.length === 0 ? "لا شيء ينتظر اعتمادك حاليًا." : "لا توجد نتائج مطابقة."}
-              </p>
-            ) : (
-              <div className="cards-list">
-                {visiblePending.map((policy) => {
-                  const classification = classifyPolicy(policy);
-                  const isOpen = openId === policy.id;
-                  return (
-                    <article className="policy-card exec-review-card" key={policy.id}>
-                      <div>
-                        <span className="exec-review-dept">{classification.departmentLabel}</span>
-                        <h2>{policy.title}</h2>
-                        <p>{policyReference(policy) ?? "بدون رقم"}</p>
-                      </div>
-                      <dl>
-                        <div>
-                          <dt>اعتماد الجودة</dt>
-                          <dd>{formatDate(policy.approved_at)}</dd>
-                        </div>
-                        <div>
-                          <dt>المراجعة القادمة</dt>
-                          <dd>{formatDate(policy.next_review_at)}</dd>
-                        </div>
-                      </dl>
-                      <div className="card-actions">
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => void openDocument(policy)}
-                        >
-                          <FileText aria-hidden="true" />
-                          عرض الوثيقة
-                        </button>
-                        <button
-                          type="button"
-                          className="text-button"
-                          onClick={() => {
-                            setOpenId(isOpen ? null : policy.id);
-                            setNote("");
-                          }}
-                        >
-                          <Undo2 aria-hidden="true" />
-                          {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
-                        </button>
-                      </div>
-                      {isOpen ? (
-                        <div className="exec-return-inline">
-                          <textarea
-                            value={note}
-                            onChange={(event) => setNote(event.target.value)}
-                            placeholder="سبب الإعادة"
-                            rows={3}
-                          />
-                          <button
-                            type="button"
-                            className="danger-button"
-                            disabled={busy === policy.id}
-                            onClick={() => void returnWithNote(policy)}
-                          >
-                            تأكيد الإعادة
-                          </button>
-                        </div>
-                      ) : null}
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <section className="data-section">
-            <div className="section-title-row">
-              <h2>آخر المعتمدة نهائيًا</h2>
-            </div>
-            {recentFinal.length === 0 ? (
-              <div className="activity-empty">لا توجد سياسات معتمدة نهائيًا بعد.</div>
-            ) : (
-              <ul className="activity-list">
-                {recentFinal.map((policy) => (
-                  <li key={policy.id}>
-                    <button
-                      type="button"
-                      className="activity-row exec-activity-row"
-                      onClick={() => void openDocument(policy)}
-                    >
-                      <div className="activity-main">
-                        <strong>{policy.title}</strong>
-                        <span className="activity-meta">
-                          {policyReference(policy) ?? "بدون رقم"} ·{" "}
-                          {formatDate(policy.final_approved_at)}
-                        </span>
-                      </div>
-                      <span className="final-seal">
-                        <Check aria-hidden="true" />
-                        معتمدة نهائيًا
+          {recentFinal.length === 0 ? (
+            <p className="gov-empty">لا توجد سياسات معتمدة نهائيًا بعد.</p>
+          ) : (
+            <ol className="gov-timeline">
+              {recentFinal.map((policy) => (
+                <li key={policy.id}>
+                  <button
+                    type="button"
+                    className="gov-timeline-item"
+                    onClick={() => void openDocument(policy)}
+                  >
+                    <span className="gov-timeline-dot" aria-hidden="true">
+                      <Check aria-hidden="true" />
+                    </span>
+                    <span className="gov-timeline-body">
+                      <strong>{policy.title}</strong>
+                      <span className="gov-timeline-meta">
+                        {policyReference(policy) ?? "—"} · {formatDate(policy.final_approved_at)}
                       </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+                    </span>
+                    <span className="gov-chip gov-chip-success">معتمدة نهائيًا</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+
+        <footer className="gov-footer">
+          <p>الوضوح قبل الاعتماد</p>
+          <span dir="ltr">Clarity before approval.</span>
+        </footer>
       </main>
+
+      {pending.length > 0 ? (
+        <div className="gov-dock">
+          <span>
+            <strong>{pending.length}</strong> سياسة بانتظار الاعتماد النهائي
+          </span>
+          <button
+            type="button"
+            className="gov-btn-primary"
+            disabled={approvingAll}
+            onClick={() => void approveAll()}
+          >
+            <CheckCheck aria-hidden="true" />
+            {approvingAll ? "جاري الاعتماد..." : "اعتماد الكل"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

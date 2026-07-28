@@ -48,15 +48,15 @@ export function ExecutiveLoginPage() {
   }
 
   return (
-    <main className="login-page">
-      <section className="login-card">
-        <img src="/brand/jfc-logo-stacked-white-alt.jpg" alt="تجمع جدة الصحي الأول" />
-        <p className="eyebrow">تجمع جدة الصحي الأول</p>
-        <h1>المكتب التنفيذي</h1>
+    <main className="exec-portal gov-auth-page">
+      <section className="gov-auth-card">
+        <span className="gov-mark gov-auth-mark">JF</span>
+        <p className="gov-eyebrow-dark">تجمع جدة الصحي الأول</p>
+        <h1>الحوكمة التنفيذية</h1>
         <form onSubmit={submit}>
           <label>
             <span>اسم المستخدم</span>
-            <div className="input-shell">
+            <div className="gov-field">
               <UserRound aria-hidden="true" />
               <input
                 dir="ltr"
@@ -70,7 +70,7 @@ export function ExecutiveLoginPage() {
           </label>
           <label>
             <span>كلمة الدخول</span>
-            <div className="input-shell">
+            <div className="gov-field">
               <KeyRound aria-hidden="true" />
               <input
                 type="password"
@@ -81,8 +81,8 @@ export function ExecutiveLoginPage() {
               />
             </div>
           </label>
-          {error ? <p className="inline-error">{error}</p> : null}
-          <button className="primary-button full" disabled={loading}>
+          {error ? <p className="gov-auth-error">{error}</p> : null}
+          <button className="gov-btn-primary gov-auth-submit" disabled={loading}>
             {loading ? "جاري الدخول..." : "دخول"}
           </button>
         </form>

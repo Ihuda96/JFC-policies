@@ -43,14 +43,14 @@ export function ExecutiveSetPassword() {
   }
 
   return (
-    <main className="login-page">
-      <section className="login-card">
-        <p className="eyebrow">المكتب التنفيذي</p>
+    <main className="exec-portal gov-auth-page">
+      <section className="gov-auth-card">
+        <p className="gov-eyebrow-dark">الحوكمة التنفيذية</p>
         <h1>اختر كلمة الدخول</h1>
         <form onSubmit={submit}>
           <label>
             <span>كلمة الدخول الجديدة</span>
-            <div className="input-shell">
+            <div className="gov-field">
               <KeyRound aria-hidden="true" />
               <input
                 type="password"
@@ -63,7 +63,7 @@ export function ExecutiveSetPassword() {
           </label>
           <label>
             <span>تأكيد كلمة الدخول</span>
-            <div className="input-shell">
+            <div className="gov-field">
               <KeyRound aria-hidden="true" />
               <input
                 type="password"
@@ -74,8 +74,8 @@ export function ExecutiveSetPassword() {
               />
             </div>
           </label>
-          {error ? <p className="inline-error">{error}</p> : null}
-          <button className="primary-button full" disabled={loading}>
+          {error ? <p className="gov-auth-error">{error}</p> : null}
+          <button className="gov-btn-primary gov-auth-submit" disabled={loading}>
             {loading ? "جاري الحفظ..." : "حفظ ومتابعة"}
           </button>
         </form>
