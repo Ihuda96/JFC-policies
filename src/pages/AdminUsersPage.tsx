@@ -3,6 +3,9 @@ import { Save, UserPlus } from "lucide-react";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
 import { StatusBadge } from "../components/StatusBadge";
+import { AdminExecutiveAccount } from "../components/admin/AdminExecutiveAccount";
+import { AdminSections } from "../components/admin/AdminSections";
+import { AdminSignupRequests } from "../components/admin/AdminSignupRequests";
 import { roleLabels } from "../lib/format";
 import {
   createDetachedSupabaseClient,
@@ -15,7 +18,9 @@ import type { AppRole, Profile, ProfileStatus } from "../lib/types";
 const roleOptions: Array<{ value: AppRole; label: string }> = [
   { value: "quality_staff", label: "موظف جودة" },
   { value: "quality_manager", label: "مدير جودة" },
+  { value: "department_staff", label: "موظف إدارة" },
   { value: "system_admin", label: "مدير نظام" },
+  { value: "ceo", label: "الرئيس التنفيذي" },
 ];
 
 const statusOptions: Array<{ value: ProfileStatus; label: string }> = [
@@ -210,6 +215,10 @@ export function AdminUsersPage() {
 
       {error ? <p className="inline-error">{error}</p> : null}
       {notice ? <p className="inline-success">{notice}</p> : null}
+
+      <AdminSignupRequests onChanged={() => void load()} />
+      <AdminExecutiveAccount />
+      <AdminSections />
 
       <form className="admin-create-card" onSubmit={(event) => void createUser(event)}>
         <div className="section-title-row">

@@ -12,10 +12,14 @@ import { LibraryPage } from "./pages/LibraryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { PolicyDetailPage } from "./pages/PolicyDetailPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { ReportsPage } from "./pages/ReportsPage";
+import { SectionLibraryPage } from "./pages/SectionLibraryPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { UploadPolicyPage } from "./pages/UploadPolicyPage";
 import { WorkspacePage } from "./pages/WorkspacePage";
+import { ExecutiveLoginPage } from "./pages/executive/ExecutiveLoginPage";
+import { ExecutivePage } from "./pages/executive/ExecutivePage";
 
 export default function App() {
   return (
@@ -23,6 +27,10 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/design-system" element={<DesignSystemPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/s/:code" element={<SectionLibraryPage />} />
+      <Route path="/executive/login" element={<ExecutiveLoginPage />} />
+      <Route path="/executive" element={<ExecutivePage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/app" element={<AppShell />}>
           <Route index element={<DashboardPage />} />

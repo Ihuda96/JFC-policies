@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../lib/supabase";
-import { canManageQuality } from "../lib/permissions";
+import { canReviewPolicies } from "../lib/permissions";
 import type { NotificationItem, Policy } from "../lib/types";
 
 export interface ActionItem {
@@ -86,7 +86,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       to: `/app/policies/${policy.id}`,
     });
 
-    if (canManageQuality(profile)) {
+    if (canReviewPolicies(profile)) {
       const pending = policies.filter((policy) =>
         ["pending_approval", "resubmitted"].includes(policy.status),
       );

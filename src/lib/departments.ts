@@ -168,6 +168,28 @@ function firstNonEmpty(...lists: string[][]): string[] {
   return [];
 }
 
+export interface OrgUnit {
+  code: string;
+  label: string;
+  kind: "department" | "section";
+  parentCode: string | null;
+}
+
+/** Every official department and section, for pickers and barcodes. */
+export const ORG_UNITS: OrgUnit[] = Object.entries(CODE_NAMES)
+  .map(([code, label]) => ({
+    code,
+    label,
+    kind: (UNIT_PARENTS[code] ? "section" : "department") as OrgUnit["kind"],
+    parentCode: UNIT_PARENTS[code] ?? null,
+  }))
+  .sort((a, b) => a.label.localeCompare(b.label, "ar"));
+
+/** Top-level departments only — used by the registration picker. */
+export const DEPARTMENT_UNITS: OrgUnit[] = ORG_UNITS.filter(
+  (unit) => unit.kind === "department",
+);
+
 export function departmentName(code: string) {
   return CODE_NAMES[code] ?? `قسم ${code}`;
 }

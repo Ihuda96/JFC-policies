@@ -15,7 +15,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { buildExecutiveSummary } from "../lib/analytics";
 import { policyReference } from "../lib/departments";
-import { canAuthorPolicies, canManageQuality } from "../lib/permissions";
+import { canAuthorPolicies, canReviewPolicies } from "../lib/permissions";
 import { formatDate, roleLabels } from "../lib/format";
 import { isSetupError, supabase } from "../lib/supabase";
 import type { PolicyBundle } from "../lib/types";
@@ -71,7 +71,7 @@ export function DashboardPage() {
   }, []);
 
   const summary = useMemo(
-    () => buildExecutiveSummary(policies, profile?.id, profile?.role, canManageQuality(profile)),
+    () => buildExecutiveSummary(policies, profile?.id, profile?.role, canReviewPolicies(profile)),
     [policies, profile],
   );
 
