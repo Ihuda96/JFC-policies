@@ -271,7 +271,7 @@ export function buildExecutiveSummary(
 
   // Approvals trend — last 6 months
   const months: { key: string; label: string; count: number }[] = [];
-  const monthFmt = new Intl.DateTimeFormat("ar", { month: "short" });
+  const monthFmt = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", { month: "short" });
   for (let i = 5; i >= 0; i -= 1) {
     const d = new Date();
     d.setMonth(d.getMonth() - i, 1);

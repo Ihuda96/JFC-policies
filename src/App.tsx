@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { PoweredBy } from "./components/PoweredBy";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ActionCenterPage } from "./pages/ActionCenterPage";
 import { AdminUsersPage } from "./pages/AdminUsersPage";
@@ -23,31 +24,34 @@ import { ExecutivePage } from "./pages/executive/ExecutivePage";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/design-system" element={<DesignSystemPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/s/:code" element={<SectionLibraryPage />} />
-      <Route path="/executive/login" element={<ExecutiveLoginPage />} />
-      <Route path="/executive" element={<ExecutivePage />} />
-      <Route element={<ProtectedRoute />}>
-        <Route path="/app" element={<AppShell />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="upload" element={<UploadPolicyPage />} />
-          <Route path="workspace" element={<WorkspacePage />} />
-          <Route path="actions" element={<ActionCenterPage />} />
-          <Route path="approvals" element={<ApprovalsPage />} />
-          <Route path="library" element={<LibraryPage />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="policies/:policyId" element={<PolicyDetailPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-          <Route path="admin/users" element={<AdminUsersPage />} />
-          <Route path="admin/audit" element={<AuditLogPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+    <>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/design-system" element={<DesignSystemPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/s/:code" element={<SectionLibraryPage />} />
+        <Route path="/executive/login" element={<ExecutiveLoginPage />} />
+        <Route path="/executive" element={<ExecutivePage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/app" element={<AppShell />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="upload" element={<UploadPolicyPage />} />
+            <Route path="workspace" element={<WorkspacePage />} />
+            <Route path="actions" element={<ActionCenterPage />} />
+            <Route path="approvals" element={<ApprovalsPage />} />
+            <Route path="library" element={<LibraryPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="policies/:policyId" element={<PolicyDetailPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="admin/users" element={<AdminUsersPage />} />
+            <Route path="admin/audit" element={<AuditLogPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Route>
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <PoweredBy />
+    </>
   );
 }

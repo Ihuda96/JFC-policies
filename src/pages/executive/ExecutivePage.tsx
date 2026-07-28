@@ -19,7 +19,7 @@ function greeting() {
   return "مساء الخير";
 }
 
-const monthFmt = new Intl.DateTimeFormat("ar", { month: "short" });
+const monthFmt = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", { month: "short" });
 
 function pct(count: number, max: number) {
   return max > 0 ? Math.round((count / max) * 100) : 0;

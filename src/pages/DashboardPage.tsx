@@ -27,7 +27,7 @@ function greeting() {
   return "مساء الخير";
 }
 
-const todayLabel = new Intl.DateTimeFormat("ar", {
+const todayLabel = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
   weekday: "long",
   day: "numeric",
   month: "long",
