@@ -1,5 +1,4 @@
 import { FormEvent, useState } from "react";
-import { KeyRound } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { errorMessage, supabase } from "../../lib/supabase";
 
@@ -43,39 +42,39 @@ export function ExecutiveSetPassword() {
   }
 
   return (
-    <main className="exec-portal gov-auth-page">
-      <section className="gov-auth-card">
-        <p className="gov-eyebrow-dark">الحوكمة التنفيذية</p>
+    <main className="exec-portal auth-page">
+      <section className="auth-card">
+        <span className="seal" aria-hidden="true">
+          ج١
+        </span>
         <h1>اختر كلمة الدخول</h1>
         <form onSubmit={submit}>
-          <label>
-            <span>كلمة الدخول الجديدة</span>
-            <div className="gov-field">
-              <KeyRound aria-hidden="true" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="new-password"
-              />
-            </div>
-          </label>
-          <label>
-            <span>تأكيد كلمة الدخول</span>
-            <div className="gov-field">
-              <KeyRound aria-hidden="true" />
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                autoComplete="new-password"
-              />
-            </div>
-          </label>
-          {error ? <p className="gov-auth-error">{error}</p> : null}
-          <button className="gov-btn-primary gov-auth-submit" disabled={loading}>
+          <div className="field">
+            <label htmlFor="exec-new-password">كلمة الدخول الجديدة</label>
+            <input
+              id="exec-new-password"
+              className="input"
+              type="password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="exec-confirm-password">تأكيد كلمة الدخول</label>
+            <input
+              id="exec-confirm-password"
+              className="input"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+          {error ? <p className="auth-error">{error}</p> : null}
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ justifyContent: "center" }}>
             {loading ? "جاري الحفظ..." : "حفظ ومتابعة"}
           </button>
         </form>

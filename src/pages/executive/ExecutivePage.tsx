@@ -1,15 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import {
-  Building2,
-  Check,
-  CheckCheck,
-  FileText,
-  LogOut,
-  Search,
-  ShieldCheck,
-  Undo2,
-} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { classifyPolicy, policyReference } from "../../lib/departments";
 import { formatDate } from "../../lib/format";
@@ -17,9 +7,9 @@ import { isExecutive } from "../../lib/permissions";
 import { readableWorkflowError, signedFileUrl } from "../../lib/policyWorkflow";
 import { errorMessage, supabase } from "../../lib/supabase";
 import { useConfirm } from "../../components/ConfirmDialog";
-import { LoadingState } from "../../components/LoadingState";
 import { useToast } from "../../components/Toast";
 import { ExecutiveSetPassword } from "./ExecutiveSetPassword";
+import { useReveal } from "./useReveal";
 import type { PolicyBundle, PolicyFile } from "../../lib/types";
 
 function greeting() {
@@ -29,30 +19,10 @@ function greeting() {
   return "مساء الخير";
 }
 
-const dateLabel = new Intl.DateTimeFormat("ar", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-}).format(new Date());
-
 const monthFmt = new Intl.DateTimeFormat("ar", { month: "short" });
-const arabicIndicNumeral = new Intl.NumberFormat("ar-SA");
-
-function sectionNumeral(n: number) {
-  return arabicIndicNumeral.format(n).padStart(2, "٠");
-}
 
 function pct(count: number, max: number) {
   return max > 0 ? Math.round((count / max) * 100) : 0;
-}
-
-function daysSince(iso: string | null) {
-  if (!iso) return null;
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return null;
-  const days = Math.max(0, Math.floor((Date.now() - then) / (24 * 60 * 60 * 1000)));
-  return days;
 }
 
 export function ExecutivePage() {
@@ -67,6 +37,16 @@ export function ExecutivePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [approvingAll, setApprovingAll] = useState(false);
   const [sealing, setSealing] = useState(false);
+
+  const heroTextRef = useReveal<HTMLDivElement>();
+  const heroSealRef = useReveal<HTMLDivElement>();
+  const kpiRef = useReveal<HTMLDivElement>();
+  const queueHeadRef = useReveal<HTMLDivElement>();
+  const queueListRef = useReveal<HTMLDivElement>();
+  const chartsHeadRef = useReveal<HTMLDivElement>();
+  const chartsGridRef = useReveal<HTMLDivElement>();
+  const registerHeadRef = useReveal<HTMLDivElement>();
+  const registerRef = useReveal<HTMLDivElement>();
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -114,26 +94,16 @@ export function ExecutivePage() {
 
   const recentFinal = useMemo(() => finalised.slice(0, 8), [finalised]);
 
-  const departmentsActive = useMemo(() => {
-    const set = new Set<string>();
-    for (const policy of policies) {
-      set.add(classifyPolicy(policy).departmentLabel);
-    }
-    return set.size;
-  }, [policies]);
-
-  const departmentBars = useMemo(() => {
+  const departmentRows = useMemo(() => {
     const counts = new Map<string, number>();
     for (const policy of policies) {
       const label = classifyPolicy(policy).departmentLabel;
       counts.set(label, (counts.get(label) ?? 0) + 1);
     }
-    const rows = [...counts.entries()]
-      .map(([label, count]) => ({ key: label, label, count }))
+    return [...counts.entries()]
+      .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 6);
-    const max = Math.max(1, ...rows.map((row) => row.count));
-    return rows.map((row) => ({ ...row, pct: pct(row.count, max) }));
   }, [policies]);
 
   const trend = useMemo(() => {
@@ -160,9 +130,9 @@ export function ExecutivePage() {
     if (!supabase || pending.length === 0) return;
 
     const confirmed = await confirm({
-      title: "الاعتماد النهائي",
-      body: `سيتم اعتماد ${pending.length} سياسة بشكل نهائي ونشرها في المكتبة الرسمية. لا يمكن التراجع عن هذا القرار.`,
-      confirmLabel: "اعتماد الكل",
+      title: "اعتماد التقارير المعلّقة",
+      body: `سيُعتمد ${pending.length} من السياسات ويُتاح نشرها. لا يمكن التراجع عن هذا الإجراء دون مراجعة.`,
+      confirmLabel: "اعتماد",
     });
     if (!confirmed) return;
 
@@ -183,7 +153,7 @@ export function ExecutivePage() {
   async function returnWithNote(policy: PolicyBundle) {
     if (!supabase) return;
     if (note.trim().length === 0) {
-      toast.error("اكتب سبب الإعادة قبل المتابعة.");
+      toast.error("اكتب ملاحظة قبل المتابعة.");
       return;
     }
     setBusy(policy.id);
@@ -193,7 +163,7 @@ export function ExecutivePage() {
         p_comment: note.trim(),
       });
       if (error) throw error;
-      toast.success("أُعيدت السياسة للمراجعة مع ملاحظاتك.");
+      toast.success("أُعيدت السياسة مع الملاحظات.");
       setNote("");
       setOpenId(null);
       await load();
@@ -237,161 +207,172 @@ export function ExecutivePage() {
   return (
     <div className="exec-portal">
       {sealing ? (
-        <div className="gov-seal-stage" role="status" aria-live="polite">
-          <div className="gov-seal-mark">
-            <Check aria-hidden="true" />
+        <div className="seal-stage" role="status" aria-live="polite">
+          <div className="hero-seal seal-stage-mark" aria-hidden="true">
+            <div className="ring" />
+            <div className="ring inner" />
+            <div className="glyph">ج١</div>
           </div>
-          <p>تم تسجيل الاعتماد النهائي</p>
+          <p>تم الاعتماد</p>
         </div>
       ) : null}
 
-      <header className="gov-topbar">
-        <div className="gov-topbar-brand">
-          <span className="gov-mark">JF</span>
-          <div>
-            <strong>الحوكمة التنفيذية</strong>
-            <span>تجمع جدة الصحي الأول · جلسة آمنة</span>
+      <header className="topbar">
+        <div className="wrap topbar-inner">
+          <div className="lockup">
+            <div className="seal" aria-hidden="true">
+              ج١
+            </div>
+            <div className="lockup-text">
+              <span className="primary">تجمع جدة الصحي الأول</span>
+              <span className="secondary">مكتب الرئيس التنفيذي</span>
+            </div>
           </div>
+          <button type="button" className="btn btn-secondary" onClick={() => void signOut()}>
+            خروج
+          </button>
         </div>
-        <button type="button" className="gov-btn" onClick={() => void signOut()}>
-          <LogOut aria-hidden="true" />
-          خروج
-        </button>
       </header>
 
-      <main className="gov-content">
-        <section className="gov-hero">
-          <div className="gov-hero-ring" aria-hidden="true" />
-          <p className="gov-eyebrow">مكتب الرئيس التنفيذي · نظام الحوكمة التنفيذية للسياسات</p>
-          <h1>
-            {pending.length} سياسة بانتظار قرارك
-          </h1>
-          <p className="gov-hero-lead">
-            {greeting()}
-            {firstName ? `، ${firstName}` : ""}. راجع القرار وسياقه الكامل، ثم اعتمد بثقة.
-          </p>
-          <div className="gov-pillrow">
-            <span className="gov-pill">{dateLabel}</span>
-            <span className="gov-pill">{finalised.length} معتمدة نهائيًا</span>
-            <span className="gov-pill">{completion}٪ نسبة الإنجاز</span>
-            <span className="gov-pill">{departmentsActive} إدارة نشطة</span>
+      <section className="hero">
+        <div className="wrap hero-grid">
+          <div className="reveal" ref={heroTextRef}>
+            <span className="eyebrow">
+              {greeting()}
+              {firstName ? `، ${firstName}` : ""}
+            </span>
+            <h1 className="display-l">{pending.length} سياسة بانتظار الاعتماد</h1>
+            <p className="lede">راجع الوثيقة وسياقها الكامل، ثم اعتمد.</p>
+            <div className="brass-rule" data-brass />
+            {pending.length > 0 ? (
+              <button
+                type="button"
+                className="btn btn-primary hero-cta"
+                disabled={approvingAll}
+                onClick={() => void approveAll()}
+              >
+                {approvingAll ? "جاري الاعتماد..." : `اعتماد الكل (${pending.length})`}
+              </button>
+            ) : null}
           </div>
-          {pending.length > 0 ? (
-            <button
-              type="button"
-              className="gov-btn-primary gov-hero-cta"
-              disabled={approvingAll}
-              onClick={() => void approveAll()}
-            >
-              <CheckCheck aria-hidden="true" />
-              {approvingAll ? "جاري الاعتماد..." : `اعتماد الكل (${pending.length})`}
-            </button>
-          ) : null}
-        </section>
 
-        <section className="gov-section" aria-labelledby="gov-queue-title">
-          <div className="gov-section-head">
-            <span className="gov-num">{sectionNumeral(1)}</span>
-            <div>
-              <h2 id="gov-queue-title">قائمة القرارات</h2>
-              <p className="gov-lead">
-                سياسات اجتازت مراجعة الجودة وتنتظر اعتمادك النهائي.
-              </p>
+          <div className="hero-seal reveal" aria-hidden="true" ref={heroSealRef}>
+            <div className="ring" />
+            <div className="ring inner" />
+            <div className="glyph">ج١</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="band">
+        <div className="wrap">
+          <div className="grid grid-3 stagger" ref={kpiRef}>
+            <div className="kpi">
+              <span className="eyebrow">بانتظار الاعتماد</span>
+              <div className="value brass">{pending.length}</div>
             </div>
+            <div className="kpi">
+              <span className="eyebrow">مُعتمد</span>
+              <div className="value">{finalised.length}</div>
+            </div>
+            <div className="kpi">
+              <span className="eyebrow">نسبة الإنجاز</span>
+              <div className="value">{completion}٪</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="band">
+        <div className="wrap">
+          <div className="section-head reveal" ref={queueHeadRef}>
+            <span className="eyebrow">بانتظار الاعتماد</span>
+            <h2>السياسات</h2>
+            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
             {pending.length > 3 ? (
-              <label className="gov-search">
-                <Search aria-hidden="true" />
+              <div className="field" style={{ marginBlockStart: "var(--s-5)", maxInlineSize: "360px" }}>
                 <input
+                  className="input"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="ابحث عن سياسة"
                 />
-              </label>
+              </div>
             ) : null}
           </div>
 
           {loading ? (
-            <LoadingState label="جاري تحميل السياسات..." inline />
+            <p className="muted">جاري التحميل...</p>
           ) : visiblePending.length === 0 ? (
-            <p className="gov-empty">
-              {pending.length === 0 ? "لا شيء ينتظر قرارك حاليًا." : "لا توجد نتائج مطابقة."}
-            </p>
+            <div className="empty">
+              <div className="mark" aria-hidden="true">
+                ✓
+              </div>
+              <h3>{pending.length === 0 ? "لا شيء بانتظار الاعتماد" : "لا توجد نتائج"}</h3>
+              <p>
+                {pending.length === 0
+                  ? "جميع السياسات معتمدة."
+                  : "جرّب كلمات بحث مختلفة."}
+              </p>
+            </div>
           ) : (
-            <div className="gov-decision-list">
+            <div className="grid" ref={queueListRef}>
               {visiblePending.map((policy) => {
                 const classification = classifyPolicy(policy);
                 const isOpen = openId === policy.id;
-                const waiting = daysSince(policy.approved_at);
                 return (
-                  <article className="gov-decision-card" key={policy.id}>
-                    <div className="gov-decision-head">
-                      <div className="gov-decision-title">
-                        <span className="gov-chip gov-chip-teal">اعتماد تنفيذي</span>
-                        {waiting !== null && waiting > 0 ? (
-                          <span className="gov-chip gov-chip-warning">
-                            بالانتظار {waiting} {waiting === 1 ? "يوم" : "أيام"}
-                          </span>
-                        ) : null}
-                        <h3>{policy.title}</h3>
-                        <span className="gov-decision-code" dir="ltr">
+                  <article className="card" key={policy.id}>
+                    <div className="demo-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <span className="pill warning">قيد المراجعة</span>
+                        <h3 style={{ marginBlockStart: "var(--s-3)" }}>{policy.title}</h3>
+                        <p className="caption" dir="ltr" style={{ textAlign: "start" }}>
                           {policyReference(policy) ?? "—"}
-                        </span>
+                        </p>
                       </div>
-                      <span className="gov-decision-dept">
-                        <Building2 aria-hidden="true" />
-                        {classification.departmentLabel}
-                      </span>
+                      <span className="caption">{classification.departmentLabel}</span>
                     </div>
 
-                    <dl className="gov-decision-meta">
+                    <div className="demo-row" style={{ marginBlockStart: "var(--s-5)", gap: "var(--s-7)" }}>
                       <div>
-                        <dt>اعتماد الجودة</dt>
-                        <dd>{formatDate(policy.approved_at)}</dd>
+                        <p className="caption">اعتماد الجودة</p>
+                        <p>{formatDate(policy.approved_at)}</p>
                       </div>
                       <div>
-                        <dt>المراجعة القادمة</dt>
-                        <dd>{formatDate(policy.next_review_at)}</dd>
+                        <p className="caption">المراجعة القادمة</p>
+                        <p>{formatDate(policy.next_review_at)}</p>
                       </div>
-                    </dl>
+                    </div>
 
-                    <p className="gov-assurance-line">
-                      <ShieldCheck aria-hidden="true" />
-                      اجتازت جميع مراجعات الجودة المطلوبة
-                    </p>
-
-                    <div className="gov-decision-actions">
-                      <button
-                        type="button"
-                        className="gov-btn"
-                        onClick={() => void openDocument(policy)}
-                      >
-                        <FileText aria-hidden="true" />
+                    <div className="demo-row" style={{ marginBlockStart: "var(--s-6)" }}>
+                      <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
                         عرض الوثيقة
                       </button>
                       <button
                         type="button"
-                        className="gov-btn-text"
+                        className="btn btn-quiet"
                         onClick={() => {
                           setOpenId(isOpen ? null : policy.id);
                           setNote("");
                         }}
                       >
-                        <Undo2 aria-hidden="true" />
                         {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
                       </button>
                     </div>
 
                     {isOpen ? (
-                      <div className="gov-return-panel">
-                        <textarea
-                          value={note}
-                          onChange={(event) => setNote(event.target.value)}
-                          placeholder="سبب الإعادة — يظهر لصاحب السياسة"
-                          rows={3}
-                        />
+                      <div style={{ marginBlockStart: "var(--s-5)" }}>
+                        <div className="field">
+                          <textarea
+                            className="textarea"
+                            value={note}
+                            onChange={(event) => setNote(event.target.value)}
+                            placeholder="سبب الإعادة"
+                          />
+                        </div>
                         <button
                           type="button"
-                          className="gov-btn-danger"
+                          className="btn btn-secondary"
                           disabled={busy === policy.id}
                           onClick={() => void returnWithNote(policy)}
                         >
@@ -404,112 +385,123 @@ export function ExecutivePage() {
               })}
             </div>
           )}
-        </section>
+        </div>
+      </section>
 
-        <section className="gov-section" aria-labelledby="gov-snapshot-title">
-          <div className="gov-section-head">
-            <span className="gov-num">{sectionNumeral(2)}</span>
-            <div>
-              <h2 id="gov-snapshot-title">لمحة الحوكمة</h2>
-              <p className="gov-lead">أكثر الإدارات إصدارًا، ووتيرة الاعتماد النهائي.</p>
-            </div>
+      <section className="band">
+        <div className="wrap">
+          <div className="section-head reveal" ref={chartsHeadRef}>
+            <span className="eyebrow">المؤشرات</span>
+            <h2>الإدارات والاعتماد</h2>
+            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
           </div>
 
-          <div className="gov-panels">
-            <article className="gov-panel">
-              <h3>أكثر الإدارات إصدارًا للسياسات</h3>
-              {departmentBars.length === 0 ? (
-                <p className="gov-empty">لا توجد بيانات.</p>
-              ) : (
-                <div className="gov-bar-list">
-                  {departmentBars.map((bar) => (
-                    <div className="gov-bar-row" key={bar.key} title={`${bar.label}: ${bar.count}`}>
-                      <span className="gov-bar-label">{bar.label}</span>
-                      <span className="gov-bar-track">
-                        <span className="gov-bar-fill" style={{ inlineSize: `${Math.max(bar.pct, 3)}%` }} />
-                      </span>
-                      <span className="gov-bar-value">{bar.count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </article>
+          <div className="grid grid-2 stagger" ref={chartsGridRef}>
+            <div className="table-scroll">
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>الإدارة</th>
+                    <th className="num">السياسات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {departmentRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={2}>لا توجد بيانات.</td>
+                    </tr>
+                  ) : (
+                    departmentRows.map((row) => (
+                      <tr key={row.label}>
+                        <td>{row.label}</td>
+                        <td className="num">{row.count}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-            <article className="gov-panel">
-              <h3>الاعتمادات النهائية · آخر ٦ أشهر</h3>
-              <div className="gov-mini-bars" role="img" aria-label="الاعتمادات النهائية خلال الأشهر الستة الأخيرة">
+            <div className="card">
+              <h3 style={{ marginBlockEnd: "var(--s-5)" }}>الاعتماد النهائي · ٦ أشهر</h3>
+              <div className="trend-bars" role="img" aria-label="الاعتماد النهائي خلال الأشهر الستة الأخيرة">
                 {trend.map((point, index) => (
-                  <div className="gov-mini-bar-col" key={index} title={`${point.label}: ${point.count}`}>
-                    <span className="gov-mini-bar-value">{point.count}</span>
-                    <span className="gov-mini-bar-track">
+                  <div className="trend-col" key={index} title={`${point.label}: ${point.count}`}>
+                    <span className="trend-value">{point.count}</span>
+                    <span className="trend-track">
                       <span
-                        className="gov-mini-bar-fill"
+                        className="trend-fill"
                         style={{ blockSize: `${point.count > 0 ? Math.max(point.pct, 6) : 2}%` }}
                       />
                     </span>
-                    <em className="gov-mini-bar-label">{point.label}</em>
+                    <em className="trend-label">{point.label}</em>
                   </div>
                 ))}
               </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="gov-section" aria-labelledby="gov-register-title">
-          <div className="gov-section-head">
-            <span className="gov-num">{sectionNumeral(3)}</span>
-            <div>
-              <h2 id="gov-register-title">سجل الاعتمادات النهائية</h2>
-              <p className="gov-lead">آخر القرارات الموثّقة في المكتبة الرسمية.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="band">
+        <div className="wrap">
+          <div className="section-head reveal" ref={registerHeadRef}>
+            <span className="eyebrow">السجل</span>
+            <h2>آخر الاعتمادات</h2>
+            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
           </div>
 
           {recentFinal.length === 0 ? (
-            <p className="gov-empty">لا توجد سياسات معتمدة نهائيًا بعد.</p>
+            <div className="empty">
+              <h3>لا يوجد سجل بعد</h3>
+              <p>تظهر السياسات هنا فور اعتمادها.</p>
+            </div>
           ) : (
-            <ol className="gov-timeline">
-              {recentFinal.map((policy) => (
-                <li key={policy.id}>
-                  <button
-                    type="button"
-                    className="gov-timeline-item"
-                    onClick={() => void openDocument(policy)}
-                  >
-                    <span className="gov-timeline-dot" aria-hidden="true">
-                      <Check aria-hidden="true" />
-                    </span>
-                    <span className="gov-timeline-body">
-                      <strong>{policy.title}</strong>
-                      <span className="gov-timeline-meta">
-                        {policyReference(policy) ?? "—"} · {formatDate(policy.final_approved_at)}
-                      </span>
-                    </span>
-                    <span className="gov-chip gov-chip-success">معتمدة نهائيًا</span>
-                  </button>
-                </li>
-              ))}
-            </ol>
+            <div className="table-scroll reveal" ref={registerRef}>
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>السياسة</th>
+                    <th>الرمز</th>
+                    <th>تاريخ الاعتماد</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentFinal.map((policy) => (
+                    <tr
+                      key={policy.id}
+                      onClick={() => void openDocument(policy)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>{policy.title}</td>
+                      <td dir="ltr" style={{ textAlign: "start" }}>
+                        {policyReference(policy) ?? "—"}
+                      </td>
+                      <td>{formatDate(policy.final_approved_at)}</td>
+                      <td>
+                        <span className="pill success">مُعتمد</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-        </section>
-
-        <footer className="gov-footer">
-          <p>الوضوح قبل الاعتماد</p>
-          <span dir="ltr">Clarity before approval.</span>
-        </footer>
-      </main>
+        </div>
+      </section>
 
       {pending.length > 0 ? (
-        <div className="gov-dock">
+        <div className="dock">
           <span>
-            <strong>{pending.length}</strong> سياسة بانتظار الاعتماد النهائي
+            <strong>{pending.length}</strong> سياسة بانتظار الاعتماد
           </span>
           <button
             type="button"
-            className="gov-btn-primary"
+            className="btn btn-primary"
             disabled={approvingAll}
             onClick={() => void approveAll()}
           >
-            <CheckCheck aria-hidden="true" />
             {approvingAll ? "جاري الاعتماد..." : "اعتماد الكل"}
           </button>
         </div>
