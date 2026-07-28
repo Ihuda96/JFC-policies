@@ -4371,3 +4371,354 @@ select,
   background: linear-gradient(135deg, #e3c88a, #c9a961);
   box-shadow: 0 4px 12px -5px rgba(160, 130, 60, 0.8);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Executive office — flagship layout: briefing band, governance
+   charts, review queue. Uses the whole canvas on desktop.
+   ═══════════════════════════════════════════════════════════════ */
+.exec-portal { --exec-surface: #0d1a26; }
+
+/* Fine grain so the dark ground has material, not flatness */
+.exec-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* Staggered arrival */
+@keyframes exec-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.exec-briefing,
+.exec-charts,
+.exec-queue {
+  animation: exec-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.exec-charts { animation-delay: 0.09s; }
+.exec-queue { animation-delay: 0.17s; }
+
+/* ── Briefing band ───────────────────────────────────────────── */
+.exec-briefing {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: clamp(24px, 4vw, 60px);
+  align-items: center;
+  padding: clamp(34px, 6vw, 74px) 0 clamp(28px, 4vw, 52px);
+}
+.exec-briefing-lead h1 {
+  margin: 10px 0 0;
+  font-size: clamp(1.7rem, 3.4vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+  color: #fff;
+}
+.exec-hero-label {
+  margin: 0 0 6px;
+  color: var(--exec-muted);
+  font-size: 0.92rem;
+}
+/* The one number the office leads with. Proportional figures on purpose. */
+.exec-hero-figure {
+  display: block;
+  font-size: clamp(4.2rem, 11vw, 7.5rem);
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  background: linear-gradient(160deg, #fff 8%, var(--gold-soft) 55%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.exec-hero-sub {
+  margin: 12px 0 0;
+  color: var(--exec-muted);
+  font-size: 0.95rem;
+}
+.exec-briefing-side {
+  display: grid;
+  gap: 12px;
+}
+
+/* ── Panels ──────────────────────────────────────────────────── */
+.exec-panel {
+  padding: clamp(18px, 2.4vw, 26px);
+  border: 1px solid var(--exec-line);
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022));
+}
+.exec-panel h2 {
+  margin: 0 0 16px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--exec-muted);
+}
+.exec-panel-empty {
+  margin: 0;
+  color: var(--exec-muted);
+}
+
+/* Meter — fill and track are steps of the same gold ramp */
+.exec-meter-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.exec-meter-value strong {
+  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gold-soft);
+}
+.exec-meter-value span {
+  color: var(--exec-muted);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.exec-meter {
+  height: 10px;
+  border-radius: 999px;
+  background: #4a3f28;
+  overflow: hidden;
+}
+.exec-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+  transition: inline-size 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.exec-meter-note {
+  margin: 10px 0 0;
+  color: var(--exec-muted);
+  font-size: 0.84rem;
+}
+
+.exec-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.exec-tile span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--exec-muted);
+  font-size: 0.84rem;
+}
+.exec-tile strong {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--exec-ink);
+}
+
+/* ── Charts ──────────────────────────────────────────────────── */
+.exec-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: clamp(26px, 4vw, 46px);
+}
+.exec-chart-wrap {
+  position: relative;
+}
+.exec-trend {
+  display: block;
+  width: 100%;
+  height: 118px;
+  overflow: visible;
+}
+.exec-axis {
+  stroke: rgba(244, 239, 228, 0.16);
+  stroke-width: 1;
+}
+.exec-trend-area {
+  fill: #e3c88a;
+  opacity: 0.1;
+}
+.exec-trend-line {
+  fill: none;
+  stroke: #e3c88a;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.exec-trend-dot {
+  fill: #e3c88a;
+  stroke: var(--exec-surface);
+  stroke-width: 2;
+}
+.exec-tip {
+  position: absolute;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #f4efe4;
+  color: #10202e;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.7);
+}
+.exec-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: var(--exec-muted);
+  font-size: 0.76rem;
+}
+
+/* Horizontal magnitude bars — thin, rounded at the data end only */
+.exec-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.exec-bars li {
+  display: grid;
+  grid-template-columns: minmax(0, 8.5rem) 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.exec-bar-label {
+  color: var(--exec-muted);
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exec-bar-track {
+  height: 14px;
+  border-radius: 3px;
+  background: rgba(244, 239, 228, 0.07);
+  overflow: hidden;
+}
+.exec-bar-fill {
+  display: block;
+  height: 100%;
+  border-start-end-radius: 4px;
+  border-end-end-radius: 4px;
+  transition: inline-size 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.exec-bar-value {
+  color: var(--exec-ink);
+  font-weight: 700;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Queue ───────────────────────────────────────────────────── */
+.exec-queue {
+  position: relative;
+  z-index: 1;
+}
+.exec-queue-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.exec-queue-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+}
+.exec-queue .exec-search {
+  margin: 0;
+  min-width: 240px;
+  flex: 1;
+  max-width: 380px;
+}
+.exec-card-title h3 {
+  margin: 0 0 5px;
+  font-size: 1.04rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #fff;
+}
+.exec-seal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: #1b1405;
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+}
+.exec-seal-pill svg { width: 13px; height: 13px; }
+
+/* ── The approval moment ─────────────────────────────────────── */
+.exec-seal-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 20px;
+  background: rgba(6, 12, 20, 0.78);
+  backdrop-filter: blur(6px);
+  animation: exec-stage-in 0.25s ease both;
+}
+@keyframes exec-stage-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.exec-seal-mark {
+  display: grid;
+  place-items: center;
+  width: 128px;
+  height: 128px;
+  border-radius: 999px;
+  color: #1b1405;
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  box-shadow: 0 0 0 10px rgba(201, 169, 97, 0.14), 0 0 60px rgba(201, 169, 97, 0.5);
+  animation: exec-stamp 0.6s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.exec-seal-mark svg { width: 60px; height: 60px; stroke-width: 2.5; }
+@keyframes exec-stamp {
+  0% { opacity: 0; transform: scale(1.9) rotate(-14deg); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.exec-seal-stage p {
+  margin: 0;
+  color: var(--gold-soft);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  animation: exec-rise 0.5s 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (max-width: 900px) {
+  .exec-briefing,
+  .exec-charts { grid-template-columns: 1fr; }
+  .exec-briefing { padding-top: clamp(26px, 6vw, 40px); gap: 26px; }
+}
+@media (max-width: 640px) {
+  .exec-queue-head { flex-direction: column; align-items: stretch; }
+  .exec-queue .exec-search { max-width: none; }
+  .exec-bars li { grid-template-columns: minmax(0, 6.5rem) 1fr auto; gap: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exec-briefing, .exec-charts, .exec-queue,
+  .exec-seal-mark, .exec-seal-stage p { animation: none; }
+  .exec-aurora { animation: none; }
+}
