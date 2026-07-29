@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { classifyPolicy, policyReference } from "../../lib/departments";
-import { formatDate } from "../../lib/format";
+import { formatDate, initials } from "../../lib/format";
 import { isExecutive } from "../../lib/permissions";
 import { readableWorkflowError, signedFileUrl } from "../../lib/policyWorkflow";
 import { errorMessage, supabase } from "../../lib/supabase";
@@ -20,9 +20,24 @@ function greeting() {
 }
 
 const monthFmt = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", { month: "short" });
+const todayFmt = new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
 
 function pct(count: number, max: number) {
   return max > 0 ? Math.round((count / max) * 100) : 0;
+}
+
+type ReviewTone = "danger" | "warning" | "info";
+
+function reviewUrgency(days: number): { label: string; tone: ReviewTone } {
+  if (days < 0) return { label: `متأخرة ${Math.abs(days)} يوم`, tone: "danger" };
+  if (days === 0) return { label: "مستحقة اليوم", tone: "danger" };
+  if (days <= 30) return { label: `خلال ${days} يوم`, tone: "warning" };
+  return { label: `خلال ${days} يوم`, tone: "info" };
 }
 
 export function ExecutivePage() {
@@ -43,6 +58,8 @@ export function ExecutivePage() {
   const kpiRef = useReveal<HTMLDivElement>();
   const queueHeadRef = useReveal<HTMLDivElement>();
   const queueListRef = useReveal<HTMLDivElement>();
+  const reviewsHeadRef = useReveal<HTMLDivElement>();
+  const reviewsRef = useReveal<HTMLDivElement>();
   const chartsHeadRef = useReveal<HTMLDivElement>();
   const chartsGridRef = useReveal<HTMLDivElement>();
   const registerHeadRef = useReveal<HTMLDivElement>();
@@ -95,15 +112,47 @@ export function ExecutivePage() {
   const recentFinal = useMemo(() => finalised.slice(0, 8), [finalised]);
 
   const departmentRows = useMemo(() => {
-    const counts = new Map<string, number>();
+    const counts = new Map<string, { approved: number; pending: number }>();
     for (const policy of policies) {
       const label = classifyPolicy(policy).departmentLabel;
-      counts.set(label, (counts.get(label) ?? 0) + 1);
+      const entry = counts.get(label) ?? { approved: 0, pending: 0 };
+      if (policy.final_approved_at) entry.approved += 1;
+      else entry.pending += 1;
+      counts.set(label, entry);
     }
     return [...counts.entries()]
-      .map(([label, count]) => ({ label, count }))
-      .sort((a, b) => b.count - a.count)
+      .map(([label, { approved, pending }]) => ({ label, approved, pending, total: approved + pending }))
+      .sort((a, b) => b.total - a.total)
       .slice(0, 6);
+  }, [policies]);
+
+  const avgApprovalDays = useMemo(() => {
+    const durations: number[] = [];
+    for (const policy of finalised) {
+      if (!policy.submitted_at || !policy.final_approved_at) continue;
+      const start = new Date(policy.submitted_at).getTime();
+      const end = new Date(policy.final_approved_at).getTime();
+      if (Number.isNaN(start) || Number.isNaN(end) || end < start) continue;
+      durations.push((end - start) / (1000 * 60 * 60 * 24));
+    }
+    if (durations.length === 0) return null;
+    return Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
+  }, [finalised]);
+
+  const upcomingReviews = useMemo(() => {
+    const now = Date.now();
+    return policies
+      .map((policy) => {
+        const reviewDate = policy.policy_metadata?.review_date;
+        if (!reviewDate) return null;
+        const parsed = new Date(reviewDate);
+        if (Number.isNaN(parsed.getTime())) return null;
+        const days = Math.ceil((parsed.getTime() - now) / (1000 * 60 * 60 * 24));
+        return { policy, days };
+      })
+      .filter((item): item is { policy: PolicyBundle; days: number } => item !== null && item.days <= 90)
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 8);
   }, [policies]);
 
   const trend = useMemo(() => {
@@ -228,9 +277,20 @@ export function ExecutivePage() {
               <span className="secondary">مكتب الرئيس التنفيذي</span>
             </div>
           </div>
-          <button type="button" className="btn btn-secondary" onClick={() => void signOut()}>
-            خروج
-          </button>
+          <div className="topbar-actions">
+            <div className="profile-chip">
+              <span className="profile-avatar" aria-hidden="true">
+                {initials(profile.full_name)}
+              </span>
+              <span className="profile-text">
+                <span className="primary">{profile.full_name ?? "الرئيس التنفيذي"}</span>
+                <span className="secondary">الرئيس التنفيذي</span>
+              </span>
+            </div>
+            <button type="button" className="btn btn-secondary" onClick={() => void signOut()}>
+              خروج
+            </button>
+          </div>
         </div>
       </header>
 
@@ -239,7 +299,7 @@ export function ExecutivePage() {
           <div className="reveal" ref={heroTextRef}>
             <span className="eyebrow">
               {greeting()}
-              {firstName ? `، ${firstName}` : ""}
+              {firstName ? `، ${firstName}` : ""} · {todayFmt.format(new Date())}
             </span>
             <h1 className="display-l">{pending.length} سياسة بانتظار الاعتماد</h1>
             <p className="lede">راجع الوثيقة وسياقها الكامل، ثم اعتمد.</p>
@@ -266,7 +326,7 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="grid grid-3 stagger" ref={kpiRef}>
+          <div className="grid grid-4 stagger" ref={kpiRef}>
             <div className="kpi">
               <span className="eyebrow">بانتظار الاعتماد</span>
               <div className="value brass">{pending.length}</div>
@@ -278,6 +338,10 @@ export function ExecutivePage() {
             <div className="kpi">
               <span className="eyebrow">نسبة الإنجاز</span>
               <div className="value">{completion}٪</div>
+            </div>
+            <div className="kpi">
+              <span className="eyebrow">متوسط زمن الاعتماد</span>
+              <div className="value">{avgApprovalDays !== null ? `${avgApprovalDays} يوم` : "—"}</div>
             </div>
           </div>
         </div>
@@ -333,14 +397,22 @@ export function ExecutivePage() {
                       <span className="caption">{classification.departmentLabel}</span>
                     </div>
 
-                    <div className="demo-row" style={{ marginBlockStart: "var(--s-5)", gap: "var(--s-7)" }}>
+                    <div className="meta-grid" style={{ marginBlockStart: "var(--s-5)" }}>
                       <div>
-                        <p className="caption">اعتماد الجودة</p>
-                        <p>{formatDate(policy.approved_at)}</p>
+                        <p className="caption">الإدارة المصدرة</p>
+                        <p>{policy.policy_metadata?.issuing_department ?? classification.departmentLabel}</p>
                       </div>
                       <div>
-                        <p className="caption">المراجعة القادمة</p>
-                        <p>{formatDate(policy.next_review_at)}</p>
+                        <p className="caption">تاريخ الإصدار</p>
+                        <p>{formatDate(policy.policy_metadata?.issue_date)}</p>
+                      </div>
+                      <div>
+                        <p className="caption">تاريخ المراجعة</p>
+                        <p>{formatDate(policy.policy_metadata?.review_date)}</p>
+                      </div>
+                      <div>
+                        <p className="caption">تاريخ الإرسال</p>
+                        <p>{formatDate(policy.submitted_at)}</p>
                       </div>
                     </div>
 
@@ -390,6 +462,59 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
+          <div className="section-head reveal" ref={reviewsHeadRef}>
+            <span className="eyebrow">المراجعات</span>
+            <h2>مراجعات مستحقة قريباً</h2>
+            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+          </div>
+
+          {upcomingReviews.length === 0 ? (
+            <div className="empty">
+              <div className="mark" aria-hidden="true">
+                ✓
+              </div>
+              <h3>لا توجد مراجعات مستحقة خلال ٩٠ يوماً</h3>
+              <p>تُقرأ هذه المواعيد من تاريخ المراجعة في ترويسة كل سياسة.</p>
+            </div>
+          ) : (
+            <div className="table-scroll reveal" ref={reviewsRef}>
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>السياسة</th>
+                    <th>الرمز</th>
+                    <th>الإدارة</th>
+                    <th>تاريخ المراجعة</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {upcomingReviews.map(({ policy, days }) => {
+                    const classification = classifyPolicy(policy);
+                    const urgency = reviewUrgency(days);
+                    return (
+                      <tr key={policy.id} onClick={() => void openDocument(policy)} style={{ cursor: "pointer" }}>
+                        <td>{policy.title}</td>
+                        <td dir="ltr" style={{ textAlign: "start" }}>
+                          {policyReference(policy) ?? "—"}
+                        </td>
+                        <td>{classification.departmentLabel}</td>
+                        <td>{formatDate(policy.policy_metadata?.review_date)}</td>
+                        <td>
+                          <span className={`pill ${urgency.tone}`}>{urgency.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="band">
+        <div className="wrap">
           <div className="section-head reveal" ref={chartsHeadRef}>
             <span className="eyebrow">المؤشرات</span>
             <h2>الإدارات والاعتماد</h2>
@@ -402,19 +527,23 @@ export function ExecutivePage() {
                 <thead>
                   <tr>
                     <th>الإدارة</th>
-                    <th className="num">السياسات</th>
+                    <th className="num">مُعتمد</th>
+                    <th className="num">بانتظار</th>
+                    <th className="num">الإجمالي</th>
                   </tr>
                 </thead>
                 <tbody>
                   {departmentRows.length === 0 ? (
                     <tr>
-                      <td colSpan={2}>لا توجد بيانات.</td>
+                      <td colSpan={4}>لا توجد بيانات.</td>
                     </tr>
                   ) : (
                     departmentRows.map((row) => (
                       <tr key={row.label}>
                         <td>{row.label}</td>
-                        <td className="num">{row.count}</td>
+                        <td className="num">{row.approved}</td>
+                        <td className="num">{row.pending}</td>
+                        <td className="num">{row.total}</td>
                       </tr>
                     ))
                   )}
@@ -463,6 +592,8 @@ export function ExecutivePage() {
                   <tr>
                     <th>السياسة</th>
                     <th>الرمز</th>
+                    <th>تاريخ الإصدار</th>
+                    <th>تاريخ المراجعة</th>
                     <th>تاريخ الاعتماد</th>
                     <th>الحالة</th>
                   </tr>
@@ -478,6 +609,8 @@ export function ExecutivePage() {
                       <td dir="ltr" style={{ textAlign: "start" }}>
                         {policyReference(policy) ?? "—"}
                       </td>
+                      <td>{formatDate(policy.policy_metadata?.issue_date)}</td>
+                      <td>{formatDate(policy.policy_metadata?.review_date)}</td>
                       <td>{formatDate(policy.final_approved_at)}</td>
                       <td>
                         <span className="pill success">مُعتمد</span>

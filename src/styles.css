@@ -4056,11 +4056,20 @@ select,
 }
 .exec-portal .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .exec-portal .grid-3 { grid-template-columns: repeat(3, 1fr); }
+.exec-portal .grid-4 { grid-template-columns: repeat(4, 1fr); }
 .exec-portal .demo-row {
   display: flex;
   gap: var(--s-4);
   flex-wrap: wrap;
   align-items: center;
+}
+.exec-portal .meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--s-5) var(--s-6);
+}
+.exec-portal .meta-grid .caption {
+  margin-block-end: var(--s-1);
 }
 
 /* The recurring mark of the office — a brass hairline that draws itself */
@@ -4120,6 +4129,44 @@ html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
   color: var(--pine);
 }
 .exec-portal .lockup-text .secondary {
+  font-size: 0.7rem;
+  color: var(--slate);
+}
+.exec-portal .topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+}
+.exec-portal .profile-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding-inline-end: var(--s-5);
+  border-inline-end: 1px solid var(--line);
+}
+.exec-portal .profile-avatar {
+  inline-size: 34px;
+  block-size: 34px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--pine);
+  color: var(--porcelain);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.exec-portal .profile-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.exec-portal .profile-text .primary {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.exec-portal .profile-text .secondary {
   font-size: 0.7rem;
   color: var(--slate);
 }
@@ -4565,10 +4612,15 @@ html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
   .exec-portal .hero-seal { max-inline-size: 280px; margin-inline: auto; }
   .exec-portal .grid-2,
   .exec-portal .grid-3 { grid-template-columns: 1fr; }
+  .exec-portal .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .exec-portal .band { padding-block: var(--s-7); }
+  .exec-portal .profile-text { display: none; }
+  .exec-portal .profile-chip { padding-inline-end: var(--s-3); }
 }
 @media (max-width: 560px) {
   .exec-portal .lockup-text .secondary { display: none; }
+  .exec-portal .grid-4 { grid-template-columns: 1fr; }
+  .exec-portal .profile-chip { border-inline-end: none; padding-inline-end: 0; }
   .exec-portal .dock { flex-direction: column; align-items: stretch; }
   .exec-portal .dock .btn-primary { width: 100%; justify-content: center; }
 }
