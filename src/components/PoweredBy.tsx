@@ -5,7 +5,7 @@ export function PoweredBy() {
   return (
     <div className="powered-by" aria-hidden="true">
       <span className="powered-by-label">Powered by</span>
-      <span className="powered-by-name">HudaJuhany</span>
+      <span className="powered-by-name">Huda Althubiany</span>
     </div>
   );
 }
