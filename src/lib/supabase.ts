@@ -48,19 +48,45 @@ export function isSetupError(error: unknown) {
   );
 }
 
+// A handful of common Supabase Auth errors that surface raw English text —
+// translated so operators see something actionable instead of a technical
+// message. Every account in this app logs in by username, not a real
+// mailbox, so an email-sending failure here is never something the user
+// caused; it just needs to be explained.
+const KNOWN_ERROR_PATTERNS: Array<{ test: RegExp; message: string }> = [
+  {
+    test: /email rate limit exceeded/i,
+    message:
+      'تم تجاوز الحد المسموح به لإرسال رسائل التفعيل من Supabase خلال فترة قصيرة. انتظر بضع دقائق ثم أعد المحاولة. لتفادي هذا نهائيًا، عطّل خيار "Confirm email" من إعدادات Supabase (Authentication → Providers → Email) — الحسابات هنا تُنشأ بعنوان داخلي لا يستقبل رسائل فعليًا فلا حاجة لتأكيده.',
+  },
+  {
+    test: /user already registered|already been registered/i,
+    message: "اسم المستخدم هذا مستخدم بالفعل. اختر اسمًا آخر.",
+  },
+];
+
+function translateKnownError(raw: string) {
+  for (const pattern of KNOWN_ERROR_PATTERNS) {
+    if (pattern.test.test(raw)) {
+      return pattern.message;
+    }
+  }
+  return raw;
+}
+
 export function errorMessage(error: unknown) {
   if (!error) {
     return "حدث خطأ غير معروف.";
   }
 
   if (typeof error === "string") {
-    return error;
+    return translateKnownError(error);
   }
 
   if (error instanceof Error) {
-    return error.message;
+    return translateKnownError(error.message);
   }
 
   const maybeError = error as { message?: string; details?: string };
-  return maybeError.message ?? maybeError.details ?? "حدث خطأ غير معروف.";
+  return translateKnownError(maybeError.message ?? maybeError.details ?? "حدث خطأ غير معروف.");
 }
