@@ -7,6 +7,7 @@ import { AdminExecutiveAccount } from "../components/admin/AdminExecutiveAccount
 import { AdminSections } from "../components/admin/AdminSections";
 import { AdminSignupRequests } from "../components/admin/AdminSignupRequests";
 import { roleLabels } from "../lib/format";
+import { loginEmailForUsername } from "../lib/loginIdentity";
 import {
   createDetachedSupabaseClient,
   errorMessage,
@@ -112,7 +113,7 @@ export function AdminUsersPage() {
 
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const email = textValue(form, "email").toLowerCase();
+    const username = textValue(form, "username").toLowerCase();
     const password = textValue(form, "password");
     const detachedClient = createDetachedSupabaseClient();
 
@@ -120,6 +121,13 @@ export function AdminUsersPage() {
       setError("تعذّر الاتصال بالخدمة حاليًا. يرجى المحاولة لاحقًا.");
       return;
     }
+
+    if (!/^[a-z0-9._-]{3,32}$/.test(username)) {
+      setError("اسم المستخدم يجب أن يكون حروفًا إنجليزية أو أرقامًا بدون مسافات (٣ إلى ٣٢ خانة).");
+      return;
+    }
+
+    const email = loginEmailForUsername(username);
 
     setCreating(true);
     setError(null);
@@ -131,7 +139,7 @@ export function AdminUsersPage() {
         password,
         options: {
           data: {
-            username: textValue(form, "username"),
+            username,
             full_name: textValue(form, "full_name"),
             department: textValue(form, "department"),
             job_title: textValue(form, "job_title"),
@@ -152,7 +160,7 @@ export function AdminUsersPage() {
       await updateProfileRecord(data.user.id, form, {
         id: data.user.id,
         email,
-        username: null,
+        username,
         full_name: null,
         role: "quality_staff",
         status: "pending",
@@ -229,12 +237,14 @@ export function AdminUsersPage() {
         </div>
         <div className="admin-form-grid">
           <label>
-            <span>البريد الإلكتروني</span>
-            <input name="email" type="email" required autoComplete="off" />
-          </label>
-          <label>
             <span>اسم المستخدم</span>
-            <input name="username" pattern="[a-zA-Z0-9._-]{3,32}" autoComplete="off" />
+            <input
+              name="username"
+              dir="ltr"
+              pattern="[a-zA-Z0-9._-]{3,32}"
+              required
+              autoComplete="off"
+            />
           </label>
           <label>
             <span>كلمة المرور</span>
@@ -292,7 +302,7 @@ export function AdminUsersPage() {
           >
             <div>
               <StatusBadge status={profile.status} />
-              <h2>{profile.email ?? profile.id}</h2>
+              <h2>{profile.full_name ?? profile.username ?? profile.id}</h2>
               <p>{roleLabels[profile.role]}</p>
               {profile.username ? <p className="muted-line">@{profile.username}</p> : null}
             </div>

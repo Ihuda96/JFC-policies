@@ -4,8 +4,10 @@
 export function PoweredBy() {
   return (
     <div className="powered-by" aria-hidden="true">
-      <span className="powered-by-label">Powered by</span>
-      <span className="powered-by-name">Huda Althubiany</span>
+      <span className="powered-by-text" dir="ltr">
+        <span className="powered-by-label">Powered by</span>
+        <span className="powered-by-name">Huda Althobiani</span>
+      </span>
     </div>
   );
 }
