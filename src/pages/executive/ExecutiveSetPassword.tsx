@@ -43,7 +43,7 @@ export function ExecutiveSetPassword() {
 
   return (
     <main className="exec-portal auth-page">
-      <section className="auth-card">
+      <section className="auth-card bloom-corner">
         <span className="seal" aria-hidden="true">
           <img src="/brand/jfc-emblem.png" alt="" />
         </span>
