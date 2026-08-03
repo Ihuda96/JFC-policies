@@ -47,6 +47,7 @@ export function ExecutivePage() {
   const [policies, setPolicies] = useState<PolicyBundle[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -462,64 +463,75 @@ export function ExecutivePage() {
               {visiblePending.map((policy) => {
                 const classification = classifyPolicy(policy);
                 const isOpen = openId === policy.id;
+                const isExpanded = expandedId === policy.id;
                 return (
-                  <article className="card" key={policy.id}>
-                    <div className="demo-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
+                  <article className={`card queue-card${isExpanded ? " is-open" : ""}`} key={policy.id}>
+                    <button
+                      type="button"
+                      className="queue-card-toggle"
+                      aria-expanded={isExpanded}
+                      onClick={() => setExpandedId(isExpanded ? null : policy.id)}
+                    >
+                      <span className="queue-card-summary">
                         <span className="pill warning">قيد المراجعة</span>
-                        <h3 style={{ marginBlockStart: "var(--s-3)" }}>{policy.title}</h3>
-                        <p className="caption" dir="ltr" style={{ textAlign: "start" }}>
+                        <h3>{policy.title}</h3>
+                        <span className="caption" dir="ltr" style={{ textAlign: "start" }}>
                           {policyReference(policy) ?? "—"}
-                        </p>
-                      </div>
+                        </span>
+                      </span>
                       <span className="caption">{classification.departmentLabel}</span>
-                    </div>
+                      <span className="chevron" aria-hidden="true" />
+                    </button>
 
-                    <div className="meta-grid" style={{ marginBlockStart: "var(--s-4)" }}>
-                      <div>
-                        <p className="caption">تاريخ الإصدار</p>
-                        <p>{formatDate(policy.policy_metadata?.issue_date)}</p>
-                      </div>
-                      <div>
-                        <p className="caption">تاريخ المراجعة</p>
-                        <p>{formatDate(policy.policy_metadata?.review_date)}</p>
-                      </div>
-                    </div>
-
-                    <div className="demo-row" style={{ marginBlockStart: "var(--s-5)" }}>
-                      <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
-                        عرض الوثيقة
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-quiet"
-                        onClick={() => {
-                          setOpenId(isOpen ? null : policy.id);
-                          setNote("");
-                        }}
-                      >
-                        {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
-                      </button>
-                    </div>
-
-                    {isOpen ? (
-                      <div style={{ marginBlockStart: "var(--s-5)" }}>
-                        <div className="field">
-                          <textarea
-                            className="textarea"
-                            value={note}
-                            onChange={(event) => setNote(event.target.value)}
-                            placeholder="سبب الإعادة"
-                          />
+                    {isExpanded ? (
+                      <div className="queue-card-body">
+                        <div className="meta-grid">
+                          <div>
+                            <p className="caption">تاريخ الإصدار</p>
+                            <p>{formatDate(policy.policy_metadata?.issue_date)}</p>
+                          </div>
+                          <div>
+                            <p className="caption">تاريخ المراجعة</p>
+                            <p>{formatDate(policy.policy_metadata?.review_date)}</p>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          disabled={busy === policy.id}
-                          onClick={() => void returnWithNote(policy)}
-                        >
-                          تأكيد الإعادة
-                        </button>
+
+                        <div className="demo-row" style={{ marginBlockStart: "var(--s-5)" }}>
+                          <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
+                            عرض الوثيقة
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-quiet"
+                            onClick={() => {
+                              setOpenId(isOpen ? null : policy.id);
+                              setNote("");
+                            }}
+                          >
+                            {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
+                          </button>
+                        </div>
+
+                        {isOpen ? (
+                          <div style={{ marginBlockStart: "var(--s-5)" }}>
+                            <div className="field">
+                              <textarea
+                                className="textarea"
+                                value={note}
+                                onChange={(event) => setNote(event.target.value)}
+                                placeholder="سبب الإعادة"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              disabled={busy === policy.id}
+                              onClick={() => void returnWithNote(policy)}
+                            >
+                              تأكيد الإعادة
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </article>

@@ -4335,6 +4335,82 @@ html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
   color: var(--slate);
 }
 
+/* ── Queue card — collapses to a single row, expands on demand ─ */
+.exec-portal .queue-card {
+  padding: 0;
+  overflow: hidden;
+}
+.exec-portal .queue-card-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  inline-size: 100%;
+  padding: var(--s-5) var(--s-6);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+}
+.exec-portal .queue-card-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  flex: 1;
+  min-inline-size: 0;
+}
+.exec-portal .queue-card-summary h3 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exec-portal .queue-card-toggle > .caption {
+  flex: none;
+}
+.exec-portal .chevron {
+  /* Physical (not logical) borders on purpose: "down" must look like down
+     regardless of RTL/LTR — a logical border-inline-end would draw the
+     opposite corner in RTL and rotate into a sideways glyph instead. */
+  flex: none;
+  inline-size: 9px;
+  block-size: 9px;
+  border-right: 2px solid var(--slate);
+  border-bottom: 2px solid var(--slate);
+  transform: rotate(45deg);
+  margin-block-start: -4px;
+  transition: transform var(--d-2) var(--ease-standard);
+}
+.exec-portal .queue-card.is-open .chevron {
+  transform: rotate(225deg);
+  margin-block-start: 4px;
+}
+.exec-portal .queue-card-body {
+  padding: var(--s-5) var(--s-6) var(--s-6);
+  border-block-start: 1px solid var(--line);
+}
+@media (max-width: 560px) {
+  .exec-portal .queue-card-toggle {
+    flex-wrap: wrap;
+    padding: var(--s-4) var(--s-5);
+  }
+  .exec-portal .queue-card-summary {
+    flex: 1 1 100%;
+    order: 1;
+  }
+  .exec-portal .queue-card-summary h3 {
+    white-space: normal;
+  }
+  .exec-portal .queue-card-toggle > .caption {
+    order: 2;
+  }
+  .exec-portal .chevron {
+    order: 3;
+    margin-inline-start: auto;
+  }
+}
+
 /* ── KPI / Stat block ────────────────────────────────────────── */
 .exec-portal .kpi {
   background: var(--porcelain);
