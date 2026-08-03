@@ -6,6 +6,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { AdminExecutiveAccount } from "../components/admin/AdminExecutiveAccount";
 import { AdminSections } from "../components/admin/AdminSections";
 import { AdminSignupRequests } from "../components/admin/AdminSignupRequests";
+import { DEPARTMENT_UNITS } from "../lib/departments";
 import { roleLabels } from "../lib/format";
 import { loginEmailForUsername } from "../lib/loginIdentity";
 import {
@@ -89,13 +90,17 @@ export function AdminUsersPage() {
       return;
     }
 
+    const departmentCode = textValue(form, "department_code").toUpperCase();
+    const departmentLabel = DEPARTMENT_UNITS.find((unit) => unit.code === departmentCode)?.label ?? "";
+
     const { error: rpcError } = await supabase.rpc("admin_update_profile", {
       p_user_id: userId,
       p_username: textValue(form, "username"),
       p_full_name: textValue(form, "full_name"),
       p_role: (String(form.get("role") ?? fallback.role) || fallback.role) as AppRole,
       p_status: (String(form.get("status") ?? fallback.status) || fallback.status) as ProfileStatus,
-      p_department: textValue(form, "department"),
+      p_department: departmentLabel,
+      p_department_code: departmentCode || null,
       p_job_title: textValue(form, "job_title"),
       p_phone: textValue(form, "phone"),
     });
@@ -141,7 +146,10 @@ export function AdminUsersPage() {
           data: {
             username,
             full_name: textValue(form, "full_name"),
-            department: textValue(form, "department"),
+            department: DEPARTMENT_UNITS.find(
+              (unit) => unit.code === textValue(form, "department_code").toUpperCase(),
+            )?.label,
+            department_code: textValue(form, "department_code"),
             job_title: textValue(form, "job_title"),
             phone: textValue(form, "phone"),
           },
@@ -276,7 +284,14 @@ export function AdminUsersPage() {
           </label>
           <label>
             <span>الإدارة</span>
-            <input name="department" autoComplete="off" />
+            <select name="department_code" defaultValue="">
+              <option value="">— بدون —</option>
+              {DEPARTMENT_UNITS.map((unit) => (
+                <option value={unit.code} key={unit.code}>
+                  {unit.label}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             <span>المسمى</span>
@@ -336,7 +351,14 @@ export function AdminUsersPage() {
             </label>
             <label>
               <span>الإدارة</span>
-              <input name="department" defaultValue={profile.department ?? ""} />
+              <select name="department_code" defaultValue={profile.department_code ?? ""}>
+                <option value="">— بدون —</option>
+                {DEPARTMENT_UNITS.map((unit) => (
+                  <option value={unit.code} key={unit.code}>
+                    {unit.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               <span>المسمى</span>

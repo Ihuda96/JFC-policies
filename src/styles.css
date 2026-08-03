@@ -4072,6 +4072,34 @@ select,
   margin-block-end: var(--s-1);
 }
 
+/* ── Recommendations — a short, data-derived insights list ─────── */
+.exec-portal .rec-list {
+  display: flex;
+  flex-direction: column;
+  border-block-start: 1px solid var(--line);
+}
+.exec-portal .rec-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-4);
+  padding: var(--s-4) 0;
+  border-block-end: 1px solid var(--line);
+}
+.exec-portal .rec-item p {
+  margin: 0;
+}
+.exec-portal .rec-item .dot {
+  inline-size: 8px;
+  block-size: 8px;
+  margin-block-start: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.exec-portal .rec-item .dot.danger { background: var(--danger); }
+.exec-portal .rec-item .dot.warning { background: var(--warning); }
+.exec-portal .rec-item .dot.info { background: var(--info); }
+.exec-portal .rec-item .dot.success { background: var(--success); }
+
 /* The recurring mark of the office — a brass hairline that draws itself */
 .exec-portal .brass-rule {
   block-size: 1px;
@@ -4523,8 +4551,8 @@ html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
   align-items: center;
   justify-content: space-between;
   gap: var(--s-5);
-  padding: var(--s-4) var(--s-5);
-  padding-block-end: calc(var(--s-4) + env(safe-area-inset-bottom));
+  padding: var(--s-5) var(--s-6);
+  padding-block-end: calc(var(--s-5) + env(safe-area-inset-bottom));
   background: var(--pine-deep);
   color: var(--porcelain);
   box-shadow: var(--e-3);
@@ -4726,7 +4754,7 @@ html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
   }
 }
 .exec-portal ~ .powered-by {
-  inset-block-end: calc(98px + env(safe-area-inset-bottom));
+  inset-block-end: calc(114px + env(safe-area-inset-bottom));
 }
 @media (max-width: 560px) {
   .powered-by {
@@ -4738,7 +4766,7 @@ html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
   /* The dock stacks (text row + full-width button) below this width, so it's
      noticeably taller than the desktop single row. */
   .exec-portal ~ .powered-by {
-    inset-block-end: calc(146px + env(safe-area-inset-bottom));
+    inset-block-end: calc(162px + env(safe-area-inset-bottom));
   }
 }
 @media (prefers-reduced-motion: reduce) {
