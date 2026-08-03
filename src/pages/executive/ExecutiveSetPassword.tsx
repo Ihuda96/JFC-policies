@@ -45,7 +45,7 @@ export function ExecutiveSetPassword() {
     <main className="exec-portal auth-page">
       <section className="auth-card">
         <span className="seal" aria-hidden="true">
-          ج١
+          <img src="/brand/jfc-emblem.png" alt="" />
         </span>
         <h1>اختر كلمة الدخول</h1>
         <form onSubmit={submit}>
