@@ -322,7 +322,7 @@ export function ExecutivePage() {
           <div className="hero-seal seal-stage-mark" aria-hidden="true">
             <div className="ring" />
             <div className="ring inner" />
-            <div className="glyph">ج١</div>
+            <img className="glyph" src="/brand/jfc-emblem.png" alt="" />
           </div>
           <p>تم الاعتماد</p>
         </div>
@@ -332,7 +332,7 @@ export function ExecutivePage() {
         <div className="wrap topbar-inner">
           <div className="lockup">
             <div className="seal" aria-hidden="true">
-              ج١
+              <img src="/brand/jfc-emblem.png" alt="" />
             </div>
             <div className="lockup-text">
               <span className="primary">تجمع جدة الصحي الأول</span>
@@ -381,7 +381,7 @@ export function ExecutivePage() {
           <div className="hero-seal reveal in" aria-hidden="true">
             <div className="ring" />
             <div className="ring inner" />
-            <div className="glyph">ج١</div>
+            <img className="glyph" src="/brand/jfc-emblem.png" alt="" />
           </div>
         </div>
       </section>

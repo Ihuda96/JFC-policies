@@ -4142,10 +4142,13 @@ html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
   border-radius: var(--r-sm);
   display: grid;
   place-items: center;
-  color: var(--pine);
-  font-size: 1.1rem;
-  font-weight: 600;
   background: var(--porcelain);
+  padding: 5px;
+}
+.exec-portal .seal img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
 }
 .exec-portal .lockup-text {
   display: flex;
@@ -4177,7 +4180,7 @@ html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
   inline-size: 34px;
   block-size: 34px;
   flex: none;
-  border-radius: 50%;
+  border-radius: var(--r-sm);
   display: grid;
   place-items: center;
   background: var(--pine);
@@ -4245,9 +4248,8 @@ html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
   opacity: 0.5;
 }
 .exec-portal .hero-seal .glyph {
-  font-size: 3.4rem;
-  color: var(--pine);
-  font-weight: 600;
+  inline-size: 42%;
+  block-size: auto;
   z-index: 1;
 }
 
