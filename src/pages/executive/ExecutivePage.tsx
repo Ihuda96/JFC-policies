@@ -307,10 +307,8 @@ export function ExecutivePage() {
     <div className="exec-portal">
       {sealing ? (
         <div className="seal-stage" role="status" aria-live="polite">
-          <div className="hero-seal seal-stage-mark" aria-hidden="true">
-            <div className="ring" />
-            <div className="ring inner" />
-            <img className="glyph" src="/brand/jfc-emblem.png" alt="" />
+          <div className="seal-stage-mark" aria-hidden="true">
+            <img src="/brand/jfc-emblem.png" alt="" />
           </div>
           <p>تم الاعتماد</p>
         </div>
@@ -323,7 +321,10 @@ export function ExecutivePage() {
               <img src="/brand/jfc-emblem.png" alt="" />
             </div>
             <div className="lockup-text">
-              <span className="primary">تجمع جدة الصحي الأول</span>
+              <span className="primary">
+                تجمع جدة الصحي الأول
+                <span className="org-code">JFHC</span>
+              </span>
               <span className="secondary">مكتب الرئيس التنفيذي</span>
             </div>
           </div>
@@ -345,15 +346,20 @@ export function ExecutivePage() {
       </header>
 
       <section className="hero">
-        <div className="wrap hero-grid">
-          <div className="reveal in">
+        <div className="hero-watermark" aria-hidden="true" />
+        <div className="wrap">
+          <div className="hero-inner">
             <span className="eyebrow">
               {greeting()}
               {firstName ? `، ${firstName}` : ""} · {todayFmt.format(new Date())}
             </span>
             <h1 className="display-l">{pending.length} سياسة بانتظار الاعتماد</h1>
             <p className="lede">راجع الوثيقة وسياقها الكامل، ثم اعتمد.</p>
-            <div className="brass-rule in" data-brass />
+            <div className="orbit-divider" aria-hidden="true">
+              <span className="tick" />
+              <span className="medallion" />
+              <span className="tick" />
+            </div>
             {pending.length > 0 ? (
               <button
                 type="button"
@@ -365,21 +371,15 @@ export function ExecutivePage() {
               </button>
             ) : null}
           </div>
-
-          <div className="hero-seal reveal in" aria-hidden="true">
-            <div className="ring" />
-            <div className="ring inner" />
-            <img className="glyph" src="/brand/jfc-emblem.png" alt="" />
-          </div>
         </div>
       </section>
 
       <section className="band">
         <div className="wrap">
-          <div className="grid grid-4 stagger in">
+          <div className="grid grid-4">
             <div className="kpi">
               <span className="eyebrow">بانتظار الاعتماد</span>
-              <div className="value brass">{pending.length}</div>
+              <div className="value accent">{pending.length}</div>
             </div>
             <div className="kpi">
               <span className="eyebrow">مُعتمد</span>
@@ -399,12 +399,16 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal in">
+          <div className="section-head">
             <span className="eyebrow">التوصيات</span>
             <h2>ما يستحق انتباهك الآن</h2>
-            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+            <div className="orbit-divider" aria-hidden="true">
+              <span className="tick" />
+              <span className="medallion" />
+              <span className="tick" />
+            </div>
           </div>
-          <div className="rec-list reveal in">
+          <div className="rec-list">
             {recommendations.map((item) => (
               <div className="rec-item" key={item.id}>
                 <span className={`dot ${item.tone}`} aria-hidden="true" />
@@ -417,10 +421,14 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal in">
+          <div className="section-head">
             <span className="eyebrow">بانتظار الاعتماد</span>
             <h2>السياسات</h2>
-            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+            <div className="orbit-divider" aria-hidden="true">
+              <span className="tick" />
+              <span className="medallion" />
+              <span className="tick" />
+            </div>
           </div>
 
           {loading ? (
@@ -452,7 +460,7 @@ export function ExecutivePage() {
               {queueOpen ? (
                 <div className="queue-card-body">
                   {pending.length > 3 ? (
-                    <div className="field" style={{ marginBlockEnd: "var(--s-5)", maxInlineSize: "360px" }}>
+                    <div className="field" style={{ marginBlockEnd: "var(--space-5)", maxInlineSize: "360px" }}>
                       <input
                         className="input"
                         value={query}
@@ -471,7 +479,10 @@ export function ExecutivePage() {
                         const isOpen = openId === policy.id;
                         const isExpanded = expandedId === policy.id;
                         return (
-                          <article className={`card queue-card${isExpanded ? " is-open" : ""}`} key={policy.id}>
+                          <article
+                            className={`card queue-card${isExpanded ? " is-open bloom-corner" : ""}`}
+                            key={policy.id}
+                          >
                             <button
                               type="button"
                               className="queue-card-toggle"
@@ -481,7 +492,7 @@ export function ExecutivePage() {
                               <span className="queue-card-summary">
                                 <span className="pill warning">قيد المراجعة</span>
                                 <h3>{policy.title}</h3>
-                                <span className="caption" dir="ltr" style={{ textAlign: "start" }}>
+                                <span className="caption code" dir="ltr" style={{ textAlign: "start" }}>
                                   {policyReference(policy) ?? "—"}
                                 </span>
                               </span>
@@ -502,7 +513,7 @@ export function ExecutivePage() {
                                   </div>
                                 </div>
 
-                                <div className="demo-row" style={{ marginBlockStart: "var(--s-5)" }}>
+                                <div className="demo-row" style={{ marginBlockStart: "var(--space-5)" }}>
                                   <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
                                     عرض الوثيقة
                                   </button>
@@ -519,7 +530,7 @@ export function ExecutivePage() {
                                 </div>
 
                                 {isOpen ? (
-                                  <div style={{ marginBlockStart: "var(--s-5)" }}>
+                                  <div style={{ marginBlockStart: "var(--space-5)" }}>
                                     <div className="field">
                                       <textarea
                                         className="textarea"
@@ -554,10 +565,14 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal in">
+          <div className="section-head">
             <span className="eyebrow">المراجعات</span>
             <h2>مراجعات مستحقة قريباً</h2>
-            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+            <div className="orbit-divider" aria-hidden="true">
+              <span className="tick" />
+              <span className="medallion" />
+              <span className="tick" />
+            </div>
           </div>
 
           {upcomingReviews.length === 0 ? (
@@ -569,7 +584,7 @@ export function ExecutivePage() {
               <p>تُقرأ هذه المواعيد من تاريخ المراجعة في ترويسة كل سياسة.</p>
             </div>
           ) : (
-            <div className="table-scroll reveal in">
+            <div className="table-scroll">
               <table className="data">
                 <thead>
                   <tr>
@@ -587,7 +602,7 @@ export function ExecutivePage() {
                     return (
                       <tr key={policy.id} onClick={() => void openDocument(policy)} style={{ cursor: "pointer" }}>
                         <td>{policy.title}</td>
-                        <td dir="ltr" style={{ textAlign: "start" }}>
+                        <td className="code" dir="ltr" style={{ textAlign: "start" }}>
                           {policyReference(policy) ?? "—"}
                         </td>
                         <td>{classification.departmentLabel}</td>
@@ -607,13 +622,17 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal in">
+          <div className="section-head">
             <span className="eyebrow">المؤشرات</span>
             <h2>الإدارات والاعتماد</h2>
-            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+            <div className="orbit-divider" aria-hidden="true">
+              <span className="tick" />
+              <span className="medallion" />
+              <span className="tick" />
+            </div>
           </div>
 
-          <div className="grid grid-2 stagger in">
+          <div className="grid grid-2">
             <div className="table-scroll">
               <table className="data">
                 <thead>
@@ -644,7 +663,7 @@ export function ExecutivePage() {
             </div>
 
             <div className="card">
-              <h3 style={{ marginBlockEnd: "var(--s-5)" }}>الاعتماد النهائي · ٦ أشهر</h3>
+              <h3 style={{ marginBlockEnd: "var(--space-5)" }}>الاعتماد النهائي · ٦ أشهر</h3>
               <div className="trend-bars" role="img" aria-label="الاعتماد النهائي خلال الأشهر الستة الأخيرة">
                 {trend.map((point, index) => (
                   <div className="trend-col" key={index} title={`${point.label}: ${point.count}`}>
@@ -666,10 +685,14 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal in">
+          <div className="section-head">
             <span className="eyebrow">السجل</span>
             <h2>آخر الاعتمادات</h2>
-            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+            <div className="orbit-divider" aria-hidden="true">
+              <span className="tick" />
+              <span className="medallion" />
+              <span className="tick" />
+            </div>
           </div>
 
           {recentFinal.length === 0 ? (
@@ -678,7 +701,7 @@ export function ExecutivePage() {
               <p>تظهر السياسات هنا فور اعتمادها.</p>
             </div>
           ) : (
-            <div className="table-scroll reveal in">
+            <div className="table-scroll">
               <table className="data">
                 <thead>
                   <tr>
@@ -698,7 +721,7 @@ export function ExecutivePage() {
                       style={{ cursor: "pointer" }}
                     >
                       <td>{policy.title}</td>
-                      <td dir="ltr" style={{ textAlign: "start" }}>
+                      <td className="code" dir="ltr" style={{ textAlign: "start" }}>
                         {policyReference(policy) ?? "—"}
                       </td>
                       <td>{formatDate(policy.policy_metadata?.issue_date)}</td>

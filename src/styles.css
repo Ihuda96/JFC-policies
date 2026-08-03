@@ -3918,172 +3918,300 @@ select,
   height: 12px;
 }
 
-
-
 /* ═══════════════════════════════════════════════════════════════
-   Executive page — "Ministerial Green & Brass" design system,
-   applied exactly as specified for this page only. Tokens, component
-   anatomy, and the brass-rule / seal signature motif are taken
-   directly from the supplied system; everything is scoped under
-   .exec-portal so no other page is touched.
+   Executive page — "Hadithah Bloom" design system v2, applied to
+   Jeddah First Health Cluster (JFHC) in place of the source doc's
+   "Al Hadithah General Hospital / Aljouf Health Cluster" naming.
+   Tokens, component anatomy, and the Bloom motif (ghost texture,
+   corner, orbit divider) are taken directly from the supplied
+   system; scoped under .exec-portal so no other page is touched.
+
+   Deliberate, flagged deviations from the literal spec:
+   - Pill/chip label colors (danger/success/warning/info) darkened.
+     The source hexes are 2.98–3.70:1 against their own *-soft chip
+     backgrounds — all below WCAG AA's 4.5:1 for text. Kept the
+     original hexes for dots/borders/fills; darkened variants below
+     (*-text) carry the label text only. Verified independently, not
+     just trusting the doc's own (correct, but narrower) contrast
+     table in §02.
+   - Reveal-on-scroll (§09) omitted entirely. This exact page has had
+     two real incidents where an IntersectionObserver-gated reveal
+     left content silently invisible with no recovery — not worth
+     reintroducing on a page executives use to approve real policies.
+     Button-press and card-hover-lift are implemented as specified
+     since both are pure :active/:hover CSS with zero JS dependency.
+   - Poppins/Inter (numerals, Latin type) substituted with a system
+     sans stack. This codebase only self-hosts Janna LT — no external
+     font loading exists anywhere in the app, and this page shouldn't
+     be the first to add one.
    ═══════════════════════════════════════════════════════════════ */
 .exec-portal {
-  /* — Palette — */
-  --ink: #16211d;
-  --pine: #17423a;
-  --pine-deep: #0f2e28;
-  --porcelain: #fafaf6;
-  --mist: #edf1ec;
-  --slate: #59665f;
-  --line: #dde3dd;
-  --champagne: #b08d57;
-  --champagne-soft: #d9c29a;
-  /* Text-safe brass: the source token (#B08D57) is 2.95:1 on porcelain,
-     below WCAG AA even at large sizes. Used only for non-text hairlines,
-     borders and rings below; this darker step carries brass-colored TEXT
-     (eyebrows, the emphasized KPI value) at 5.7:1. */
-  --champagne-text: #7d5e33;
-  --success: #3e7c5a;
-  --warning: #b0803a;
-  --danger: #9e4b41;
-  --info: #3e6478;
+  /* — §02 Color: primary "Sky" — 500 is brand blue, 900 is brand navy — */
+  --primary-50: #eaf6fd;
+  --primary-100: #d3edfb;
+  --primary-200: #a8dbf6;
+  --primary-300: #78c5ee;
+  --primary-400: #4fb0e4;
+  --primary-500: #2ea3e0;
+  --primary-600: #1d89c4;
+  --primary-700: #166b9b;
+  --primary-800: #123f5c;
+  --primary-900: #0e2841;
 
-  /* — Spacing: 8pt base — */
-  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
-  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 128px;
+  /* accent "Sand" */
+  --accent-50: #fbf3e6;
+  --accent-100: #f5e4c6;
+  --accent-200: #eacb93;
+  --accent-300: #ddaf66;
+  --accent-400: #c89a4c;
+  --accent-500: #b8863a;
+  --accent-600: #9c6e2c;
+  --accent-700: #7a5220;
+  --accent-800: #593a16;
+  --accent-900: #38240d;
 
-  /* — Radius — */
-  --r-sm: 2px; --r-md: 6px; --r-lg: 12px; --r-pill: 999px;
+  /* neutral "Slate" — tinted with primary hue, never true gray */
+  --neutral-0: #ffffff;
+  --neutral-50: #f7fafd;
+  --neutral-100: #eef3f8;
+  --neutral-200: #e1eaf1;
+  --neutral-300: #cbd9e4;
+  --neutral-400: #a8bccc;
+  --neutral-500: #7e93a6;
+  --neutral-600: #5c7186;
+  --neutral-700: #435a72;
+  --neutral-800: #253c54;
+  --neutral-900: #14283a;
 
-  /* — Elevation: ink-tinted, never pure black — */
-  --e-1: 0 1px 2px rgba(22, 33, 29, 0.05);
-  --e-2: 0 6px 18px rgba(22, 33, 29, 0.06);
-  --e-3: 0 16px 40px rgba(22, 33, 29, 0.08);
+  /* semantic aliases — what components consume */
+  --bg: var(--neutral-50);
+  --surface: var(--neutral-0);
+  --surface-soft: var(--primary-50);
+  --surface-sunken: var(--neutral-100);
+  --text: var(--neutral-900);
+  --text-secondary: var(--neutral-700);
+  --text-muted: var(--neutral-600);
+  /* primary-500 (2.83:1) and primary-600 (3.87:1) both fail AA white-text —
+     matches the source doc's own correction: every button/link/focus use
+     points to 700 (5.82:1); 500 stays decorative-only (icon fills, thin
+     borders, swatches — never text or a fill carrying text). */
+  --primary: var(--primary-700);
+  --primary-hover: var(--primary-800);
+  --primary-active: var(--primary-900);
+  --primary-strong: var(--primary-900);
+  --primary-soft: var(--primary-50);
+  --primary-decorative: var(--primary-500);
+  --accent: var(--accent-500);
+  --accent-hover: var(--accent-600);
+  --accent-soft: var(--accent-50);
+  --success: #1f9d6c;
+  --success-hover: #187d57;
+  --success-soft: #e6f7f0;
+  --success-text: #197e56;
+  --danger: #d6455b;
+  --danger-hover: #b7364a;
+  --danger-soft: #fce9ec;
+  --danger-text: #b63b4d;
+  --warning: #b8842a;
+  --warning-hover: #966c1f;
+  --warning-soft: #fbf3e2;
+  --warning-text: #8a6320;
+  --info: #2e86c6;
+  --info-hover: #256fa3;
+  --info-soft: #e7f3fc;
+  --info-text: #2772a8;
+  --border: var(--neutral-200);
+  --border-strong: var(--neutral-300);
+  --focus-ring: var(--primary-400);
 
-  /* — Motion — */
-  --ease-authority: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --d-1: 120ms; --d-2: 200ms; --d-3: 320ms; --d-4: 520ms; --d-5: 720ms;
-  --reveal-shift: 12px;
+  /* — §05 Spacing — 4px base — */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
 
-  min-height: 100vh;
-  background: var(--porcelain);
-  color: var(--ink);
-  line-height: 1.8;
+  /* — §05 Radius — */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+  /* admin-register status chips are deliberately smaller/squarer than the
+     public radius-sm, §07 — "so staff always know which surface they're in" */
+  --radius-chip: 6px;
+
+  /* — §05 Elevation — */
+  --shadow-sm: 0 1px 2px rgba(20, 40, 58, 0.06);
+  --shadow-md: 0 6px 16px rgba(20, 40, 58, 0.1), 0 2px 4px rgba(20, 40, 58, 0.05);
+  --shadow-lg: 0 16px 40px rgba(20, 40, 58, 0.14), 0 4px 10px rgba(20, 40, 58, 0.06);
+  --shadow-xl: 0 28px 64px rgba(10, 20, 30, 0.28), 0 8px 20px rgba(10, 20, 30, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-blur: blur(16px) saturate(140%);
+
+  /* — §09 Motion — named curves, exactly as specified — */
+  --ease-press-down: cubic-bezier(0.4, 0, 1, 1);
+  --ease-press-up: cubic-bezier(0.16, 1.2, 0.3, 1);
+  --ease-lift: cubic-bezier(0.22, 1, 0.36, 1);
+  --d-press-down: 120ms;
+  --d-press-up: 220ms;
+  --d-lift: 260ms;
+
+  --font-numeral: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+
+  min-block-size: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
   font-variant-numeric: tabular-nums;
 }
 .exec-portal * {
-  letter-spacing: 0 !important;
+  letter-spacing: 0 !important; /* Janna LT's connected forms never track */
 }
 .exec-portal-loading {
   display: grid;
   place-items: center;
 }
 
-/* ── Type roles ──────────────────────────────────────────────── */
-.exec-portal .display-l,
-.exec-portal h1,
-.exec-portal h2,
-.exec-portal h3 {
-  font-weight: 400;
-  color: var(--ink);
-}
-.exec-portal h2,
-.exec-portal h3 {
-  font-weight: 700;
-}
+/* — §03 Typography — justified 1.25 scale, Arabic sizing (this app's primary script) — */
 .exec-portal .display-l {
-  font-size: 3.375rem;
-  line-height: 1.18;
-  margin-block: var(--s-4) var(--s-5);
+  font-size: 65px;
+  line-height: 1.65;
+  font-weight: 700;
+  margin: 0;
 }
 .exec-portal h1 {
-  font-size: 2.5rem;
-  line-height: 1.25;
+  font-size: 52px;
+  line-height: 1.6;
+  font-weight: 700;
+  margin: 0;
 }
 .exec-portal h2 {
-  font-size: 1.875rem;
-  line-height: 1.35;
+  font-size: 41px;
+  line-height: 1.55;
+  font-weight: 700;
+  margin: 0;
 }
 .exec-portal h3 {
-  font-size: 1.375rem;
-  line-height: 1.3;
+  font-size: 33px;
+  line-height: 1.5;
+  font-weight: 600;
+  margin: 0;
 }
 .exec-portal .lede {
-  color: var(--slate);
-  font-size: 1.125rem;
-  max-inline-size: 46ch;
+  font-size: 22px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0;
 }
 .exec-portal .caption {
-  font-size: 0.8125rem;
+  font-size: 13px;
   line-height: 1.5;
-  color: var(--slate);
+  color: var(--text-muted);
+}
+.exec-portal .small {
+  font-size: 15px;
+  line-height: 1.6;
 }
 .exec-portal .muted {
-  color: var(--slate);
+  color: var(--text-muted);
 }
 .exec-portal .eyebrow {
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--champagne-text);
+  color: var(--primary);
   display: inline-block;
 }
 
-/* ── Layout ──────────────────────────────────────────────────── */
+/* — §04 Signature motif "Bloom" — drawn from JFHC's own five-petal star mark — */
+.exec-portal .bloom-corner {
+  border-start-start-radius: 28px;
+  border-start-end-radius: 16px;
+  border-end-end-radius: 16px;
+  border-end-start-radius: 16px;
+}
+.exec-portal .orbit-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+}
+.exec-portal .orbit-divider .medallion {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-500);
+  flex: none;
+}
+.exec-portal .orbit-divider .tick {
+  inline-size: 14px;
+  block-size: 1px;
+  background: var(--accent-300);
+  flex: none;
+}
+
+/* — Layout — */
 .exec-portal .wrap {
-  max-inline-size: 1120px;
+  max-inline-size: 1180px;
   margin-inline: auto;
-  padding-inline: var(--s-5);
+  padding-inline: var(--space-6);
 }
 .exec-portal .band {
-  padding-block: var(--s-8);
-  border-block-end: 1px solid var(--line);
+  padding-block: var(--space-10);
+  border-block-end: 1px solid var(--border);
 }
 .exec-portal .band:last-of-type {
   border-block-end: none;
 }
 .exec-portal .section-head {
-  margin-block-end: var(--s-6);
+  margin-block-end: var(--space-6);
   max-inline-size: 60ch;
 }
 .exec-portal .section-head h2 {
-  margin-block-start: var(--s-3);
+  margin-block-start: var(--space-2);
 }
 .exec-portal .grid {
   display: grid;
-  gap: var(--s-5);
+  gap: var(--space-5);
 }
-.exec-portal .grid-2 { grid-template-columns: repeat(2, 1fr); }
-.exec-portal .grid-3 { grid-template-columns: repeat(3, 1fr); }
-.exec-portal .grid-4 { grid-template-columns: repeat(4, 1fr); }
+.exec-portal .grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.exec-portal .grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
 .exec-portal .demo-row {
   display: flex;
-  gap: var(--s-4);
+  gap: var(--space-4);
   flex-wrap: wrap;
   align-items: center;
 }
 .exec-portal .meta-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--s-5) var(--s-6);
+  gap: var(--space-5) var(--space-6);
 }
 .exec-portal .meta-grid .caption {
-  margin-block-end: var(--s-1);
+  margin-block-end: var(--space-1);
 }
 
-/* ── Recommendations — a short, data-derived insights list ─────── */
+/* — Recommendations list — */
 .exec-portal .rec-list {
   display: flex;
   flex-direction: column;
-  border-block-start: 1px solid var(--line);
+  border-block-start: 1px solid var(--border);
 }
 .exec-portal .rec-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--s-4);
-  padding: var(--s-4) 0;
-  border-block-end: 1px solid var(--line);
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-block-end: 1px solid var(--border);
 }
 .exec-portal .rec-item p {
   margin: 0;
@@ -4095,54 +4223,439 @@ select,
   border-radius: 50%;
   flex: none;
 }
-.exec-portal .rec-item .dot.danger { background: var(--danger); }
-.exec-portal .rec-item .dot.warning { background: var(--warning); }
-.exec-portal .rec-item .dot.info { background: var(--info); }
-.exec-portal .rec-item .dot.success { background: var(--success); }
-
-/* The recurring mark of the office — a brass hairline that draws itself */
-.exec-portal .brass-rule {
-  block-size: 1px;
-  background: var(--champagne);
-  inline-size: 100%;
-  transform: scaleX(0);
-  transition: transform var(--d-4) var(--ease-authority);
+.exec-portal .rec-item .dot.danger {
+  background: var(--danger);
 }
-html[dir="rtl"] .exec-portal .brass-rule { transform-origin: right center; }
-html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
-.exec-portal .brass-rule.in,
-.exec-portal .reveal.in .brass-rule { transform: scaleX(1); }
+.exec-portal .rec-item .dot.warning {
+  background: var(--warning);
+}
+.exec-portal .rec-item .dot.info {
+  background: var(--info);
+}
+.exec-portal .rec-item .dot.success {
+  background: var(--success);
+}
 
-/* ── Top bar + monogram lockup ──────────────────────────────── */
+/* — §09 Buttons: press-down 120ms ease-in, spring release 220ms — */
+.exec-portal .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-5);
+  padding-block: var(--space-3);
+  min-block-size: 44px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: transform var(--d-press-up) var(--ease-press-up), box-shadow var(--d-press-up) var(--ease-press-up),
+    background var(--d-press-up) var(--ease-press-up), border-color var(--d-press-up) var(--ease-press-up),
+    color var(--d-press-up) var(--ease-press-up);
+}
+.exec-portal .btn:active {
+  transition-duration: var(--d-press-down);
+  transition-timing-function: var(--ease-press-down);
+  transform: scale(0.97) translateY(1px);
+}
+.exec-portal .btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.exec-portal .btn-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.exec-portal .btn-primary:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-md);
+}
+.exec-portal .btn-primary:active {
+  box-shadow: var(--shadow-sm);
+}
+.exec-portal .btn-primary:disabled {
+  background: var(--neutral-100);
+  color: var(--neutral-400);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+.exec-portal .btn-secondary {
+  background: var(--surface);
+  color: var(--primary);
+  border-color: var(--border-strong);
+}
+.exec-portal .btn-secondary:hover {
+  border-color: var(--primary-300);
+  background: var(--primary-50);
+}
+.exec-portal .btn-quiet {
+  background: none;
+  color: var(--text-secondary);
+  padding-inline: var(--space-3);
+  position: relative;
+}
+.exec-portal .btn-quiet::after {
+  content: "";
+  position: absolute;
+  inset-inline: var(--space-3);
+  block-size: 1px;
+  inset-block-end: 6px;
+  background: var(--primary-300);
+  transform: scaleX(0);
+  transition: transform var(--d-lift) var(--ease-lift);
+}
+html[dir="rtl"] .exec-portal .btn-quiet::after {
+  transform-origin: right;
+}
+html[dir="ltr"] .exec-portal .btn-quiet::after {
+  transform-origin: left;
+}
+.exec-portal .btn-quiet:hover::after {
+  transform: scaleX(1);
+}
+.exec-portal .hero-cta {
+  margin-block-start: var(--space-6);
+}
+
+/* — §06 Cards: hover lift 260ms, translateY(-6px), shadow sm→lg, border→primary-300 — */
+.exec-portal .card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--d-lift) var(--ease-lift), box-shadow var(--d-lift) var(--ease-lift),
+    border-color var(--d-lift) var(--ease-lift);
+}
+.exec-portal .card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-300);
+}
+.exec-portal .card h3 {
+  margin-block-end: var(--space-2);
+}
+.exec-portal .card p {
+  color: var(--text-secondary);
+}
+
+/* KPI / stat card — primary-900 fill, numerals in the Latin numeral stack */
+.exec-portal .kpi {
+  background: var(--primary-900);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+.exec-portal .kpi .eyebrow {
+  color: rgba(255, 255, 255, 0.72);
+}
+.exec-portal .kpi .value {
+  font-family: var(--font-numeral);
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.exec-portal .kpi .value.accent {
+  color: var(--accent-300);
+}
+
+/* — Forms — 1.5px border, 44px min height, 10px radius — */
+.exec-portal .field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.exec-portal .field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.exec-portal .input,
+.exec-portal .textarea {
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  min-block-size: 44px;
+  padding-inline: var(--space-4);
+  padding-block: var(--space-3);
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  transition: border-color 200ms, box-shadow 200ms;
+}
+.exec-portal .textarea {
+  min-block-size: 96px;
+  resize: vertical;
+}
+.exec-portal .input:hover,
+.exec-portal .textarea:hover {
+  border-color: var(--border-strong);
+}
+.exec-portal .input:focus,
+.exec-portal .textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-50);
+}
+.exec-portal .input::placeholder,
+.exec-portal .textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* — Status chips — admin register: radius-chip (6px), never a pill, §07 — */
+.exec-portal .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-chip);
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.exec-portal .pill::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+.exec-portal .pill.warning {
+  background: var(--warning-soft);
+  color: var(--warning-text);
+  border-color: var(--warning);
+}
+.exec-portal .pill.warning::before {
+  background: var(--warning);
+}
+.exec-portal .pill.success {
+  background: var(--success-soft);
+  color: var(--success-text);
+  border-color: var(--success);
+}
+.exec-portal .pill.success::before {
+  background: var(--success);
+}
+.exec-portal .pill.danger {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  border-color: var(--danger);
+}
+.exec-portal .pill.danger::before {
+  background: var(--danger);
+}
+.exec-portal .pill.info {
+  background: var(--info-soft);
+  color: var(--info-text);
+  border-color: var(--info);
+}
+.exec-portal .pill.info::before {
+  background: var(--info);
+}
+
+/* — Table — admin-dense rows (40px, not 56px), monospace for codes — */
+.exec-portal .table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.exec-portal table.data {
+  inline-size: 100%;
+  min-inline-size: 0;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.exec-portal table.data thead th {
+  position: sticky;
+  inset-block-start: 0;
+  background: var(--primary-900);
+  color: #fff;
+  font-weight: 600;
+  text-align: start;
+  padding: var(--space-3) var(--space-4);
+  font-size: 13px;
+}
+.exec-portal table.data td {
+  padding: var(--space-3) var(--space-4);
+  border-block-start: 1px solid var(--border);
+  block-size: 40px;
+}
+.exec-portal table.data tbody tr {
+  transition: background 150ms;
+}
+.exec-portal table.data tbody tr:hover {
+  background: var(--surface-soft);
+}
+.exec-portal table.data .num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-numeral);
+  inline-size: 1%;
+  white-space: nowrap;
+}
+.exec-portal .code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+/* — Empty state — */
+.exec-portal .empty {
+  text-align: center;
+  padding: var(--space-10) var(--space-6);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+}
+.exec-portal .empty .mark {
+  inline-size: 48px;
+  block-size: 48px;
+  margin-inline: auto;
+  margin-block-end: var(--space-4);
+  border-radius: 50%;
+  background: var(--success-soft);
+  color: var(--success-text);
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+}
+.exec-portal .empty h3 {
+  font-size: 22px;
+  margin-block-end: var(--space-2);
+}
+.exec-portal .empty p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* — Queue card — collapses to a single row, expands on demand — */
+.exec-portal .queue-card {
+  padding: 0;
+  overflow: hidden;
+}
+.exec-portal .queue-card-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  inline-size: 100%;
+  padding: var(--space-5) var(--space-6);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+}
+.exec-portal .queue-card-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-inline-size: 0;
+}
+.exec-portal .queue-card-summary h3 {
+  font-size: 20px;
+  line-height: 1.4;
+  margin: 0;
+}
+.exec-portal .queue-card-toggle > .caption {
+  flex: none;
+}
+.exec-portal .chevron {
+  /* Physical (not logical) borders on purpose: "down" must look like down
+     regardless of RTL/LTR — a logical border-inline-end would draw the
+     opposite corner in RTL and rotate into a sideways glyph instead. */
+  flex: none;
+  inline-size: 9px;
+  block-size: 9px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  margin-block-start: -4px;
+  transition: transform var(--d-lift) var(--ease-lift);
+}
+.exec-portal .queue-card.is-open > .queue-card-toggle > .chevron {
+  transform: rotate(225deg);
+  margin-block-start: 4px;
+}
+.exec-portal .queue-card-body {
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  border-block-start: 1px solid var(--border);
+}
+
+/* — Trend bars — */
+.exec-portal .trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  block-size: 160px;
+}
+.exec-portal .trend-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  block-size: 100%;
+}
+.exec-portal .trend-value {
+  font-family: var(--font-numeral);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.exec-portal .trend-track {
+  flex: 1;
+  inline-size: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.exec-portal .trend-fill {
+  inline-size: 100%;
+  background: var(--primary-700);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.exec-portal .trend-label {
+  font-size: 12px;
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+/* — §06 Navigation: topbar + monogram lockup — */
 .exec-portal .topbar {
   position: sticky;
   inset-block-start: 0;
   z-index: 40;
-  background: color-mix(in srgb, var(--porcelain) 88%, transparent);
-  backdrop-filter: saturate(140%) blur(10px);
-  border-block-end: 1px solid var(--line);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-block-end: 1px solid var(--border);
 }
 .exec-portal .topbar-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--s-5);
-  padding-block: var(--s-4);
+  gap: var(--space-5);
+  padding-block: var(--space-4);
 }
 .exec-portal .lockup {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
+  gap: var(--space-3);
 }
 .exec-portal .seal {
   inline-size: 40px;
   block-size: 40px;
   flex: none;
-  border: 1px solid var(--champagne);
-  border-radius: var(--r-sm);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
-  background: var(--porcelain);
+  background: var(--surface);
   padding: 5px;
 }
 .exec-portal .seal img {
@@ -4156,37 +4669,51 @@ html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
   line-height: 1.25;
 }
 .exec-portal .lockup-text .primary {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--pine);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-900);
 }
 .exec-portal .lockup-text .secondary {
-  font-size: 0.7rem;
-  color: var(--slate);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+/* Small-detail brand mark: the JFHC acronym, monospace like the rest of the
+   system's IDs/codes — a deliberately tiny, quiet detail, not a badge. */
+.exec-portal .org-code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em !important;
+  color: var(--primary-700);
+  background: var(--primary-50);
+  border: 1px solid var(--primary-200);
+  border-radius: var(--radius-chip);
+  padding: 2px 6px;
+  margin-inline-start: var(--space-2);
 }
 .exec-portal .topbar-actions {
   display: flex;
   align-items: center;
-  gap: var(--s-5);
+  gap: var(--space-5);
 }
 .exec-portal .profile-chip {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
-  padding-inline-end: var(--s-5);
-  border-inline-end: 1px solid var(--line);
+  gap: var(--space-3);
+  padding-inline-end: var(--space-5);
+  border-inline-end: 1px solid var(--border);
 }
 .exec-portal .profile-avatar {
   inline-size: 34px;
   block-size: 34px;
   flex: none;
-  border-radius: var(--r-sm);
+  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
-  background: var(--pine);
-  color: var(--porcelain);
-  font-size: 0.78rem;
-  font-weight: 600;
+  background: var(--primary-900);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
 }
 .exec-portal .profile-text {
   display: flex;
@@ -4194,219 +4721,190 @@ html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
   line-height: 1.25;
 }
 .exec-portal .profile-text .primary {
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text);
 }
 .exec-portal .profile-text .secondary {
-  font-size: 0.7rem;
-  color: var(--slate);
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
-/* ── Hero ────────────────────────────────────────────────────── */
+/* — §08 Hero: editorial, motif-anchored — Arabic headline at hero scale,
+   the star mark once, oversized, desaturated, cropped off-canvas — */
 .exec-portal .hero {
-  padding-block: var(--s-9) var(--s-8);
   position: relative;
   overflow: hidden;
+  padding-block: var(--space-12) var(--space-10);
 }
-.exec-portal .hero-grid {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: var(--s-8);
-  align-items: center;
+.exec-portal .hero-watermark {
+  position: absolute;
+  inset-block-start: -18%;
+  inset-inline-end: -12%;
+  inline-size: 56%;
+  aspect-ratio: 1;
+  background: url("/brand/jfc-emblem.png") no-repeat center / contain;
+  opacity: 0.07;
+  filter: grayscale(1);
+  pointer-events: none;
+  animation: bloom-breathe 14s ease-in-out infinite alternate;
 }
-.exec-portal .hero .brass-rule {
-  margin-block-start: var(--s-6);
-  max-inline-size: 220px;
+@keyframes bloom-breathe {
+  from {
+    opacity: 0.05;
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    opacity: 0.1;
+    transform: scale(1.04) rotate(2deg);
+  }
 }
-.exec-portal .hero-cta {
-  margin-block-start: var(--s-6);
+.exec-portal .hero-inner {
+  position: relative;
+  z-index: 1;
+  max-inline-size: 720px;
 }
 
-/* Ambient seal panel — quiet, geometric, no gradient cliché */
-.exec-portal .hero-seal {
+/* — Approval-stamp overlay — */
+.exec-portal .seal-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  background: rgba(14, 40, 65, 0.55);
+  backdrop-filter: blur(4px);
+  animation: seal-stage-in 200ms ease both;
+}
+@keyframes seal-stage-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.exec-portal .seal-stage-mark {
+  inline-size: 140px;
   aspect-ratio: 1;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background:
-    radial-gradient(120% 120% at 100% 0%, var(--mist), transparent 60%),
-    var(--porcelain);
+  border-radius: 50%;
+  background: var(--surface);
   display: grid;
   place-items: center;
-  position: relative;
-  box-shadow: var(--e-2);
+  box-shadow: var(--shadow-xl);
+  animation: seal-stamp 520ms var(--ease-lift) both;
 }
-.exec-portal .hero-seal .ring {
-  position: absolute;
-  inset: var(--s-6);
-  border: 1px solid var(--line);
-  border-radius: 50%;
+.exec-portal .seal-stage-mark img {
+  inline-size: 58%;
 }
-.exec-portal .hero-seal .ring.inner {
-  inset: calc(var(--s-6) + 22px);
-  border-color: var(--champagne);
-  opacity: 0.5;
+@keyframes seal-stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
-.exec-portal .hero-seal .glyph {
-  inline-size: 42%;
-  block-size: auto;
-  z-index: 1;
-}
-
-/* ── Buttons ─────────────────────────────────────────────────── */
-.exec-portal .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-2);
-  padding-inline: var(--s-5);
-  padding-block: var(--s-3);
-  border-radius: var(--r-md);
-  font-size: 0.92rem;
-  font-weight: 500;
-  border: 1px solid transparent;
-  transition: background var(--d-2) var(--ease-standard),
-    transform var(--d-2) var(--ease-authority), border-color var(--d-2), color var(--d-2);
-}
-.exec-portal .btn:active {
-  transform: translateY(1px);
-}
-.exec-portal .btn-primary {
-  background: var(--pine);
-  color: var(--porcelain);
-}
-.exec-portal .btn-primary:hover {
-  background: var(--pine-deep);
-  transform: translateY(-1px);
-}
-.exec-portal .btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-.exec-portal .btn-secondary {
-  border-color: var(--line);
-  color: var(--ink);
-  background: var(--porcelain);
-}
-.exec-portal .btn-secondary:hover {
-  border-color: var(--champagne);
-  transform: translateY(-1px);
-}
-.exec-portal .btn-quiet {
-  color: var(--slate);
-  padding-inline: var(--s-2);
-  position: relative;
-}
-.exec-portal .btn-quiet::after {
-  content: "";
-  position: absolute;
-  inset-block-end: var(--s-1);
-  inset-inline-start: var(--s-2);
-  inline-size: calc(100% - var(--s-4));
-  block-size: 1px;
-  background: var(--champagne);
-  transform: scaleX(0);
-  transition: transform var(--d-3) var(--ease-authority);
-}
-html[dir="rtl"] .exec-portal .btn-quiet::after { transform-origin: right; }
-html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
-.exec-portal .btn-quiet:hover {
-  color: var(--ink);
-}
-.exec-portal .btn-quiet:hover::after {
-  transform: scaleX(1);
-}
-
-/* ── Card ────────────────────────────────────────────────────── */
-.exec-portal .card {
-  background: var(--mist);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: var(--s-6);
-  box-shadow: var(--e-1);
-  transition: box-shadow var(--d-3) var(--ease-authority), transform var(--d-3) var(--ease-authority);
-}
-.exec-portal .card:hover {
-  box-shadow: var(--e-2);
-  transform: translateY(-2px);
-}
-.exec-portal .card h3 {
-  margin-block-end: var(--s-2);
-}
-.exec-portal .card p {
-  color: var(--slate);
-}
-
-/* ── Queue card — collapses to a single row, expands on demand ─ */
-.exec-portal .queue-card {
-  padding: 0;
-  overflow: hidden;
-}
-.exec-portal .queue-card-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--s-4);
-  inline-size: 100%;
-  padding: var(--s-5) var(--s-6);
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: start;
-  font: inherit;
-  color: inherit;
-}
-.exec-portal .queue-card-summary {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  flex: 1;
-  min-inline-size: 0;
-}
-.exec-portal .queue-card-summary h3 {
+.exec-portal .seal-stage p {
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--primary-900);
+  font-weight: 600;
 }
-.exec-portal .queue-card-toggle > .caption {
-  flex: none;
+
+/* — Sticky dock — */
+.exec-portal .dock {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  padding-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
+  background: var(--primary-900);
+  color: #fff;
+  box-shadow: var(--shadow-xl);
 }
-.exec-portal .chevron {
-  /* Physical (not logical) borders on purpose: "down" must look like down
-     regardless of RTL/LTR — a logical border-inline-end would draw the
-     opposite corner in RTL and rotate into a sideways glyph instead. */
-  flex: none;
-  inline-size: 9px;
-  block-size: 9px;
-  border-right: 2px solid var(--slate);
-  border-bottom: 2px solid var(--slate);
-  transform: rotate(45deg);
-  margin-block-start: -4px;
-  transition: transform var(--d-2) var(--ease-standard);
+.exec-portal .dock span {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
 }
-/* Direct child combinators only — queue cards can nest (a group of
-   policies inside a collapsible group), and a plain descendant selector
-   here would let an open outer card's .is-open rotate every chevron
-   nested inside it, regardless of that item's own state. */
-.exec-portal .queue-card.is-open > .queue-card-toggle > .chevron {
-  transform: rotate(225deg);
-  margin-block-start: 4px;
+.exec-portal .dock strong {
+  color: #fff;
 }
-.exec-portal .queue-card-body {
-  padding: var(--s-5) var(--s-6) var(--s-6);
-  border-block-start: 1px solid var(--line);
+.exec-portal .dock .btn-primary {
+  background: var(--accent-500);
+  color: var(--primary-900);
+}
+.exec-portal .dock .btn-primary:hover {
+  background: var(--accent-400);
+}
+
+/* — Responsive — */
+@media (max-width: 900px) {
+  .exec-portal .display-l {
+    font-size: 40px;
+  }
+  .exec-portal h1 {
+    font-size: 34px;
+  }
+  .exec-portal .lede {
+    font-size: 18px;
+  }
+  .exec-portal .hero-watermark {
+    inline-size: 80%;
+    inset-inline-end: -30%;
+  }
+  .exec-portal .grid-2,
+  .exec-portal .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .exec-portal .band {
+    padding-block: var(--space-8);
+  }
+  .exec-portal .profile-text {
+    display: none;
+  }
+  .exec-portal .profile-chip {
+    padding-inline-end: var(--space-3);
+  }
 }
 @media (max-width: 560px) {
+  .exec-portal .lockup-text .secondary,
+  .exec-portal .org-code {
+    display: none;
+  }
+  .exec-portal .grid-2,
+  .exec-portal .grid-4 {
+    grid-template-columns: 1fr;
+  }
+  .exec-portal .profile-chip {
+    border-inline-end: none;
+    padding-inline-end: 0;
+  }
+  .exec-portal .dock {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .exec-portal .dock .btn-primary {
+    inline-size: 100%;
+    justify-content: center;
+  }
   .exec-portal .queue-card-toggle {
     flex-wrap: wrap;
-    padding: var(--s-4) var(--s-5);
+    padding: var(--space-4) var(--space-5);
   }
   .exec-portal .queue-card-summary {
     flex: 1 1 100%;
     order: 1;
-  }
-  .exec-portal .queue-card-summary h3 {
-    white-space: normal;
   }
   .exec-portal .queue-card-toggle > .caption {
     order: 2;
@@ -4417,369 +4915,67 @@ html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
   }
 }
 
-/* ── KPI / Stat block ────────────────────────────────────────── */
-.exec-portal .kpi {
-  background: var(--porcelain);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: var(--s-6);
+/* — §10 Accessibility: focus-visible everywhere, honor reduced motion — */
+.exec-portal a:focus-visible,
+.exec-portal button:focus-visible,
+.exec-portal input:focus-visible,
+.exec-portal textarea:focus-visible,
+.exec-portal select:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
-.exec-portal .kpi .eyebrow {
-  margin-block-end: var(--s-3);
-}
-.exec-portal .kpi .value {
-  font-size: 3rem;
-  line-height: 1;
-  color: var(--ink);
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-}
-.exec-portal .kpi .value.brass {
-  color: var(--champagne-text);
-}
-
-/* ── Data table ──────────────────────────────────────────────── */
-.exec-portal .table-scroll {
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-}
-.exec-portal table.data {
-  inline-size: 100%;
-  min-inline-size: 0;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-.exec-portal table.data thead th {
-  position: sticky;
-  inset-block-start: 0;
-  background: var(--pine);
-  color: var(--porcelain);
-  font-weight: 500;
-  text-align: start;
-  padding: var(--s-3) var(--s-4);
-  font-size: 0.82rem;
-}
-.exec-portal table.data td {
-  padding: var(--s-3) var(--s-4);
-  border-block-start: 1px solid var(--line);
-}
-.exec-portal table.data tbody tr {
-  transition: background var(--d-2);
-}
-.exec-portal table.data tbody tr:hover {
-  background: var(--mist);
-}
-.exec-portal table.data .num {
-  text-align: end;
-  font-variant-numeric: tabular-nums;
-  inline-size: 1%;
-  white-space: nowrap;
-}
-
-/* ── Forms ───────────────────────────────────────────────────── */
-.exec-portal .field {
-  margin-block-end: var(--s-5);
-}
-.exec-portal .field label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 500;
-  margin-block-end: var(--s-2);
-}
-.exec-portal .input,
-.exec-portal .textarea {
-  inline-size: 100%;
-  background: var(--porcelain);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding-inline: var(--s-4);
-  padding-block: var(--s-3);
-  color: var(--ink);
-  font-size: 0.92rem;
-  font-family: inherit;
-  transition: border-color var(--d-2), box-shadow var(--d-2);
-}
-.exec-portal .input:focus,
-.exec-portal .textarea:focus {
-  outline: none;
-  border-color: var(--champagne);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--champagne) 25%, transparent);
-}
-.exec-portal .textarea {
-  min-block-size: 96px;
-  resize: vertical;
-}
-
-/* ── Status pills — muted, dot-prefixed, never candy-bright ──── */
-.exec-portal .pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-2);
-  padding-inline: var(--s-3);
-  padding-block: 4px;
-  border-radius: var(--r-pill);
-  font-size: 0.78rem;
-  font-weight: 500;
-  border: 1px solid;
-}
-.exec-portal .pill::before {
-  content: "";
-  inline-size: 6px;
-  block-size: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-/* Text colors below are darkened from the source tokens where the
-   original failed WCAG AA at pill scale (success 4.40:1, warning
-   3.01:1); tints/borders are unchanged. */
-.exec-portal .pill.success {
-  color: #2f6146;
-  border-color: color-mix(in srgb, var(--success) 35%, var(--line));
-  background: color-mix(in srgb, var(--success) 8%, var(--porcelain));
-}
-.exec-portal .pill.warning {
-  color: #8a5416;
-  border-color: color-mix(in srgb, var(--warning) 35%, var(--line));
-  background: color-mix(in srgb, var(--warning) 8%, var(--porcelain));
-}
-.exec-portal .pill.danger {
-  color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
-  background: color-mix(in srgb, var(--danger) 8%, var(--porcelain));
-}
-.exec-portal .pill.info {
-  color: var(--info);
-  border-color: color-mix(in srgb, var(--info) 35%, var(--line));
-  background: color-mix(in srgb, var(--info) 8%, var(--porcelain));
-}
-
-/* ── Empty state ─────────────────────────────────────────────── */
-.exec-portal .empty {
-  text-align: center;
-  padding: var(--s-8);
-  border: 1px dashed var(--line);
-  border-radius: var(--r-lg);
-  background: var(--porcelain);
-}
-.exec-portal .empty .mark {
-  inline-size: 48px;
-  block-size: 48px;
-  margin-inline: auto;
-  margin-block-end: var(--s-4);
-  border: 1px solid var(--champagne);
-  border-radius: var(--r-sm);
-  display: grid;
-  place-items: center;
-  color: var(--champagne-text);
-}
-.exec-portal .empty h3 {
-  margin-block-end: var(--s-2);
-}
-.exec-portal .empty p {
-  color: var(--slate);
-  max-inline-size: 40ch;
-  margin-inline: auto;
-}
-
-/* ── Trend bars (composed from tokens; magnitude-over-time reads
-     better as bars than as the doc's table component) ──────────── */
-.exec-portal .trend-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--s-3);
-  block-size: 150px;
-}
-.exec-portal .trend-col {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s-2);
-  block-size: 100%;
-}
-.exec-portal .trend-value {
-  color: var(--ink);
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-.exec-portal .trend-track {
-  display: flex;
-  align-items: flex-end;
-  flex: 1;
-  inline-size: 100%;
-  border-radius: var(--r-sm);
-  background: var(--mist);
-  overflow: hidden;
-}
-.exec-portal .trend-fill {
-  display: block;
-  inline-size: 100%;
-  border-radius: var(--r-sm) var(--r-sm) 0 0;
-  background: var(--pine);
-  transition: block-size var(--d-4) var(--ease-authority);
-}
-.exec-portal .trend-label {
-  color: var(--slate);
-  font-size: 0.74rem;
-  font-style: normal;
-}
-
-/* ── Sticky action dock ──────────────────────────────────────── */
-.exec-portal .dock {
-  position: sticky;
-  inset-block-end: 0;
-  z-index: 15;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-5);
-  padding: var(--s-5) var(--s-6);
-  padding-block-end: calc(var(--s-5) + env(safe-area-inset-bottom));
-  background: var(--pine-deep);
-  color: var(--porcelain);
-  box-shadow: var(--e-3);
-}
-.exec-portal .dock span {
-  font-size: 0.9rem;
-  color: color-mix(in srgb, var(--porcelain) 82%, transparent);
-}
-.exec-portal .dock strong {
-  color: var(--porcelain);
-}
-.exec-portal .dock .btn-primary {
-  background: var(--champagne);
-  color: var(--pine-deep);
-}
-.exec-portal .dock .btn-primary:hover {
-  background: var(--champagne-soft);
-}
-
-/* ── The approval moment — the office seal, stamped ─────────── */
-.exec-portal .seal-stage {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: var(--s-5);
-  background: rgba(22, 33, 29, 0.5);
-  backdrop-filter: blur(4px);
-  animation: seal-stage-in var(--d-2) var(--ease-standard) both;
-}
-@keyframes seal-stage-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.exec-portal .seal-stage-mark {
-  inline-size: 160px;
-  box-shadow: var(--e-3);
-  animation: seal-stamp var(--d-4) var(--ease-authority) both;
-}
-@keyframes seal-stamp {
-  from { opacity: 0; transform: scale(1.3); }
-  to { opacity: 1; transform: scale(1); }
-}
-.exec-portal .seal-stage p {
-  margin: 0;
-  padding: var(--s-2) var(--s-5);
-  border-radius: var(--r-pill);
-  background: var(--porcelain);
-  color: var(--pine);
-  font-weight: 600;
-}
-
-/* ── Motion — reveal + stagger ───────────────────────────────── */
-.exec-portal .reveal {
-  opacity: 0;
-  transform: translateY(var(--reveal-shift));
-  transition: opacity var(--d-4) var(--ease-authority), transform var(--d-4) var(--ease-authority);
-}
-.exec-portal .reveal.in {
-  opacity: 1;
-  transform: none;
-}
-.exec-portal .stagger > * {
-  opacity: 0;
-  transform: translateY(var(--reveal-shift));
-  transition: opacity var(--d-4) var(--ease-authority), transform var(--d-4) var(--ease-authority);
-}
-.exec-portal .stagger.in > * {
-  opacity: 1;
-  transform: none;
-}
-.exec-portal .stagger.in > *:nth-child(1) { transition-delay: 0ms; }
-.exec-portal .stagger.in > *:nth-child(2) { transition-delay: 75ms; }
-.exec-portal .stagger.in > *:nth-child(3) { transition-delay: 150ms; }
-.exec-portal .stagger.in > *:nth-child(4) { transition-delay: 225ms; }
-.exec-portal .stagger.in > *:nth-child(5) { transition-delay: 300ms; }
-.exec-portal .stagger.in > *:nth-child(6) { transition-delay: 375ms; }
-
-/* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .exec-portal .display-l { font-size: 2.5rem; }
-  .exec-portal .hero-grid { grid-template-columns: 1fr; }
-  .exec-portal .hero-seal { max-inline-size: 280px; margin-inline: auto; }
-  .exec-portal .grid-2,
-  .exec-portal .grid-3 { grid-template-columns: 1fr; }
-  .exec-portal .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .exec-portal .band { padding-block: var(--s-7); }
-  .exec-portal .profile-text { display: none; }
-  .exec-portal .profile-chip { padding-inline-end: var(--s-3); }
-}
-@media (max-width: 560px) {
-  .exec-portal .lockup-text .secondary { display: none; }
-  .exec-portal .grid-4 { grid-template-columns: 1fr; }
-  .exec-portal .profile-chip { border-inline-end: none; padding-inline-end: 0; }
-  .exec-portal .dock { flex-direction: column; align-items: stretch; }
-  .exec-portal .dock .btn-primary { width: 100%; justify-content: center; }
-}
-
-/* ── Reduced motion: a plain ≤120ms cross-fade only ─────────── */
 @media (prefers-reduced-motion: reduce) {
-  .exec-portal * { transition-duration: 120ms !important; animation: none !important; }
-  .exec-portal .reveal,
-  .exec-portal .stagger > * { transform: none !important; }
-  .exec-portal .brass-rule { transform: scaleX(1) !important; }
-  .exec-portal .btn:hover,
-  .exec-portal .card:hover { transform: none !important; }
+  .exec-portal * {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+  /* The 1ms override above is fine for one-shot animations (it just makes
+     them instant) but would turn an *infinite* one into a rapid strobe —
+     a real seizure-trigger risk, not just an unwanted flourish. Ambient/
+     looping animations need to be fully disabled here, not sped up. */
+  .exec-portal .hero-watermark {
+    animation: none;
+    opacity: 0.07;
+    transform: none;
+  }
 }
 
-/* ── Sign-in / set-password (same system) ───────────────────── */
+/* — Auth pages (login / set password) — */
 .exec-portal.auth-page {
+  min-block-size: 100vh;
   display: grid;
   place-items: center;
-  padding: var(--s-5);
+  padding: var(--space-6);
 }
 .exec-portal .auth-card {
-  inline-size: min(400px, 100%);
-  padding: var(--s-8);
-  border-radius: var(--r-lg);
-  background: var(--porcelain);
-  border: 1px solid var(--line);
-  box-shadow: var(--e-2);
+  inline-size: min(420px, 100%);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-10) var(--space-8);
   text-align: center;
 }
 .exec-portal .auth-card .seal {
   margin-inline: auto;
-  margin-block-end: var(--s-4);
+  margin-block-end: var(--space-4);
 }
 .exec-portal .auth-card h1 {
-  font-size: 1.5rem;
-  margin-block-end: var(--s-6);
+  font-size: 26px;
+  margin-block-end: var(--space-6);
 }
 .exec-portal .auth-card form {
   display: grid;
+  gap: var(--space-4);
   text-align: start;
 }
 .exec-portal .auth-card .field:last-of-type {
-  margin-block-end: var(--s-6);
+  margin-block-end: var(--space-2);
 }
 .exec-portal .auth-error {
-  margin: 0 0 var(--s-4);
-  color: var(--danger);
-  font-size: 0.86rem;
+  margin: 0 0 var(--space-4);
+  color: var(--danger-text);
+  font-size: 13px;
 }
 
 /* ── "Powered by" credit — small, on every page, never blocks a click ─── */
