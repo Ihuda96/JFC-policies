@@ -31,9 +31,9 @@ function pct(count: number, max: number) {
   return max > 0 ? Math.round((count / max) * 100) : 0;
 }
 
-type ReviewTone = "danger" | "warning" | "info";
+type Tone = "danger" | "warning" | "info" | "success";
 
-function reviewUrgency(days: number): { label: string; tone: ReviewTone } {
+function reviewUrgency(days: number): { label: string; tone: Tone } {
   if (days < 0) return { label: `متأخرة ${Math.abs(days)} يوم`, tone: "danger" };
   if (days === 0) return { label: "مستحقة اليوم", tone: "danger" };
   if (days <= 30) return { label: `خلال ${days} يوم`, tone: "warning" };
@@ -56,6 +56,8 @@ export function ExecutivePage() {
   const heroTextRef = useReveal<HTMLDivElement>();
   const heroSealRef = useReveal<HTMLDivElement>();
   const kpiRef = useReveal<HTMLDivElement>();
+  const recsHeadRef = useReveal<HTMLDivElement>();
+  const recsRef = useReveal<HTMLDivElement>();
   const queueHeadRef = useReveal<HTMLDivElement>();
   const queueListRef = useReveal<HTMLDivElement>();
   const reviewsHeadRef = useReveal<HTMLDivElement>();
@@ -154,6 +156,67 @@ export function ExecutivePage() {
       .sort((a, b) => a.days - b.days)
       .slice(0, 8);
   }, [policies]);
+
+  const recommendations = useMemo(() => {
+    const items: { id: string; tone: Tone; text: string }[] = [];
+
+    if (pending.length > 0) {
+      const oldest = [...pending].sort((a, b) => {
+        const aTime = new Date(a.submitted_at ?? a.created_at).getTime();
+        const bTime = new Date(b.submitted_at ?? b.created_at).getTime();
+        return aTime - bTime;
+      })[0];
+      const started = oldest.submitted_at ?? oldest.created_at;
+      const days = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(started).getTime()) / (1000 * 60 * 60 * 24)),
+      );
+      if (days >= 3) {
+        items.push({
+          id: "oldest",
+          tone: days >= 14 ? "danger" : "warning",
+          text: `أقدم سياسة بانتظار الاعتماد "${oldest.title}" منذ ${days} يومًا — يُنصح بمراجعتها أولاً.`,
+        });
+      }
+    }
+
+    const busiestDept = [...departmentRows].filter((row) => row.pending > 0).sort((a, b) => b.pending - a.pending)[0];
+    if (busiestDept && busiestDept.pending > 1) {
+      items.push({
+        id: "department",
+        tone: "warning",
+        text: `"${busiestDept.label}" لديها ${busiestDept.pending} سياسة بانتظار الاعتماد، الأكثر بين الإدارات.`,
+      });
+    }
+
+    const overdue = upcomingReviews.filter((item) => item.days < 0).length;
+    if (overdue > 0) {
+      items.push({
+        id: "overdue",
+        tone: "danger",
+        text: `${overdue} سياسة تجاوزت تاريخ مراجعتها المحدد — يُنصح بجدولتها في أقرب وقت.`,
+      });
+    }
+
+    const dueSoon = upcomingReviews.filter((item) => item.days >= 0 && item.days <= 30).length;
+    if (dueSoon > 0) {
+      items.push({
+        id: "due-soon",
+        tone: "info",
+        text: `${dueSoon} سياسة مستحقة المراجعة خلال ٣٠ يومًا القادمة.`,
+      });
+    }
+
+    if (items.length === 0) {
+      items.push({
+        id: "clear",
+        tone: "success",
+        text: "لا توجد توصيات عاجلة حاليًا — جميع السياسات ضمن الجدول المتوقع.",
+      });
+    }
+
+    return items.slice(0, 4);
+  }, [pending, departmentRows, upcomingReviews]);
 
   const trend = useMemo(() => {
     const months: { label: string; count: number }[] = [];
@@ -349,6 +412,24 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
+          <div className="section-head reveal" ref={recsHeadRef}>
+            <span className="eyebrow">التوصيات</span>
+            <h2>ما يستحق انتباهك الآن</h2>
+            <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
+          </div>
+          <div className="rec-list reveal" ref={recsRef}>
+            {recommendations.map((item) => (
+              <div className="rec-item" key={item.id}>
+                <span className={`dot ${item.tone}`} aria-hidden="true" />
+                <p>{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="band">
+        <div className="wrap">
           <div className="section-head reveal" ref={queueHeadRef}>
             <span className="eyebrow">بانتظار الاعتماد</span>
             <h2>السياسات</h2>
@@ -397,11 +478,7 @@ export function ExecutivePage() {
                       <span className="caption">{classification.departmentLabel}</span>
                     </div>
 
-                    <div className="meta-grid" style={{ marginBlockStart: "var(--s-5)" }}>
-                      <div>
-                        <p className="caption">الإدارة المصدرة</p>
-                        <p>{policy.policy_metadata?.issuing_department ?? classification.departmentLabel}</p>
-                      </div>
+                    <div className="meta-grid" style={{ marginBlockStart: "var(--s-4)" }}>
                       <div>
                         <p className="caption">تاريخ الإصدار</p>
                         <p>{formatDate(policy.policy_metadata?.issue_date)}</p>
@@ -410,13 +487,9 @@ export function ExecutivePage() {
                         <p className="caption">تاريخ المراجعة</p>
                         <p>{formatDate(policy.policy_metadata?.review_date)}</p>
                       </div>
-                      <div>
-                        <p className="caption">تاريخ الإرسال</p>
-                        <p>{formatDate(policy.submitted_at)}</p>
-                      </div>
                     </div>
 
-                    <div className="demo-row" style={{ marginBlockStart: "var(--s-6)" }}>
+                    <div className="demo-row" style={{ marginBlockStart: "var(--s-5)" }}>
                       <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
                         عرض الوثيقة
                       </button>
