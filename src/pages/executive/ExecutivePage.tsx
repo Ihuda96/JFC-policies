@@ -47,6 +47,7 @@ export function ExecutivePage() {
   const [policies, setPolicies] = useState<PolicyBundle[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [queueOpen, setQueueOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -432,112 +433,133 @@ export function ExecutivePage() {
             <span className="eyebrow">بانتظار الاعتماد</span>
             <h2>السياسات</h2>
             <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
-            {pending.length > 3 ? (
-              <div className="field" style={{ marginBlockStart: "var(--s-5)", maxInlineSize: "360px" }}>
-                <input
-                  className="input"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="ابحث عن سياسة"
-                />
-              </div>
-            ) : null}
           </div>
 
           {loading ? (
             <p className="muted">جاري التحميل...</p>
-          ) : visiblePending.length === 0 ? (
+          ) : pending.length === 0 ? (
             <div className="empty">
               <div className="mark" aria-hidden="true">
                 ✓
               </div>
-              <h3>{pending.length === 0 ? "لا شيء بانتظار الاعتماد" : "لا توجد نتائج"}</h3>
-              <p>
-                {pending.length === 0
-                  ? "جميع السياسات معتمدة."
-                  : "جرّب كلمات بحث مختلفة."}
-              </p>
+              <h3>لا شيء بانتظار الاعتماد</h3>
+              <p>جميع السياسات معتمدة.</p>
             </div>
           ) : (
-            <div className="grid" ref={queueListRef}>
-              {visiblePending.map((policy) => {
-                const classification = classifyPolicy(policy);
-                const isOpen = openId === policy.id;
-                const isExpanded = expandedId === policy.id;
-                return (
-                  <article className={`card queue-card${isExpanded ? " is-open" : ""}`} key={policy.id}>
-                    <button
-                      type="button"
-                      className="queue-card-toggle"
-                      aria-expanded={isExpanded}
-                      onClick={() => setExpandedId(isExpanded ? null : policy.id)}
-                    >
-                      <span className="queue-card-summary">
-                        <span className="pill warning">قيد المراجعة</span>
-                        <h3>{policy.title}</h3>
-                        <span className="caption" dir="ltr" style={{ textAlign: "start" }}>
-                          {policyReference(policy) ?? "—"}
-                        </span>
-                      </span>
-                      <span className="caption">{classification.departmentLabel}</span>
-                      <span className="chevron" aria-hidden="true" />
-                    </button>
+            <article className={`card queue-card${queueOpen ? " is-open" : ""}`} ref={queueListRef}>
+              <button
+                type="button"
+                className="queue-card-toggle"
+                aria-expanded={queueOpen}
+                onClick={() => setQueueOpen((current) => !current)}
+              >
+                <span className="queue-card-summary">
+                  <span className="pill warning">قيد المراجعة</span>
+                  <h3>{pending.length} سياسة بانتظار الاعتماد</h3>
+                  <span className="caption">اضغط لعرض القائمة ومراجعة كل سياسة</span>
+                </span>
+                <span className="chevron" aria-hidden="true" />
+              </button>
 
-                    {isExpanded ? (
-                      <div className="queue-card-body">
-                        <div className="meta-grid">
-                          <div>
-                            <p className="caption">تاريخ الإصدار</p>
-                            <p>{formatDate(policy.policy_metadata?.issue_date)}</p>
-                          </div>
-                          <div>
-                            <p className="caption">تاريخ المراجعة</p>
-                            <p>{formatDate(policy.policy_metadata?.review_date)}</p>
-                          </div>
-                        </div>
+              {queueOpen ? (
+                <div className="queue-card-body">
+                  {pending.length > 3 ? (
+                    <div className="field" style={{ marginBlockEnd: "var(--s-5)", maxInlineSize: "360px" }}>
+                      <input
+                        className="input"
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="ابحث عن سياسة"
+                      />
+                    </div>
+                  ) : null}
 
-                        <div className="demo-row" style={{ marginBlockStart: "var(--s-5)" }}>
-                          <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
-                            عرض الوثيقة
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-quiet"
-                            onClick={() => {
-                              setOpenId(isOpen ? null : policy.id);
-                              setNote("");
-                            }}
-                          >
-                            {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
-                          </button>
-                        </div>
-
-                        {isOpen ? (
-                          <div style={{ marginBlockStart: "var(--s-5)" }}>
-                            <div className="field">
-                              <textarea
-                                className="textarea"
-                                value={note}
-                                onChange={(event) => setNote(event.target.value)}
-                                placeholder="سبب الإعادة"
-                              />
-                            </div>
+                  {visiblePending.length === 0 ? (
+                    <p className="muted">لا توجد نتائج. جرّب كلمات بحث مختلفة.</p>
+                  ) : (
+                    <div className="grid">
+                      {visiblePending.map((policy) => {
+                        const classification = classifyPolicy(policy);
+                        const isOpen = openId === policy.id;
+                        const isExpanded = expandedId === policy.id;
+                        return (
+                          <article className={`card queue-card${isExpanded ? " is-open" : ""}`} key={policy.id}>
                             <button
                               type="button"
-                              className="btn btn-secondary"
-                              disabled={busy === policy.id}
-                              onClick={() => void returnWithNote(policy)}
+                              className="queue-card-toggle"
+                              aria-expanded={isExpanded}
+                              onClick={() => setExpandedId(isExpanded ? null : policy.id)}
                             >
-                              تأكيد الإعادة
+                              <span className="queue-card-summary">
+                                <span className="pill warning">قيد المراجعة</span>
+                                <h3>{policy.title}</h3>
+                                <span className="caption" dir="ltr" style={{ textAlign: "start" }}>
+                                  {policyReference(policy) ?? "—"}
+                                </span>
+                              </span>
+                              <span className="caption">{classification.departmentLabel}</span>
+                              <span className="chevron" aria-hidden="true" />
                             </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </article>
-                );
-              })}
-            </div>
+
+                            {isExpanded ? (
+                              <div className="queue-card-body">
+                                <div className="meta-grid">
+                                  <div>
+                                    <p className="caption">تاريخ الإصدار</p>
+                                    <p>{formatDate(policy.policy_metadata?.issue_date)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="caption">تاريخ المراجعة</p>
+                                    <p>{formatDate(policy.policy_metadata?.review_date)}</p>
+                                  </div>
+                                </div>
+
+                                <div className="demo-row" style={{ marginBlockStart: "var(--s-5)" }}>
+                                  <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
+                                    عرض الوثيقة
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-quiet"
+                                    onClick={() => {
+                                      setOpenId(isOpen ? null : policy.id);
+                                      setNote("");
+                                    }}
+                                  >
+                                    {isOpen ? "إلغاء" : "إعادة مع ملاحظات"}
+                                  </button>
+                                </div>
+
+                                {isOpen ? (
+                                  <div style={{ marginBlockStart: "var(--s-5)" }}>
+                                    <div className="field">
+                                      <textarea
+                                        className="textarea"
+                                        value={note}
+                                        onChange={(event) => setNote(event.target.value)}
+                                        placeholder="سبب الإعادة"
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="btn btn-secondary"
+                                      disabled={busy === policy.id}
+                                      onClick={() => void returnWithNote(policy)}
+                                    >
+                                      تأكيد الإعادة
+                                    </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </article>
           )}
         </div>
       </section>

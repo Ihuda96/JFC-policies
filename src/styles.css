@@ -4382,7 +4382,11 @@ html[dir="ltr"] .exec-portal .btn-quiet::after { transform-origin: left; }
   margin-block-start: -4px;
   transition: transform var(--d-2) var(--ease-standard);
 }
-.exec-portal .queue-card.is-open .chevron {
+/* Direct child combinators only — queue cards can nest (a group of
+   policies inside a collapsible group), and a plain descendant selector
+   here would let an open outer card's .is-open rotate every chevron
+   nested inside it, regardless of that item's own state. */
+.exec-portal .queue-card.is-open > .queue-card-toggle > .chevron {
   transform: rotate(225deg);
   margin-block-start: 4px;
 }
