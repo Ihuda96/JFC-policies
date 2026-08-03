@@ -9,7 +9,6 @@ import { errorMessage, supabase } from "../../lib/supabase";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { useToast } from "../../components/Toast";
 import { ExecutiveSetPassword } from "./ExecutiveSetPassword";
-import { useReveal } from "./useReveal";
 import type { PolicyBundle, PolicyFile } from "../../lib/types";
 
 function greeting() {
@@ -54,17 +53,6 @@ export function ExecutivePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [approvingAll, setApprovingAll] = useState(false);
   const [sealing, setSealing] = useState(false);
-
-  const recsHeadRef = useReveal<HTMLDivElement>();
-  const recsRef = useReveal<HTMLDivElement>();
-  const queueHeadRef = useReveal<HTMLDivElement>();
-  const queueListRef = useReveal<HTMLDivElement>();
-  const reviewsHeadRef = useReveal<HTMLDivElement>();
-  const reviewsRef = useReveal<HTMLDivElement>();
-  const chartsHeadRef = useReveal<HTMLDivElement>();
-  const chartsGridRef = useReveal<HTMLDivElement>();
-  const registerHeadRef = useReveal<HTMLDivElement>();
-  const registerRef = useReveal<HTMLDivElement>();
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -411,12 +399,12 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal" ref={recsHeadRef}>
+          <div className="section-head reveal in">
             <span className="eyebrow">التوصيات</span>
             <h2>ما يستحق انتباهك الآن</h2>
             <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
           </div>
-          <div className="rec-list reveal" ref={recsRef}>
+          <div className="rec-list reveal in">
             {recommendations.map((item) => (
               <div className="rec-item" key={item.id}>
                 <span className={`dot ${item.tone}`} aria-hidden="true" />
@@ -429,7 +417,7 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal" ref={queueHeadRef}>
+          <div className="section-head reveal in">
             <span className="eyebrow">بانتظار الاعتماد</span>
             <h2>السياسات</h2>
             <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
@@ -446,7 +434,7 @@ export function ExecutivePage() {
               <p>جميع السياسات معتمدة.</p>
             </div>
           ) : (
-            <article className={`card queue-card${queueOpen ? " is-open" : ""}`} ref={queueListRef}>
+            <article className={`card queue-card${queueOpen ? " is-open" : ""}`}>
               <button
                 type="button"
                 className="queue-card-toggle"
@@ -566,7 +554,7 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal" ref={reviewsHeadRef}>
+          <div className="section-head reveal in">
             <span className="eyebrow">المراجعات</span>
             <h2>مراجعات مستحقة قريباً</h2>
             <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
@@ -581,7 +569,7 @@ export function ExecutivePage() {
               <p>تُقرأ هذه المواعيد من تاريخ المراجعة في ترويسة كل سياسة.</p>
             </div>
           ) : (
-            <div className="table-scroll reveal" ref={reviewsRef}>
+            <div className="table-scroll reveal in">
               <table className="data">
                 <thead>
                   <tr>
@@ -619,13 +607,13 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal" ref={chartsHeadRef}>
+          <div className="section-head reveal in">
             <span className="eyebrow">المؤشرات</span>
             <h2>الإدارات والاعتماد</h2>
             <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
           </div>
 
-          <div className="grid grid-2 stagger" ref={chartsGridRef}>
+          <div className="grid grid-2 stagger in">
             <div className="table-scroll">
               <table className="data">
                 <thead>
@@ -678,7 +666,7 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="section-head reveal" ref={registerHeadRef}>
+          <div className="section-head reveal in">
             <span className="eyebrow">السجل</span>
             <h2>آخر الاعتمادات</h2>
             <div className="brass-rule" data-brass style={{ maxInlineSize: "180px", marginBlockStart: "var(--s-4)" }} />
@@ -690,7 +678,7 @@ export function ExecutivePage() {
               <p>تظهر السياسات هنا فور اعتمادها.</p>
             </div>
           ) : (
-            <div className="table-scroll reveal" ref={registerRef}>
+            <div className="table-scroll reveal in">
               <table className="data">
                 <thead>
                   <tr>
