@@ -53,9 +53,6 @@ export function ExecutivePage() {
   const [approvingAll, setApprovingAll] = useState(false);
   const [sealing, setSealing] = useState(false);
 
-  const heroTextRef = useReveal<HTMLDivElement>();
-  const heroSealRef = useReveal<HTMLDivElement>();
-  const kpiRef = useReveal<HTMLDivElement>();
   const recsHeadRef = useReveal<HTMLDivElement>();
   const recsRef = useReveal<HTMLDivElement>();
   const queueHeadRef = useReveal<HTMLDivElement>();
@@ -359,14 +356,14 @@ export function ExecutivePage() {
 
       <section className="hero">
         <div className="wrap hero-grid">
-          <div className="reveal" ref={heroTextRef}>
+          <div className="reveal in">
             <span className="eyebrow">
               {greeting()}
               {firstName ? `، ${firstName}` : ""} · {todayFmt.format(new Date())}
             </span>
             <h1 className="display-l">{pending.length} سياسة بانتظار الاعتماد</h1>
             <p className="lede">راجع الوثيقة وسياقها الكامل، ثم اعتمد.</p>
-            <div className="brass-rule" data-brass />
+            <div className="brass-rule in" data-brass />
             {pending.length > 0 ? (
               <button
                 type="button"
@@ -379,7 +376,7 @@ export function ExecutivePage() {
             ) : null}
           </div>
 
-          <div className="hero-seal reveal" aria-hidden="true" ref={heroSealRef}>
+          <div className="hero-seal reveal in" aria-hidden="true">
             <div className="ring" />
             <div className="ring inner" />
             <div className="glyph">ج١</div>
@@ -389,7 +386,7 @@ export function ExecutivePage() {
 
       <section className="band">
         <div className="wrap">
-          <div className="grid grid-4 stagger" ref={kpiRef}>
+          <div className="grid grid-4 stagger in">
             <div className="kpi">
               <span className="eyebrow">بانتظار الاعتماد</span>
               <div className="value brass">{pending.length}</div>

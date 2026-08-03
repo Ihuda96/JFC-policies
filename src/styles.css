@@ -4110,7 +4110,8 @@ select,
 }
 html[dir="rtl"] .exec-portal .brass-rule { transform-origin: right center; }
 html[dir="ltr"] .exec-portal .brass-rule { transform-origin: left center; }
-.exec-portal .brass-rule.in { transform: scaleX(1); }
+.exec-portal .brass-rule.in,
+.exec-portal .reveal.in .brass-rule { transform: scaleX(1); }
 
 /* ── Top bar + monogram lockup ──────────────────────────────── */
 .exec-portal .topbar {
