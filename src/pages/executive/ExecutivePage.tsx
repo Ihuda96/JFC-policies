@@ -316,8 +316,12 @@ export function ExecutivePage() {
           upsert: true,
         });
       if (uploadError) {
+        // ⁦/⁩ (LRI/PDI) force the LTR path and uid to render in
+        // their own order inside this RTL sentence — without them the
+        // browser's bidi algorithm reorders/wraps them into an unreadable
+        // scramble mid-string.
         throw new Error(
-          `تعذّر رفع الملف المختوم (المسار: ${path} — معرّف المستخدم الحالي: ${profile.id}): ${errorMessage(uploadError)}`,
+          `تعذّر رفع الملف المختوم (المسار: ⁦${path}⁩ — معرّف المستخدم الحالي: ⁦${profile.id}⁩): ${errorMessage(uploadError)}`,
         );
       }
 
