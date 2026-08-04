@@ -316,7 +316,9 @@ export function ExecutivePage() {
           upsert: true,
         });
       if (uploadError) {
-        throw new Error(`تعذّر رفع الملف المختوم: ${errorMessage(uploadError)}`);
+        throw new Error(
+          `تعذّر رفع الملف المختوم (المسار: ${path} — معرّف المستخدم الحالي: ${profile.id}): ${errorMessage(uploadError)}`,
+        );
       }
 
       const fileName = `${original.file_name.replace(/\.[^.]+$/, "")}-معتمد.pdf`;
