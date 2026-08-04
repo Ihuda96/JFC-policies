@@ -308,13 +308,26 @@ export function ExecutivePage() {
       const { embedStampInPdf } = await import("../../lib/stampPdf");
       const stampedBytes = await embedStampInPdf(pdfBytes, stampBytes);
       const path = `${profile.id}/${policy.id}/${versionId}/approved-stamped.pdf`;
+      const stampedBlob = new Blob([Uint8Array.from(stampedBytes)], { type: "application/pdf" });
 
-      const { error: uploadError } = await supabase.storage
+      let { error: uploadError } = await supabase.storage
         .from("policy-approved")
-        .upload(path, new Blob([Uint8Array.from(stampedBytes)], { type: "application/pdf" }), {
-          contentType: "application/pdf",
-          upsert: true,
-        });
+        .upload(path, stampedBlob, { contentType: "application/pdf", upsert: true });
+
+      // Storage requests carry their own snapshot of the session token,
+      // separate from the RPC call that just ran moments earlier. If that
+      // snapshot went stale mid-flow (this whole function spends a few
+      // seconds downloading and re-encoding the PDF first), the upload can
+      // be rejected by RLS even though the user is genuinely still signed
+      // in. One retry after an explicit refresh clears that up without
+      // bothering the CEO with a transient failure.
+      if (uploadError && /row-level security/i.test(uploadError.message)) {
+        await supabase.auth.refreshSession();
+        ({ error: uploadError } = await supabase.storage
+          .from("policy-approved")
+          .upload(path, stampedBlob, { contentType: "application/pdf", upsert: true }));
+      }
+
       if (uploadError) {
         // ⁦/⁩ (LRI/PDI) force the LTR path and uid to render in
         // their own order inside this RTL sentence — without them the
