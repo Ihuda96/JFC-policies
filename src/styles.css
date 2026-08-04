@@ -12,22 +12,23 @@ body {
   line-height: var(--jfc-line-height-body);
 }
 
-/* ── Faded cluster emblem, fixed behind every page, centered and large,
-   spinning slowly around its own center like a tire — a steady, continuous
-   rotation rather than a drift, pinned to the middle of the viewport. */
+/* ── Faded cluster emblem, fixed behind every page, oversized so it reads
+   as a monumental backdrop bigger than the page itself, spinning slowly
+   and smoothly around its own center like a tire — pinned to the middle
+   of the viewport. */
 .brand-watermark {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: min(64vw, 880px);
+  width: min(95vw, 1400px);
   aspect-ratio: 1;
   background: url("/brand/jfc-emblem.png") no-repeat center / contain;
-  opacity: 0.1;
+  opacity: 0.06;
   filter: grayscale(1);
   pointer-events: none;
   z-index: 1;
   transform: translate(-50%, -50%) rotate(0deg);
-  animation: brand-spin 40s linear infinite;
+  animation: brand-spin 90s linear infinite;
 }
 @keyframes brand-spin {
   from { transform: translate(-50%, -50%) rotate(0deg); }
@@ -35,7 +36,7 @@ body {
 }
 @media (max-width: 700px) {
   .brand-watermark {
-    width: min(88vw, 520px);
+    width: min(140vw, 760px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
