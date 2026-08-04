@@ -12,6 +12,39 @@ body {
   line-height: var(--jfc-line-height-body);
 }
 
+/* ── Faded cluster emblem, fixed behind every page, oversized so it reads
+   as a monumental backdrop bigger than the page itself, spinning slowly
+   and smoothly around its own center like a tire — pinned to the middle
+   of the viewport. */
+.brand-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(95vw, 1400px);
+  aspect-ratio: 1;
+  background: url("/brand/jfc-emblem.png") no-repeat center / contain;
+  opacity: 0.06;
+  filter: grayscale(1);
+  pointer-events: none;
+  z-index: 1;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: brand-spin 90s linear infinite;
+}
+@keyframes brand-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@media (max-width: 700px) {
+  .brand-watermark {
+    width: min(140vw, 760px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-watermark {
+    animation: none;
+  }
+}
+
 button,
 input,
 textarea,
@@ -371,8 +404,10 @@ svg {
 .login-page,
 .setup-screen {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
   background:
     linear-gradient(145deg, rgba(7, 56, 97, 0.86), rgba(47, 155, 202, 0.78)),
@@ -1059,6 +1094,52 @@ dd {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--soft);
+}
+
+.superseded-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--jfc-feedback-warning-fg, #b8863a);
+  background: var(--jfc-feedback-warning-bg, #fbf3e6);
+  color: var(--jfc-feedback-warning-fg, #7a5220);
+  font-weight: 600;
+}
+
+.superseded-banner .text-button {
+  color: inherit;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.ack-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green-700, #197e56);
+  font-weight: 700;
+}
+
+.ack-roster {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.ack-roster li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.86rem;
+  color: var(--muted);
 }
 
 .scan-sample code {
@@ -3500,6 +3581,10 @@ select,
   font-size: 0.82rem;
   font-weight: 800;
 }
+.count-pill.danger {
+  background: var(--jfc-action-danger, #b3261e);
+  color: #fff;
+}
 .request-list {
   display: grid;
   gap: 10px;
@@ -3865,6 +3950,11 @@ select,
   background: var(--soft);
   color: var(--blue-700);
 }
+.section-item-icon img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
 .section-item strong {
   display: block;
   color: var(--blue-950);
@@ -3883,6 +3973,26 @@ select,
   margin-top: 3px;
   color: var(--muted);
   font-size: 0.8rem;
+}
+.section-item-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--blue-700);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.section-item-view:hover {
+  background: var(--blue-100, rgba(18, 122, 175, 0.12));
+}
+.section-item-view svg {
+  width: 14px;
+  height: 14px;
 }
 .section-empty {
   padding: 40px 20px;
@@ -3916,6 +4026,14 @@ select,
 .final-seal svg {
   width: 12px;
   height: 12px;
+}
+.final-seal-stamp {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #fff;
+  padding: 1px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -4455,6 +4573,17 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
 .exec-portal .pill.info::before {
   background: var(--info);
 }
+.exec-portal .stamped-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.exec-portal .stamp-seal {
+  inline-size: 22px;
+  block-size: 22px;
+  object-fit: contain;
+  opacity: 0.9;
+}
 
 /* — Table — admin-dense rows (40px, not 56px), monospace for codes — */
 .exec-portal .table-scroll {
@@ -4696,6 +4825,38 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   align-items: center;
   gap: var(--space-5);
 }
+.exec-portal .stamp-trigger {
+  inline-size: 34px;
+  block-size: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--d-lift, 200ms) var(--ease-lift, ease), color var(--d-lift, 200ms) var(--ease-lift, ease);
+}
+.exec-portal .stamp-trigger:hover {
+  border-color: var(--accent-500);
+  color: var(--accent-600);
+}
+.exec-portal .stamp-trigger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.exec-portal .stamp-trigger svg {
+  inline-size: 16px;
+  block-size: 16px;
+}
+.exec-portal .stamp-trigger img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  padding: 3px;
+}
 .exec-portal .profile-chip {
   display: flex;
   align-items: center;
@@ -4730,34 +4891,11 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   color: var(--text-muted);
 }
 
-/* — §08 Hero: editorial, motif-anchored — Arabic headline at hero scale,
-   the star mark once, oversized, desaturated, cropped off-canvas — */
+/* — §08 Hero: editorial, motif-anchored — Arabic headline at hero scale — */
 .exec-portal .hero {
   position: relative;
   overflow: hidden;
   padding-block: var(--space-12) var(--space-10);
-}
-.exec-portal .hero-watermark {
-  position: absolute;
-  inset-block-start: -18%;
-  inset-inline-end: -12%;
-  inline-size: 56%;
-  aspect-ratio: 1;
-  background: url("/brand/jfc-emblem.png") no-repeat center / contain;
-  opacity: 0.07;
-  filter: grayscale(1);
-  pointer-events: none;
-  animation: bloom-breathe 14s ease-in-out infinite alternate;
-}
-@keyframes bloom-breathe {
-  from {
-    opacity: 0.05;
-    transform: scale(1) rotate(0deg);
-  }
-  to {
-    opacity: 0.1;
-    transform: scale(1.04) rotate(2deg);
-  }
 }
 .exec-portal .hero-inner {
   position: relative;
@@ -4859,10 +4997,6 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   .exec-portal .lede {
     font-size: 18px;
   }
-  .exec-portal .hero-watermark {
-    inline-size: 80%;
-    inset-inline-end: -30%;
-  }
   .exec-portal .grid-2,
   .exec-portal .grid-4 {
     grid-template-columns: repeat(2, 1fr);
@@ -4929,22 +5063,15 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
   }
-  /* The 1ms override above is fine for one-shot animations (it just makes
-     them instant) but would turn an *infinite* one into a rapid strobe —
-     a real seizure-trigger risk, not just an unwanted flourish. Ambient/
-     looping animations need to be fully disabled here, not sped up. */
-  .exec-portal .hero-watermark {
-    animation: none;
-    opacity: 0.07;
-    transform: none;
-  }
 }
 
 /* — Auth pages (login / set password) — */
 .exec-portal.auth-page {
   min-block-size: 100vh;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: var(--space-6);
 }
 .exec-portal .auth-card {
@@ -4978,33 +5105,27 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   font-size: 13px;
 }
 
-/* ── "Powered by" credit — small, on every page, never blocks a click ─── */
+/* ── "Powered by" credit — sits in normal document flow at the true end
+   of each page's content, never fixed over it, so it can't drift on top
+   of scrolling cards no matter how long the page is. ─────────────────── */
 .powered-by {
-  position: fixed;
-  inset-inline-start: 12px;
-  inset-block-end: calc(10px + env(safe-area-inset-bottom));
-  z-index: 30;
-  display: inline-flex;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(22, 26, 24, 0.84), rgba(10, 13, 12, 0.88));
-  border: 1px solid rgba(214, 179, 122, 0.28);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px) saturate(1.2);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  pointer-events: none;
-  white-space: nowrap;
-  /* Forces its own compositing layer so mobile WebKit doesn't let it drift
-     with touch-scroll momentum before the next repaint. */
-  will-change: transform;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  animation: powered-by-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 400ms both;
+  display: flex;
+  justify-content: center;
+  margin: 32px 0 16px;
+  padding: 0 24px;
+  animation: powered-by-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both;
 }
 .powered-by-text {
   display: inline-flex;
   align-items: baseline;
   gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(22, 26, 24, 0.84), rgba(10, 13, 12, 0.88));
+  border: 1px solid rgba(214, 179, 122, 0.28);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+  white-space: nowrap;
 }
 .powered-by-label {
   font-size: 9px;
@@ -5023,29 +5144,15 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   color: transparent;
 }
 @keyframes powered-by-in {
-  from { opacity: 0; transform: translateY(6px) translateZ(0); }
-  to { opacity: 1; transform: translateZ(0); }
-}
-/* Clear the mobile bottom nav (AppShell) and the executive sticky dock */
-@media (max-width: 820px) {
-  .app-layout ~ .powered-by {
-    inset-block-end: calc(70px + env(safe-area-inset-bottom));
-  }
-}
-.exec-portal ~ .powered-by {
-  inset-block-end: calc(114px + env(safe-area-inset-bottom));
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @media (max-width: 560px) {
-  .powered-by {
+  .powered-by-text {
     padding: 5px 10px;
   }
   .powered-by-label {
     display: none;
-  }
-  /* The dock stacks (text row + full-width button) below this width, so it's
-     noticeably taller than the desktop single row. */
-  .exec-portal ~ .powered-by {
-    inset-block-end: calc(162px + env(safe-area-inset-bottom));
   }
 }
 @media (prefers-reduced-motion: reduce) {

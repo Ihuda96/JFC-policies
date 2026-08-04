@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
-import { PoweredBy } from "./components/PoweredBy";
+import { BrandWatermark } from "./components/BrandWatermark";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ActionCenterPage } from "./pages/ActionCenterPage";
 import { AdminUsersPage } from "./pages/AdminUsersPage";
@@ -25,6 +25,7 @@ import { ExecutivePage } from "./pages/executive/ExecutivePage";
 export default function App() {
   return (
     <>
+      <BrandWatermark />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/design-system" element={<DesignSystemPage />} />
@@ -51,7 +52,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <PoweredBy />
     </>
   );
 }

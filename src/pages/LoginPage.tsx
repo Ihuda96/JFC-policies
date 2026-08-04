@@ -4,6 +4,7 @@ import { ArrowRight, KeyRound, Mail } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { hasSupabaseConfig } from "../lib/config";
 import { errorMessage, supabase } from "../lib/supabase";
+import { PoweredBy } from "../components/PoweredBy";
 import { SetupRequired } from "../components/SetupRequired";
 
 export function LoginPage() {
@@ -133,6 +134,7 @@ export function LoginPage() {
           موظف إدارة ولا تملك حسابًا؟ <Link to="/register">سجّل الآن</Link>
         </p>
       </section>
+      <PoweredBy />
     </main>
   );
 }

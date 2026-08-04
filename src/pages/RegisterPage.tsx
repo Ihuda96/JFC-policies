@@ -6,6 +6,7 @@ import { hasSupabaseConfig } from "../lib/config";
 import { DEPARTMENT_UNITS } from "../lib/departments";
 import { loginEmailForUsername } from "../lib/loginIdentity";
 import { createDetachedSupabaseClient, errorMessage } from "../lib/supabase";
+import { PoweredBy } from "../components/PoweredBy";
 import { SetupRequired } from "../components/SetupRequired";
 
 export function RegisterPage() {
@@ -114,6 +115,7 @@ export function RegisterPage() {
             الذهاب لتسجيل الدخول
           </Link>
         </section>
+        <PoweredBy />
       </main>
     );
   }
@@ -211,6 +213,7 @@ export function RegisterPage() {
           </button>
         </form>
       </section>
+      <PoweredBy />
     </main>
   );
 }

@@ -32,7 +32,9 @@ export function ActionCenterPage() {
           <section className="data-section" key={group.key}>
             <div className="section-title-row">
               <h2>{group.title}</h2>
-              <span className="count-pill">{group.items.length}</span>
+              <span className={group.tone === "danger" ? "count-pill danger" : "count-pill"}>
+                {group.items.length}
+              </span>
             </div>
             <div className="cards-list">
               {group.items.map((item) => (

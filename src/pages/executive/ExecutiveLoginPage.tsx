@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { hasSupabaseConfig } from "../../lib/config";
 import { errorMessage, supabase } from "../../lib/supabase";
+import { PoweredBy } from "../../components/PoweredBy";
 import { SetupRequired } from "../../components/SetupRequired";
 
 export function ExecutiveLoginPage() {
@@ -85,6 +86,7 @@ export function ExecutiveLoginPage() {
           </button>
         </form>
       </section>
+      <PoweredBy />
     </main>
   );
 }

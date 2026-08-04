@@ -2,27 +2,38 @@
 -- (quality employee + quality manager + system admin) at the same time.
 --
 -- Safe to run in the Supabase SQL Editor. No service-role key required.
--- Idempotent: re-running it is harmless.
+-- Idempotent: re-running it is harmless. Assumes DEPLOY_V2_STEP1_ROLES.sql
+-- and DEPLOY_V2_STEP2_FEATURES.sql have already been applied.
 --
 -- HOW IT WORKS
--- The platform gives each user a single role, and the three roles are
--- mutually exclusive in the database (approving needs exactly
--- quality_manager, user management needs exactly system_admin, authoring
--- needs quality_staff/quality_manager). A "platform super admin" already
--- maps to system_admin via public.system_admin_overrides, which covers the
--- admin side. This script additionally lets a platform super admin satisfy
--- the MANAGER and AUTHOR gates too — so the designated account can do
--- everything at once. Only emails in public.system_admin_overrides are
--- affected; every other user keeps their normal single role.
+-- A "platform super admin" (email allowlist / super-admin JWT claim, see
+-- public.system_admin_overrides) already maps to system_admin via
+-- public.is_platform_superadmin(), which covers the admin side. V2's own
+-- can_review_policies()/can_author_policies()/acts_as_quality_manager()
+-- helpers already fold is_platform_superadmin() into their checks, so the
+-- designated account automatically gets reviewer and author rights too —
+-- this script no longer needs to (and must not) redefine
+-- can_access_policy_content / return_policy_for_revision /
+-- approve_policy_version or the insert RLS policies to achieve that; V2's
+-- versions already cover it, and are broader (they also seat quality_staff,
+-- the CEO, and department_staff correctly). Redefining them here again with
+-- the older, narrower acts_as_quality_manager()-only logic would silently
+-- undo that broadening if this file happened to run after V2 — which is
+-- exactly the bug this revision removes. Only emails in
+-- public.system_admin_overrides are affected by anything below; every
+-- other user keeps their normal single role.
 --
 -- The target account must already exist in Supabase Auth (the person has
 -- signed up / been created) and sign in with the email below.
 
 begin;
 
--- ── 1. Capability predicates ────────────────────────────────────────────
+-- ── 1. Capability predicate ─────────────────────────────────────────────
 -- "Acts as a quality manager" = actually a quality manager, OR a designated
--- platform super admin (email allowlist / super-admin JWT claim).
+-- platform super admin (email allowlist / super-admin JWT claim). Identical
+-- to the definition in DEPLOY_V2_STEP2_FEATURES.sql — kept here only so
+-- this file still works if it's ever run before V2 has been applied; the
+-- two definitions always converge to the same behavior regardless of order.
 create or replace function public.acts_as_quality_manager()
 returns boolean
 language sql
@@ -34,44 +45,15 @@ as $$
       or public.is_platform_superadmin()
 $$;
 
--- "Can author policies" = quality staff or quality manager, OR a designated
--- platform super admin.
-create or replace function public.can_author_policies()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select public.current_app_role() in ('quality_staff', 'quality_manager')
-      or public.is_platform_superadmin()
-$$;
-
 grant execute on function public.acts_as_quality_manager() to authenticated;
-grant execute on function public.can_author_policies() to authenticated;
 
--- ── 2. Broaden the manager-exclusive gates ──────────────────────────────
--- Content access (file preview/download) for non-owned, non-approved policies.
-create or replace function public.can_access_policy_content(p_policy_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.policies p
-    where p.id = p_policy_id
-      and public.is_active_profile()
-      and (
-        p.owner_id = auth.uid()
-        or public.acts_as_quality_manager()
-        or p.status = 'approved'
-      )
-  )
-$$;
-
+-- ── 2. Manager-only actions V2 doesn't already broaden ──────────────────
+-- submit_policy_version and archive_policy are untouched by
+-- DEPLOY_V2_STEP2_FEATURES.sql, so — unlike the functions removed above —
+-- redefining them here is still the only way a plain system_admin-role
+-- super admin (as opposed to the owner) gets to submit or archive someone
+-- else's policy. Kept exactly as before.
+--
 -- Submit a policy version (managers may submit policies they do not own).
 create or replace function public.submit_policy_version(
   p_policy_id uuid,
@@ -156,195 +138,6 @@ begin
 
   perform public.log_audit(
     case when v_action = 'resubmitted' then 'policy_resubmitted'::public.audit_event_type else 'policy_submitted'::public.audit_event_type end,
-    'policies',
-    p_policy_id,
-    p_policy_id,
-    jsonb_build_object('version_id', p_version_id)
-  );
-end;
-$$;
-
--- Return a policy for revision (manager decision).
-create or replace function public.return_policy_for_revision(
-  p_policy_id uuid,
-  p_version_id uuid,
-  p_comment text,
-  p_page_number integer default null
-)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_actor uuid := auth.uid();
-  v_owner uuid;
-begin
-  if v_actor is null or not public.acts_as_quality_manager() then
-    raise exception 'quality manager role is required';
-  end if;
-
-  if nullif(trim(coalesce(p_comment, '')), '') is null then
-    raise exception 'return comment is required';
-  end if;
-
-  select owner_id into v_owner
-  from public.policies
-  where id = p_policy_id
-    and status in ('pending_approval', 'resubmitted')
-  for update;
-
-  if not found then
-    raise exception 'policy is not waiting for review';
-  end if;
-
-  if not exists (
-    select 1 from public.policy_versions
-    where id = p_version_id and policy_id = p_policy_id
-  ) then
-    raise exception 'version does not belong to policy';
-  end if;
-
-  insert into public.review_comments (
-    policy_id,
-    version_id,
-    author_id,
-    page_number,
-    comment_text
-  )
-  values (
-    p_policy_id,
-    p_version_id,
-    v_actor,
-    p_page_number,
-    trim(p_comment)
-  );
-
-  update public.policy_versions
-  set status = 'returned',
-      returned_at = now(),
-      updated_at = now()
-  where id = p_version_id;
-
-  update public.policies
-  set status = 'returned_for_revision',
-      updated_at = now()
-  where id = p_policy_id;
-
-  insert into public.approval_actions (policy_id, version_id, actor_id, action, comment)
-  values (p_policy_id, p_version_id, v_actor, 'returned', trim(p_comment));
-
-  insert into public.notifications (recipient_id, policy_id, version_id, type, title_ar, body_ar, action_url)
-  values (
-    v_owner,
-    p_policy_id,
-    p_version_id,
-    'policy_returned',
-    'إعادة سياسة للتعديل',
-    'أعاد مدير الجودة السياسة للتعديل مع ملاحظات إلزامية.',
-    '/app/policies/' || p_policy_id::text
-  );
-
-  perform public.log_audit(
-    'policy_returned',
-    'policies',
-    p_policy_id,
-    p_policy_id,
-    jsonb_build_object('version_id', p_version_id)
-  );
-end;
-$$;
-
--- Approve and publish a policy version (manager decision).
-create or replace function public.approve_policy_version(
-  p_policy_id uuid,
-  p_version_id uuid
-)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_actor uuid := auth.uid();
-  v_owner uuid;
-  v_review_months integer := 36;
-  v_review_date date;
-begin
-  if v_actor is null or not public.acts_as_quality_manager() then
-    raise exception 'quality manager role is required';
-  end if;
-
-  select owner_id into v_owner
-  from public.policies
-  where id = p_policy_id
-    and status in ('pending_approval', 'resubmitted')
-  for update;
-
-  if not found then
-    raise exception 'policy is not waiting for approval';
-  end if;
-
-  if not exists (
-    select 1 from public.policy_versions
-    where id = p_version_id and policy_id = p_policy_id
-  ) then
-    raise exception 'version does not belong to policy';
-  end if;
-
-  select coalesce((value #>> '{}')::integer, 36)
-  into v_review_months
-  from public.app_settings
-  where key = 'default_review_interval_months';
-
-  select coalesce(review_date, (current_date + make_interval(months => v_review_months))::date)
-  into v_review_date
-  from public.policy_metadata
-  where policy_id = p_policy_id;
-
-  if v_review_date is null then
-    v_review_date := (current_date + make_interval(months => v_review_months))::date;
-  end if;
-
-  update public.policy_versions
-  set status = 'superseded',
-      updated_at = now()
-  where policy_id = p_policy_id
-    and id <> p_version_id
-    and status = 'approved';
-
-  update public.policy_versions
-  set status = 'approved',
-      approved_by = v_actor,
-      approved_at = now(),
-      updated_at = now()
-  where id = p_version_id;
-
-  update public.policies
-  set status = 'approved',
-      current_version_id = p_version_id,
-      approved_version_id = p_version_id,
-      approved_at = now(),
-      next_review_at = v_review_date,
-      updated_at = now()
-  where id = p_policy_id;
-
-  insert into public.approval_actions (policy_id, version_id, actor_id, action, comment)
-  values (p_policy_id, p_version_id, v_actor, 'approved', 'اعتماد ونشر');
-
-  insert into public.notifications (recipient_id, policy_id, version_id, type, title_ar, body_ar, action_url)
-  values (
-    v_owner,
-    p_policy_id,
-    p_version_id,
-    'policy_approved',
-    'اعتماد السياسة',
-    'تم اعتماد السياسة ونشرها في المكتبة.',
-    '/app/policies/' || p_policy_id::text
-  );
-
-  perform public.log_audit(
-    'policy_approved',
     'policies',
     p_policy_id,
     p_policy_id,
@@ -444,45 +237,13 @@ begin
 end;
 $$;
 
--- ── 3. Broaden the author / manager RLS write gates ─────────────────────
-drop policy if exists "policies_insert_staff_manager" on public.policies;
-create policy "policies_insert_staff_manager"
-on public.policies for insert to authenticated
-with check (
-  public.can_author_policies()
-  and owner_id = auth.uid()
-  and created_by = auth.uid()
-);
-
-drop policy if exists "policy_versions_insert_owner_manager" on public.policy_versions;
-create policy "policy_versions_insert_owner_manager"
-on public.policy_versions for insert to authenticated
-with check (
-  exists (
-    select 1 from public.policies p
-    where p.id = policy_id
-      and (p.owner_id = auth.uid() or public.acts_as_quality_manager())
-  )
-);
-
-drop policy if exists "policy_files_insert_owner_manager" on public.policy_files;
-create policy "policy_files_insert_owner_manager"
-on public.policy_files for insert to authenticated
-with check (
-  created_by = auth.uid()
-  and exists (
-    select 1 from public.policies p
-    where p.id = policy_id
-      and (p.owner_id = auth.uid() or public.acts_as_quality_manager())
-  )
-);
-
-drop policy if exists "review_comments_manager_insert" on public.review_comments;
-create policy "review_comments_manager_insert"
-on public.review_comments for insert to authenticated
-with check (public.acts_as_quality_manager() and author_id = auth.uid());
-
--- ── 4. Designate the account (email allowlist) ──────────────────────────
+-- ── 3. Designate the account (email allowlist) ──────────────────────────
+-- (Section that used to redefine the policies/policy_versions/policy_files/
+-- review_comments insert RLS policies has been removed — V2 already defines
+-- them with the correct, broader can_author_policies()/can_review_policies()
+-- checks, which already cover a platform super admin. Redefining them here
+-- with the older acts_as_quality_manager()-only logic would silently narrow
+-- them back down if this file ran after V2.)
 insert into public.system_admin_overrides (email, is_active, note)
 values ('hudajuhany@gmail.com', true, 'Combined access: quality employee + manager + system admin.')
 on conflict (email) do update

@@ -1,5 +1,12 @@
 -- Hotfix for production projects that were deployed before archive_policy existed.
 -- Safe to run in Supabase SQL Editor. No service-role key is required.
+--
+-- The role check below is inlined (current_app_role() = 'quality_manager' or
+-- is_platform_superadmin()) rather than calling public.acts_as_quality_manager(),
+-- so this file archives correctly whether it's run standalone on a bare base
+-- deployment or after DEPLOY_ALL_ACCESS_FOR_ACCOUNT.sql — both leave
+-- archive_policy with the same effective permission rule, so it no longer
+-- matters which one happened to run last.
 
 begin;
 
@@ -36,7 +43,7 @@ begin
   end if;
 
   if not (
-    public.current_app_role() = 'quality_manager'
+    (public.current_app_role() = 'quality_manager' or public.is_platform_superadmin())
     or (
       v_policy.owner_id = v_actor
       and v_policy.status in ('draft', 'returned_for_revision')

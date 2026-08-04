@@ -28,12 +28,14 @@ import {
 } from "../lib/policyWorkflow";
 import { policyReference } from "../lib/departments";
 import { canManageQuality, canReviewPolicies } from "../lib/permissions";
+import { stampPublicUrl } from "../lib/stamp";
 import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
 import { isSetupError, supabase } from "../lib/supabase";
 import type {
   ApprovalAction,
+  PolicyAcknowledgment,
   PolicyBundle,
   PolicyFile,
   PolicyVersion,
@@ -52,6 +54,8 @@ export function PolicyDetailPage() {
   const [policy, setPolicy] = useState<PolicyBundle | null>(null);
   const [comments, setComments] = useState<ReviewComment[]>([]);
   const [actions, setActions] = useState<ApprovalAction[]>([]);
+  const [acknowledgments, setAcknowledgments] = useState<PolicyAcknowledgment[]>([]);
+  const [acknowledging, setAcknowledging] = useState(false);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [revisionFile, setRevisionFile] = useState<File | null>(null);
   const [revisionNote, setRevisionNote] = useState("");
@@ -75,7 +79,7 @@ export function PolicyDetailPage() {
     if (!options.silent) {
       setLoading(true);
     }
-    const [policyResult, commentsResult, actionsResult] = await Promise.all([
+    const [policyResult, commentsResult, actionsResult, acknowledgmentsResult] = await Promise.all([
       supabase
         .from("policies")
         .select(
@@ -93,6 +97,13 @@ export function PolicyDetailPage() {
         .select("*")
         .eq("policy_id", policyId)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("policy_acknowledgments")
+        .select(
+          "id,policy_id,version_id,user_id,acknowledged_at,profiles:profiles!policy_acknowledgments_user_id_fkey(full_name)",
+        )
+        .eq("policy_id", policyId)
+        .order("acknowledged_at", { ascending: false }),
     ]);
 
     if (policyResult.error) {
@@ -114,6 +125,9 @@ export function PolicyDetailPage() {
     if (!actionsResult.error) {
       setActions((actionsResult.data as ApprovalAction[]) ?? []);
     }
+    if (!acknowledgmentsResult.error) {
+      setAcknowledgments((acknowledgmentsResult.data as unknown as PolicyAcknowledgment[]) ?? []);
+    }
     if (!options.silent) {
       setLoading(false);
     }
@@ -125,6 +139,11 @@ export function PolicyDetailPage() {
 
   const versions = useMemo(() => sortedVersions(policy?.policy_versions), [policy]);
   const selectedVersion = versions.find((version) => version.id === selectedVersionId) ?? versions[0];
+  const currentApprovedVersion = policy?.approved_version_id
+    ? versions.find((version) => version.id === policy.approved_version_id) ?? null
+    : null;
+  const isViewingSuperseded =
+    Boolean(currentApprovedVersion) && selectedVersion?.id !== currentApprovedVersion?.id;
   const selectedVersionFiles = useMemo<PolicyFile[]>(() => {
     if (!policy || !selectedVersion) {
       return [];
@@ -136,7 +155,9 @@ export function PolicyDetailPage() {
   }, [policy, selectedVersion]);
   const originalFile =
     selectedVersionFiles.find((file) => file.file_kind === "original") ?? null;
-  const selectedFile = originalFile;
+  const stampedFile =
+    selectedVersionFiles.find((file) => file.file_kind === "approved_pdf") ?? null;
+  const selectedFile = stampedFile ?? originalFile;
 
   // If the full code was never stored, read it from the document and save it
   // so the policy classifies automatically and shows its full number.
@@ -299,6 +320,29 @@ export function PolicyDetailPage() {
     }
   }
 
+  async function acknowledge() {
+    if (!policy || !supabase) {
+      return;
+    }
+
+    setAcknowledging(true);
+    setError(null);
+    try {
+      const { error: rpcError } = await supabase.rpc("acknowledge_policy", {
+        p_policy_id: policy.id,
+      });
+      if (rpcError) throw rpcError;
+      await load({ silent: true });
+      toast.success("تم تسجيل إقرارك بالاطلاع.");
+    } catch (err) {
+      const message = readableWorkflowError(err);
+      setError(message);
+      toast.error(message);
+    } finally {
+      setAcknowledging(false);
+    }
+  }
+
   async function archiveCurrentPolicy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!policy) {
@@ -359,12 +403,32 @@ export function PolicyDetailPage() {
       (policy.owner_id === profile?.id && ["draft", "returned_for_revision"].includes(policy.status)));
   const canSetCode = !policy.policy_number && Boolean(profile);
   const originalIsPdf = Boolean(originalFile?.file_name.toLowerCase().endsWith(".pdf"));
+  const currentAcknowledgments = acknowledgments.filter(
+    (item) => item.version_id === policy.approved_version_id,
+  );
+  const myAcknowledgment = currentAcknowledgments.find((item) => item.user_id === profile?.id);
+  const canSeeAcknowledgmentRoster =
+    canManageQuality(profile) ||
+    policy.owner_id === profile?.id ||
+    policy.assigned_manager_id === profile?.id;
 
   return (
     <div className="policy-detail">
       <section className="policy-header">
         <div>
           <StatusBadge status={policy.status} />
+          {policy.final_approved_at ? (
+            <span className="final-seal" title="اعتماد نهائي من المكتب التنفيذي">
+              {stampPublicUrl(policy.final_stamp_path) ? (
+                <img
+                  src={stampPublicUrl(policy.final_stamp_path) ?? undefined}
+                  alt=""
+                  className="final-seal-stamp"
+                />
+              ) : null}
+              معتمدة نهائيًا
+            </span>
+          ) : null}
           <h1>{policy.title}</h1>
           <p>
             رقم السياسة: {policyReference(policy) ?? "لم يستخرج بعد"} · آخر تحديث{" "}
@@ -386,6 +450,22 @@ export function PolicyDetailPage() {
       </section>
 
       {error ? <p className="inline-error">{error}</p> : null}
+
+      {isViewingSuperseded && currentApprovedVersion ? (
+        <div className="superseded-banner" role="status">
+          <span>
+            أنت تعرض نسخة سابقة (نسخة {selectedVersion?.version_number}) — تم اعتماد نسخة أحدث
+            (نسخة {currentApprovedVersion.version_number}).
+          </span>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => setSelectedVersionId(currentApprovedVersion.id)}
+          >
+            عرض النسخة المعتمدة الحالية
+          </button>
+        </div>
+      ) : null}
 
       <section className="review-layout">
         <DocumentPreview file={selectedFile} />
@@ -429,6 +509,21 @@ export function PolicyDetailPage() {
 
           <div className="info-card">
             <h2>ملفات النسخة</h2>
+            {stampedFile ? (
+              <article className="file-action-row">
+                <div>
+                  <FileText aria-hidden="true" />
+                  <span>
+                    <strong>النسخة المعتمدة والمختومة</strong>
+                    {stampedFile.file_name} · {fileSize(stampedFile.file_size)}
+                  </span>
+                </div>
+                <button onClick={() => void openVersionFile(stampedFile, "download")}>
+                  <Download aria-hidden="true" />
+                  تنزيل النسخة المختومة
+                </button>
+              </article>
+            ) : null}
             {originalFile ? (
               <article className="file-action-row">
                 <div>
@@ -445,6 +540,41 @@ export function PolicyDetailPage() {
               </article>
             ) : null}
           </div>
+
+          {policy.status === "approved" && policy.approved_version_id && profile ? (
+            <div className="info-card">
+              <h2>الإقرار بالاطلاع</h2>
+              {myAcknowledgment ? (
+                <p className="ack-confirmed">
+                  <CheckCircle2 aria-hidden="true" />
+                  أقررت بالاطلاع في {formatDate(myAcknowledgment.acknowledged_at)}
+                </p>
+              ) : (
+                <>
+                  <p>يرجى تأكيد اطلاعك على النسخة المعتمدة الحالية من هذه السياسة.</p>
+                  <button
+                    type="button"
+                    className="primary-button full"
+                    onClick={() => void acknowledge()}
+                    disabled={acknowledging}
+                  >
+                    <CheckCircle2 aria-hidden="true" />
+                    أقر بأنني اطلعت على هذه السياسة
+                  </button>
+                </>
+              )}
+              {canSeeAcknowledgmentRoster && currentAcknowledgments.length > 0 ? (
+                <ul className="ack-roster">
+                  {currentAcknowledgments.map((item) => (
+                    <li key={item.id}>
+                      <span>{item.profiles?.full_name ?? "مستخدم"}</span>
+                      <span>{formatDate(item.acknowledged_at)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
 
           {canOwnerRevise ? (
             <form className="info-card" onSubmit={submitRevision}>

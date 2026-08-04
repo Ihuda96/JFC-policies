@@ -19,6 +19,7 @@ import { useAuth } from "../context/AuthContext";
 import { useAppData } from "../context/AppDataContext";
 import { CommandPalette } from "./CommandPalette";
 import { NotificationBell } from "./NotificationBell";
+import { PoweredBy } from "./PoweredBy";
 import { SuperAdminChip } from "./SuperAdminChip";
 import { initials, roleLabels } from "../lib/format";
 import {
@@ -192,6 +193,7 @@ export function AppShell() {
         </header>
         <main className="content-area">
           <Outlet />
+          <PoweredBy />
         </main>
       </div>
 

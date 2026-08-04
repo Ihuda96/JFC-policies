@@ -25,6 +25,7 @@ import {
 } from "../lib/documentCode";
 import { formatDate } from "../lib/format";
 import { downloadPolicyFileBytes, readableWorkflowError, setPolicyReference } from "../lib/policyWorkflow";
+import { stampPublicUrl } from "../lib/stamp";
 import { isSetupError, supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
@@ -44,6 +45,7 @@ export function LibraryPage() {
   const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>({});
   const [savingCode, setSavingCode] = useState<string | null>(null);
   const [editing, setEditing] = useState<Set<string>>(new Set());
+  const [fullTextMatches, setFullTextMatches] = useState<Set<string> | null>(null);
   const { profile } = useAuth();
   const toast = useToast();
   const canEditCodes = Boolean(profile);
@@ -143,6 +145,38 @@ export function LibraryPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Full-text search over policy_metadata.search_vector — additive to the
+  // substring match below, so it can find matches inside the extracted
+  // document text (search_text) that substring matching on title/number/
+  // department alone never sees. Debounced so it fires once typing pauses,
+  // not on every keystroke.
+  useEffect(() => {
+    const normalized = query.trim();
+    if (!supabase || !normalized) {
+      setFullTextMatches(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const { data, error } = await supabase!
+        .from("policy_metadata")
+        .select("policy_id")
+        .textSearch("search_vector", normalized, { type: "websearch", config: "simple" });
+
+      if (!cancelled) {
+        setFullTextMatches(
+          error ? null : new Set((data ?? []).map((row) => row.policy_id as string)),
+        );
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
 
   // Read the full code from the document and save it, organising the library in
   // one pass. `rescanAll` re-reads every policy to correct codes stored earlier.
@@ -259,6 +293,10 @@ export function LibraryPage() {
     }
 
     return policies.filter((policy) => {
+      if (fullTextMatches?.has(policy.id)) {
+        return true;
+      }
+
       const text = [
         policy.title,
         policy.policy_number,
@@ -273,7 +311,7 @@ export function LibraryPage() {
 
       return text.includes(normalized);
     });
-  }, [policies, query]);
+  }, [policies, query, fullTextMatches]);
 
   // Department chips reflect the full approved library so they stay stable
   // while searching.
@@ -477,6 +515,13 @@ export function LibraryPage() {
                                     <span>{section.label ?? department.label}</span>
                                     {policy.final_approved_at ? (
                                       <span className="final-seal" title="اعتماد نهائي من المكتب التنفيذي">
+                                        {stampPublicUrl(policy.final_stamp_path) ? (
+                                          <img
+                                            src={stampPublicUrl(policy.final_stamp_path) ?? undefined}
+                                            alt=""
+                                            className="final-seal-stamp"
+                                          />
+                                        ) : null}
                                         معتمدة نهائيًا
                                       </span>
                                     ) : null}

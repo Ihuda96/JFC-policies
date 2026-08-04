@@ -23,6 +23,7 @@ export interface ActionGroup {
   key: string;
   title: string;
   items: ActionItem[];
+  tone?: "default" | "danger";
 }
 
 interface AppDataValue {
@@ -86,6 +87,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       to: `/app/policies/${policy.id}`,
     });
 
+    const now = Date.now();
+    const soon = now + REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    const overdueForReview = policies
+      .filter(
+        (policy) =>
+          policy.status === "approved" &&
+          policy.next_review_at &&
+          new Date(policy.next_review_at).getTime() < now,
+      )
+      .map((policy) => ({ ...link(policy), meta: policy.next_review_at }));
+    if (overdueForReview.length > 0) {
+      groups.push({
+        key: "overdue-review",
+        title: "متأخرة عن المراجعة",
+        items: overdueForReview,
+        tone: "danger",
+      });
+    }
+
     if (canReviewPolicies(profile)) {
       const pending = policies.filter((policy) =>
         ["pending_approval", "resubmitted"].includes(policy.status),
@@ -105,12 +125,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       groups.push({ key: "drafts", title: "مسودات لم تُرسل بعد", items: drafts.map(link) });
     }
 
-    const soon = Date.now() + REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
     const dueForReview = policies
       .filter(
         (policy) =>
           policy.status === "approved" &&
           policy.next_review_at &&
+          new Date(policy.next_review_at).getTime() >= now &&
           new Date(policy.next_review_at).getTime() <= soon,
       )
       .map((policy) => ({
