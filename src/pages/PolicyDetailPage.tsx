@@ -155,7 +155,9 @@ export function PolicyDetailPage() {
   }, [policy, selectedVersion]);
   const originalFile =
     selectedVersionFiles.find((file) => file.file_kind === "original") ?? null;
-  const selectedFile = originalFile;
+  const stampedFile =
+    selectedVersionFiles.find((file) => file.file_kind === "approved_pdf") ?? null;
+  const selectedFile = stampedFile ?? originalFile;
 
   // If the full code was never stored, read it from the document and save it
   // so the policy classifies automatically and shows its full number.
@@ -507,6 +509,21 @@ export function PolicyDetailPage() {
 
           <div className="info-card">
             <h2>ملفات النسخة</h2>
+            {stampedFile ? (
+              <article className="file-action-row">
+                <div>
+                  <FileText aria-hidden="true" />
+                  <span>
+                    <strong>النسخة المعتمدة والمختومة</strong>
+                    {stampedFile.file_name} · {fileSize(stampedFile.file_size)}
+                  </span>
+                </div>
+                <button onClick={() => void openVersionFile(stampedFile, "download")}>
+                  <Download aria-hidden="true" />
+                  تنزيل النسخة المختومة
+                </button>
+              </article>
+            ) : null}
             {originalFile ? (
               <article className="file-action-row">
                 <div>

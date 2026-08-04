@@ -3974,6 +3974,26 @@ select,
   color: var(--muted);
   font-size: 0.8rem;
 }
+.section-item-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--blue-700);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.section-item-view:hover {
+  background: var(--blue-100, rgba(18, 122, 175, 0.12));
+}
+.section-item-view svg {
+  width: 14px;
+  height: 14px;
+}
 .section-empty {
   padding: 40px 20px;
   text-align: center;

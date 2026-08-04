@@ -1,10 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { FileText, Lock, Search } from "lucide-react";
+import { FileText, FileCheck2, Lock, Search } from "lucide-react";
 import { hasSupabaseConfig } from "../lib/config";
 import { formatDate } from "../lib/format";
 import { errorMessage, supabase } from "../lib/supabase";
-import { stampPublicUrl } from "../lib/stamp";
+import { approvedPdfPublicUrl, stampPublicUrl } from "../lib/stamp";
 import { PoweredBy } from "../components/PoweredBy";
 import { SetupRequired } from "../components/SetupRequired";
 
@@ -17,6 +17,7 @@ interface SectionPolicy {
   next_review_at: string | null;
   department_code: string | null;
   final_stamp_path: string | null;
+  approved_pdf_path: string | null;
 }
 
 export function SectionLibraryPage() {
@@ -189,6 +190,17 @@ export function SectionLibraryPage() {
                       اعتُمدت نهائيًا {formatDate(policy.final_approved_at)} · المراجعة القادمة{" "}
                       {formatDate(policy.next_review_at)}
                     </span>
+                    {approvedPdfPublicUrl(policy.approved_pdf_path) ? (
+                      <a
+                        className="section-item-view"
+                        href={approvedPdfPublicUrl(policy.approved_pdf_path) ?? undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <FileCheck2 aria-hidden="true" />
+                        عرض الوثيقة المعتمدة والمختومة
+                      </a>
+                    ) : null}
                   </div>
                 </article>
               </li>

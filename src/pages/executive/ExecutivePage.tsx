@@ -5,8 +5,12 @@ import { useAuth } from "../../context/AuthContext";
 import { classifyPolicy, policyReference } from "../../lib/departments";
 import { formatDate, initials } from "../../lib/format";
 import { isExecutive } from "../../lib/permissions";
-import { readableWorkflowError, signedFileUrl } from "../../lib/policyWorkflow";
-import { stampPublicUrl } from "../../lib/stamp";
+import {
+  downloadPolicyFileBytes,
+  readableWorkflowError,
+  signedFileUrl,
+} from "../../lib/policyWorkflow";
+import { stampPublicUrl, toPngBlob } from "../../lib/stamp";
 import { errorMessage, supabase } from "../../lib/supabase";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { PoweredBy } from "../../components/PoweredBy";
@@ -247,12 +251,14 @@ export function ExecutivePage() {
 
     setUploadingStamp(true);
     try {
-      const extension = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${profile.id}/stamp-${Date.now()}.${extension}`;
+      // Always store as a clean PNG regardless of what was picked, so it can
+      // be embedded directly into a policy PDF later with no format handling.
+      const pngBlob = await toPngBlob(file);
+      const path = `${profile.id}/stamp-${Date.now()}.png`;
 
       const { error: uploadError } = await supabase.storage
         .from("ceo-stamps")
-        .upload(path, file, { contentType: file.type, upsert: false });
+        .upload(path, pngBlob, { contentType: "image/png", upsert: false });
       if (uploadError) throw uploadError;
 
       const { error: rpcError } = await supabase.rpc("set_ceo_stamp", {
@@ -269,6 +275,65 @@ export function ExecutivePage() {
     }
   }
 
+  // Burns the CEO's e-stamp onto the policy's original PDF and registers
+  // the result as its approved_pdf file. Best-effort: the policy is still
+  // validly finally-approved even if this fails, so failures are surfaced
+  // but never block or undo the approval itself.
+  async function stampPolicyDocument(policy: PolicyBundle) {
+    if (!supabase || !profile?.stamp_path) {
+      return true;
+    }
+
+    const versionId = policy.approved_version_id;
+    const original = (policy.policy_files ?? []).find(
+      (item) => item.file_kind === "original" && item.version_id === versionId,
+    );
+    if (!original || !original.content_type.toLowerCase().includes("pdf")) {
+      // Only PDF originals can be stamped in place; DOCX has no in-browser
+      // path for this without converting it first.
+      return true;
+    }
+
+    try {
+      const stampUrl = stampPublicUrl(profile.stamp_path);
+      if (!stampUrl) return true;
+
+      const [pdfBytes, stampBytes] = await Promise.all([
+        downloadPolicyFileBytes(original),
+        fetch(stampUrl).then((response) => response.arrayBuffer()),
+      ]);
+
+      // Loaded on demand — pdf-lib is only ever needed at the moment of a
+      // CEO approval, not on every visitor's initial page load.
+      const { embedStampInPdf } = await import("../../lib/stampPdf");
+      const stampedBytes = await embedStampInPdf(pdfBytes, stampBytes);
+      const path = `${profile.id}/${policy.id}/${versionId}/approved-stamped.pdf`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("policy-approved")
+        .upload(path, new Blob([Uint8Array.from(stampedBytes)], { type: "application/pdf" }), {
+          contentType: "application/pdf",
+          upsert: true,
+        });
+      if (uploadError) throw uploadError;
+
+      const fileName = `${original.file_name.replace(/\.[^.]+$/, "")}-معتمد.pdf`;
+      const { error: rpcError } = await supabase.rpc("record_approved_pdf", {
+        p_policy_id: policy.id,
+        p_version_id: versionId,
+        p_storage_path: path,
+        p_file_name: fileName,
+        p_file_size: stampedBytes.byteLength,
+      });
+      if (rpcError) throw rpcError;
+
+      return true;
+    } catch (err) {
+      toast.error(`تعذّر ختم نسخة PDF لسياسة "${policy.title}": ${errorMessage(err)}`);
+      return false;
+    }
+  }
+
   async function approveAll() {
     if (!supabase || pending.length === 0) return;
 
@@ -279,12 +344,20 @@ export function ExecutivePage() {
     });
     if (!confirmed) return;
 
+    const batch = pending;
     setApprovingAll(true);
     try {
       const { error } = await supabase.rpc("ceo_final_approve_all");
       if (error) throw error;
       setSealing(true);
       window.setTimeout(() => setSealing(false), 1500);
+
+      if (profile?.stamp_path) {
+        for (const policy of batch) {
+          await stampPolicyDocument(policy);
+        }
+      }
+
       await load();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -299,6 +372,7 @@ export function ExecutivePage() {
     try {
       const { error } = await supabase.rpc("ceo_final_approve", { p_policy_id: policy.id });
       if (error) throw error;
+      await stampPolicyDocument(policy);
       toast.success("تم اعتماد السياسة نهائيًا.");
       await load();
     } catch (err) {
@@ -333,9 +407,10 @@ export function ExecutivePage() {
   }
 
   async function openDocument(policy: PolicyBundle) {
-    const file = (policy.policy_files ?? []).find(
-      (item: PolicyFile) => item.file_kind === "original",
-    );
+    const files = policy.policy_files ?? [];
+    const file =
+      files.find((item: PolicyFile) => item.file_kind === "approved_pdf") ??
+      files.find((item: PolicyFile) => item.file_kind === "original");
     if (!file) {
       toast.error("لا يوجد ملف مرفق.");
       return;
