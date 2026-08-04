@@ -25,6 +25,7 @@ import {
 } from "../lib/documentCode";
 import { formatDate } from "../lib/format";
 import { downloadPolicyFileBytes, readableWorkflowError, setPolicyReference } from "../lib/policyWorkflow";
+import { stampPublicUrl } from "../lib/stamp";
 import { isSetupError, supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/Toast";
@@ -514,6 +515,13 @@ export function LibraryPage() {
                                     <span>{section.label ?? department.label}</span>
                                     {policy.final_approved_at ? (
                                       <span className="final-seal" title="اعتماد نهائي من المكتب التنفيذي">
+                                        {stampPublicUrl(policy.final_stamp_path) ? (
+                                          <img
+                                            src={stampPublicUrl(policy.final_stamp_path) ?? undefined}
+                                            alt=""
+                                            className="final-seal-stamp"
+                                          />
+                                        ) : null}
                                         معتمدة نهائيًا
                                       </span>
                                     ) : null}

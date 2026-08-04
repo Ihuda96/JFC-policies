@@ -4,6 +4,7 @@ import { FileText, Lock, Search } from "lucide-react";
 import { hasSupabaseConfig } from "../lib/config";
 import { formatDate } from "../lib/format";
 import { errorMessage, supabase } from "../lib/supabase";
+import { stampPublicUrl } from "../lib/stamp";
 import { PoweredBy } from "../components/PoweredBy";
 import { SetupRequired } from "../components/SetupRequired";
 
@@ -15,6 +16,7 @@ interface SectionPolicy {
   final_approved_at: string | null;
   next_review_at: string | null;
   department_code: string | null;
+  final_stamp_path: string | null;
 }
 
 export function SectionLibraryPage() {
@@ -168,7 +170,15 @@ export function SectionLibraryPage() {
               <li key={policy.id}>
                 <article className="section-item">
                   <span className="section-item-icon">
-                    <FileText aria-hidden="true" />
+                    {stampPublicUrl(policy.final_stamp_path) ? (
+                      <img
+                        src={stampPublicUrl(policy.final_stamp_path) ?? undefined}
+                        alt="ختم الاعتماد النهائي"
+                        title="ختم الاعتماد النهائي"
+                      />
+                    ) : (
+                      <FileText aria-hidden="true" />
+                    )}
                   </span>
                   <div>
                     <strong>{policy.title}</strong>

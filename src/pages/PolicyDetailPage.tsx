@@ -28,6 +28,7 @@ import {
 } from "../lib/policyWorkflow";
 import { policyReference } from "../lib/departments";
 import { canManageQuality, canReviewPolicies } from "../lib/permissions";
+import { stampPublicUrl } from "../lib/stamp";
 import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
@@ -414,6 +415,18 @@ export function PolicyDetailPage() {
       <section className="policy-header">
         <div>
           <StatusBadge status={policy.status} />
+          {policy.final_approved_at ? (
+            <span className="final-seal" title="اعتماد نهائي من المكتب التنفيذي">
+              {stampPublicUrl(policy.final_stamp_path) ? (
+                <img
+                  src={stampPublicUrl(policy.final_stamp_path) ?? undefined}
+                  alt=""
+                  className="final-seal-stamp"
+                />
+              ) : null}
+              معتمدة نهائيًا
+            </span>
+          ) : null}
           <h1>{policy.title}</h1>
           <p>
             رقم السياسة: {policyReference(policy) ?? "لم يستخرج بعد"} · آخر تحديث{" "}

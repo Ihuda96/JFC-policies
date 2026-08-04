@@ -1,16 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { Stamp } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { classifyPolicy, policyReference } from "../../lib/departments";
 import { formatDate, initials } from "../../lib/format";
 import { isExecutive } from "../../lib/permissions";
 import { readableWorkflowError, signedFileUrl } from "../../lib/policyWorkflow";
+import { stampPublicUrl } from "../../lib/stamp";
 import { errorMessage, supabase } from "../../lib/supabase";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { PoweredBy } from "../../components/PoweredBy";
 import { useToast } from "../../components/Toast";
 import { ExecutiveSetPassword } from "./ExecutiveSetPassword";
 import type { PolicyBundle, PolicyFile } from "../../lib/types";
+
+const STAMP_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const STAMP_MAX_BYTES = 2 * 1024 * 1024;
 
 function greeting() {
   const hour = new Date().getHours();
@@ -41,7 +46,7 @@ function reviewUrgency(days: number): { label: string; tone: Tone } {
 }
 
 export function ExecutivePage() {
-  const { profile, loading: authLoading, signOut } = useAuth();
+  const { profile, loading: authLoading, signOut, refreshProfile } = useAuth();
   const confirm = useConfirm();
   const toast = useToast();
   const [policies, setPolicies] = useState<PolicyBundle[]>([]);
@@ -54,6 +59,8 @@ export function ExecutivePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [approvingAll, setApprovingAll] = useState(false);
   const [sealing, setSealing] = useState(false);
+  const [uploadingStamp, setUploadingStamp] = useState(false);
+  const stampInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -226,6 +233,42 @@ export function ExecutivePage() {
     return months.map((m) => ({ ...m, pct: pct(m.count, max) }));
   }, [finalised]);
 
+  async function uploadStamp(file: File) {
+    if (!supabase || !profile) return;
+
+    if (!STAMP_TYPES.has(file.type)) {
+      toast.error("صيغ الختم المسموحة: PNG أو JPEG أو WebP.");
+      return;
+    }
+    if (file.size > STAMP_MAX_BYTES) {
+      toast.error("حجم صورة الختم يجب ألا يتجاوز 2 ميجابايت.");
+      return;
+    }
+
+    setUploadingStamp(true);
+    try {
+      const extension = file.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `${profile.id}/stamp-${Date.now()}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("ceo-stamps")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { error: rpcError } = await supabase.rpc("set_ceo_stamp", {
+        p_storage_path: path,
+      });
+      if (rpcError) throw rpcError;
+
+      await refreshProfile();
+      toast.success("تم حفظ ختم الاعتماد. سيُستخدم تلقائيًا في كل اعتماد نهائي قادم.");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setUploadingStamp(false);
+    }
+  }
+
   async function approveAll() {
     if (!supabase || pending.length === 0) return;
 
@@ -345,6 +388,31 @@ export function ExecutivePage() {
             </div>
           </div>
           <div className="topbar-actions">
+            <input
+              ref={stampInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              style={{ display: "none" }}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (file) void uploadStamp(file);
+              }}
+            />
+            <button
+              type="button"
+              className="stamp-trigger"
+              disabled={uploadingStamp}
+              onClick={() => stampInputRef.current?.click()}
+              title={profile.stamp_path ? "تغيير ختم الاعتماد" : "رفع ختم الاعتماد"}
+              aria-label={profile.stamp_path ? "تغيير ختم الاعتماد" : "رفع ختم الاعتماد"}
+            >
+              {profile.stamp_path ? (
+                <img src={stampPublicUrl(profile.stamp_path) ?? undefined} alt="" />
+              ) : (
+                <Stamp aria-hidden="true" />
+              )}
+            </button>
             <div className="profile-chip">
               <span className="profile-avatar" aria-hidden="true">
                 {initials(profile.full_name)}
@@ -751,7 +819,17 @@ export function ExecutivePage() {
                       <td>{formatDate(policy.policy_metadata?.review_date ?? policy.next_review_at)}</td>
                       <td>{formatDate(policy.final_approved_at)}</td>
                       <td>
-                        <span className="pill success">مُعتمد</span>
+                        <span className="stamped-status">
+                          <span className="pill success">مُعتمد</span>
+                          {stampPublicUrl(policy.final_stamp_path) ? (
+                            <img
+                              className="stamp-seal"
+                              src={stampPublicUrl(policy.final_stamp_path) ?? undefined}
+                              alt="ختم الاعتماد النهائي"
+                              title="ختم الاعتماد النهائي"
+                            />
+                          ) : null}
+                        </span>
                       </td>
                     </tr>
                   ))}

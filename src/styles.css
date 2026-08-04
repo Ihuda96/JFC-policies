@@ -3950,6 +3950,11 @@ select,
   background: var(--soft);
   color: var(--blue-700);
 }
+.section-item-icon img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
 .section-item strong {
   display: block;
   color: var(--blue-950);
@@ -4001,6 +4006,14 @@ select,
 .final-seal svg {
   width: 12px;
   height: 12px;
+}
+.final-seal-stamp {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #fff;
+  padding: 1px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -4540,6 +4553,17 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
 .exec-portal .pill.info::before {
   background: var(--info);
 }
+.exec-portal .stamped-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.exec-portal .stamp-seal {
+  inline-size: 22px;
+  block-size: 22px;
+  object-fit: contain;
+  opacity: 0.9;
+}
 
 /* — Table — admin-dense rows (40px, not 56px), monospace for codes — */
 .exec-portal .table-scroll {
@@ -4780,6 +4804,38 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   display: flex;
   align-items: center;
   gap: var(--space-5);
+}
+.exec-portal .stamp-trigger {
+  inline-size: 34px;
+  block-size: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--d-lift, 200ms) var(--ease-lift, ease), color var(--d-lift, 200ms) var(--ease-lift, ease);
+}
+.exec-portal .stamp-trigger:hover {
+  border-color: var(--accent-500);
+  color: var(--accent-600);
+}
+.exec-portal .stamp-trigger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.exec-portal .stamp-trigger svg {
+  inline-size: 16px;
+  block-size: 16px;
+}
+.exec-portal .stamp-trigger img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  padding: 3px;
 }
 .exec-portal .profile-chip {
   display: flex;

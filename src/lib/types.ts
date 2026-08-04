@@ -51,6 +51,11 @@ export interface Profile {
   /** Designated platform super admin (email allowlist / super-admin claim):
    *  holds every capability — quality employee, manager, and system admin. */
   is_super_admin?: boolean;
+  /** Storage path of the executive's current e-stamp image, in the public
+   *  ceo-stamps bucket. Policies capture a snapshot of this at the moment
+   *  of final approval rather than pointing back here live. */
+  stamp_path?: string | null;
+  stamp_updated_at?: string | null;
 }
 
 export interface Policy {
@@ -74,6 +79,9 @@ export interface Policy {
   /** Set when the executive office gives the final approval. */
   final_approved_at?: string | null;
   final_approved_by?: string | null;
+  /** Snapshot of the approving CEO's e-stamp path at the moment of final
+   *  approval; cleared if the policy is later returned. */
+  final_stamp_path?: string | null;
   profiles?: Pick<Profile, "full_name" | "email"> | null;
 }
 
