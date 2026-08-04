@@ -4,6 +4,7 @@ import { FileText, Lock, Search } from "lucide-react";
 import { hasSupabaseConfig } from "../lib/config";
 import { formatDate } from "../lib/format";
 import { errorMessage, supabase } from "../lib/supabase";
+import { PoweredBy } from "../components/PoweredBy";
 import { SetupRequired } from "../components/SetupRequired";
 
 interface SectionPolicy {
@@ -100,6 +101,7 @@ export function SectionLibraryPage() {
           <h1>الرمز غير معروف</h1>
           <p>تأكد من مسح الباركود الصحيح.</p>
         </section>
+        <PoweredBy />
       </main>
     );
   }
@@ -131,6 +133,7 @@ export function SectionLibraryPage() {
             </button>
           </form>
         </section>
+        <PoweredBy />
       </main>
     );
   }
@@ -183,6 +186,7 @@ export function SectionLibraryPage() {
           </ul>
         )}
       </section>
+      <PoweredBy />
     </main>
   );
 }

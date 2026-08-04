@@ -7,6 +7,7 @@ import { isExecutive } from "../../lib/permissions";
 import { readableWorkflowError, signedFileUrl } from "../../lib/policyWorkflow";
 import { errorMessage, supabase } from "../../lib/supabase";
 import { useConfirm } from "../../components/ConfirmDialog";
+import { PoweredBy } from "../../components/PoweredBy";
 import { useToast } from "../../components/Toast";
 import { ExecutiveSetPassword } from "./ExecutiveSetPassword";
 import type { PolicyBundle, PolicyFile } from "../../lib/types";
@@ -361,7 +362,6 @@ export function ExecutivePage() {
       </header>
 
       <section className="hero">
-        <div className="hero-watermark" aria-hidden="true" />
         <div className="wrap">
           <div className="hero-inner">
             <span className="eyebrow">
@@ -778,9 +778,7 @@ export function ExecutivePage() {
         </div>
       ) : null}
 
-      <p className="exec-credit" aria-hidden="true">
-        <span>Powered by</span> <strong>Huda Althubiany</strong>
-      </p>
+      <PoweredBy />
     </div>
   );
 }

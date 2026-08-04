@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { errorMessage, supabase } from "../../lib/supabase";
+import { PoweredBy } from "../../components/PoweredBy";
 
 /** Shown the first time an executive signs in with a password issued by the
  *  administrator, so they immediately choose their own. */
@@ -79,6 +80,7 @@ export function ExecutiveSetPassword() {
           </button>
         </form>
       </section>
+      <PoweredBy />
     </main>
   );
 }

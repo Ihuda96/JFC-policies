@@ -12,6 +12,48 @@ body {
   line-height: var(--jfc-line-height-body);
 }
 
+/* ── Faded cluster emblem, fixed behind every page. Negative z-index keeps
+   it under ordinary static page content — it only peeks through wherever a
+   page leaves its own background exposed. Drifts in a slow, smooth,
+   one-directional loop biased toward the right; never alternates back and
+   forth, so the motion always reads as continuous, not a "breathing" pulse. */
+.brand-watermark {
+  position: fixed;
+  top: -10vw;
+  right: -10vw;
+  width: min(48vw, 640px);
+  aspect-ratio: 1;
+  background: url("/brand/jfc-emblem.png") no-repeat center / contain;
+  opacity: 0.06;
+  filter: grayscale(1);
+  pointer-events: none;
+  z-index: 1;
+  animation: brand-orbit 26s linear infinite;
+}
+@keyframes brand-orbit {
+  0%    { transform: translate(0, 0) rotate(0deg); }
+  12.5% { transform: translate(1.2vw, -0.8vw) rotate(0.5deg); }
+  25%   { transform: translate(2.4vw, -1vw) rotate(1deg); }
+  37.5% { transform: translate(3.2vw, -0.4vw) rotate(1.5deg); }
+  50%   { transform: translate(3.2vw, 0.6vw) rotate(1deg); }
+  62.5% { transform: translate(2.4vw, 1.2vw) rotate(0.5deg); }
+  75%   { transform: translate(1.2vw, 1vw) rotate(0deg); }
+  87.5% { transform: translate(0.4vw, 0.4vw) rotate(-0.5deg); }
+  100%  { transform: translate(0, 0) rotate(0deg); }
+}
+@media (max-width: 700px) {
+  .brand-watermark {
+    width: min(70vw, 420px);
+    top: -14vw;
+    right: -16vw;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-watermark {
+    animation: none;
+  }
+}
+
 button,
 input,
 textarea,
@@ -371,8 +413,10 @@ svg {
 .login-page,
 .setup-screen {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
   background:
     linear-gradient(145deg, rgba(7, 56, 97, 0.86), rgba(47, 155, 202, 0.78)),
@@ -4780,34 +4824,11 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   color: var(--text-muted);
 }
 
-/* — §08 Hero: editorial, motif-anchored — Arabic headline at hero scale,
-   the star mark once, oversized, desaturated, cropped off-canvas — */
+/* — §08 Hero: editorial, motif-anchored — Arabic headline at hero scale — */
 .exec-portal .hero {
   position: relative;
   overflow: hidden;
   padding-block: var(--space-12) var(--space-10);
-}
-.exec-portal .hero-watermark {
-  position: absolute;
-  inset-block-start: -18%;
-  inset-inline-end: -12%;
-  inline-size: 56%;
-  aspect-ratio: 1;
-  background: url("/brand/jfc-emblem.png") no-repeat center / contain;
-  opacity: 0.07;
-  filter: grayscale(1);
-  pointer-events: none;
-  animation: bloom-breathe 14s ease-in-out infinite alternate;
-}
-@keyframes bloom-breathe {
-  from {
-    opacity: 0.05;
-    transform: scale(1) rotate(0deg);
-  }
-  to {
-    opacity: 0.1;
-    transform: scale(1.04) rotate(2deg);
-  }
 }
 .exec-portal .hero-inner {
   position: relative;
@@ -4909,10 +4930,6 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   .exec-portal .lede {
     font-size: 18px;
   }
-  .exec-portal .hero-watermark {
-    inline-size: 80%;
-    inset-inline-end: -30%;
-  }
   .exec-portal .grid-2,
   .exec-portal .grid-4 {
     grid-template-columns: repeat(2, 1fr);
@@ -4979,22 +4996,15 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
   }
-  /* The 1ms override above is fine for one-shot animations (it just makes
-     them instant) but would turn an *infinite* one into a rapid strobe —
-     a real seizure-trigger risk, not just an unwanted flourish. Ambient/
-     looping animations need to be fully disabled here, not sped up. */
-  .exec-portal .hero-watermark {
-    animation: none;
-    opacity: 0.07;
-    transform: none;
-  }
 }
 
 /* — Auth pages (login / set password) — */
 .exec-portal.auth-page {
   min-block-size: 100vh;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: var(--space-6);
 }
 .exec-portal .auth-card {
@@ -5028,33 +5038,27 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   font-size: 13px;
 }
 
-/* ── "Powered by" credit — small, on every page, never blocks a click ─── */
+/* ── "Powered by" credit — sits in normal document flow at the true end
+   of each page's content, never fixed over it, so it can't drift on top
+   of scrolling cards no matter how long the page is. ─────────────────── */
 .powered-by {
-  position: fixed;
-  inset-inline-start: 12px;
-  inset-block-end: calc(10px + env(safe-area-inset-bottom));
-  z-index: 30;
-  display: inline-flex;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(22, 26, 24, 0.84), rgba(10, 13, 12, 0.88));
-  border: 1px solid rgba(214, 179, 122, 0.28);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px) saturate(1.2);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  pointer-events: none;
-  white-space: nowrap;
-  /* Forces its own compositing layer so mobile WebKit doesn't let it drift
-     with touch-scroll momentum before the next repaint. */
-  will-change: transform;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  animation: powered-by-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 400ms both;
+  display: flex;
+  justify-content: center;
+  margin: 32px 0 16px;
+  padding: 0 24px;
+  animation: powered-by-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both;
 }
 .powered-by-text {
   display: inline-flex;
   align-items: baseline;
   gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(22, 26, 24, 0.84), rgba(10, 13, 12, 0.88));
+  border: 1px solid rgba(214, 179, 122, 0.28);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+  white-space: nowrap;
 }
 .powered-by-label {
   font-size: 9px;
@@ -5073,25 +5077,11 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   color: transparent;
 }
 @keyframes powered-by-in {
-  from { opacity: 0; transform: translateY(6px) translateZ(0); }
-  to { opacity: 1; transform: translateZ(0); }
-}
-/* Clear the mobile bottom nav (AppShell) */
-@media (max-width: 820px) {
-  .app-layout ~ .powered-by {
-    inset-block-end: calc(70px + env(safe-area-inset-bottom));
-  }
-}
-/* The executive dashboard's queue can scroll for a long time under a fixed
-   badge no offset guesses right — drifts over card content instead of
-   staying pinned to a footer. Its own in-flow credit line (.exec-credit,
-   below) replaces it there. The short auth pages keep the floating badge —
-   they never scroll, so it stays harmlessly pinned to their corner. */
-.exec-dashboard ~ .powered-by {
-  display: none;
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @media (max-width: 560px) {
-  .powered-by {
+  .powered-by-text {
     padding: 5px 10px;
   }
   .powered-by-label {
@@ -5102,20 +5092,4 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   .powered-by {
     animation: none;
   }
-}
-
-/* In-flow credit for the executive portal — sits after the dock at the
-   true end of the page instead of floating fixed over the scrollable
-   queue, so it never drifts over card content. */
-.exec-credit {
-  margin: var(--space-6) 0 var(--space-5);
-  padding: 0 var(--space-6);
-  text-align: center;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: var(--neutral-500);
-}
-.exec-credit strong {
-  color: var(--neutral-700);
-  font-weight: 600;
 }

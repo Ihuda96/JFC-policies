@@ -1,6 +1,7 @@
 import { CheckCircle2, FileText, ShieldCheck } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { MetricCard } from "../components/MetricCard";
+import { PoweredBy } from "../components/PoweredBy";
 import { StatusBadge } from "../components/StatusBadge";
 import {
   colorScales,
@@ -218,6 +219,7 @@ export function DesignSystemPage() {
           />
         </div>
       </section>
+      <PoweredBy />
     </main>
   );
 }

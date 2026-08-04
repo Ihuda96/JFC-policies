@@ -11,6 +11,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PoweredBy } from "../components/PoweredBy";
 
 const capabilities = [
   { icon: FileSearch, title: "معاينة داخلية", body: "PDF مباشرة وDOCX عبر معاينة Word من الملف الأصلي." },
@@ -127,6 +128,8 @@ export function LandingPage() {
           <span><Workflow /> سجل تدقيق لكل إجراء حساس</span>
         </div>
       </section>
+
+      <PoweredBy />
     </main>
   );
 }
