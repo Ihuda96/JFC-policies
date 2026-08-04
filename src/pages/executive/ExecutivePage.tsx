@@ -315,7 +315,9 @@ export function ExecutivePage() {
           contentType: "application/pdf",
           upsert: true,
         });
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        throw new Error(`تعذّر رفع الملف المختوم: ${errorMessage(uploadError)}`);
+      }
 
       const fileName = `${original.file_name.replace(/\.[^.]+$/, "")}-معتمد.pdf`;
       const { error: rpcError } = await supabase.rpc("record_approved_pdf", {
@@ -325,7 +327,9 @@ export function ExecutivePage() {
         p_file_name: fileName,
         p_file_size: stampedBytes.byteLength,
       });
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        throw new Error(`تعذّر تسجيل الملف المختوم: ${errorMessage(rpcError)}`);
+      }
 
       return true;
     } catch (err) {
