@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Stamp } from "lucide-react";
+import { RotateCcw, Stamp } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { classifyPolicy, policyReference } from "../../lib/departments";
 import { formatDate, initials } from "../../lib/format";
@@ -380,6 +380,29 @@ export function ExecutivePage() {
       if (error) throw error;
       await stampPolicyDocument(policy);
       toast.success("تم اعتماد السياسة نهائيًا.");
+      await load();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function unapprovePolicy(policy: PolicyBundle) {
+    if (!supabase) return;
+
+    const confirmed = await confirm({
+      title: "إلغاء الاعتماد النهائي",
+      body: `ستعود سياسة "${policy.title}" إلى قائمة الانتظار للاعتماد النهائي، ويُزال ختمها الحالي. لن تُرسل إلى صاحبها للمراجعة.`,
+      confirmLabel: "إلغاء الاعتماد",
+    });
+    if (!confirmed) return;
+
+    setBusy(policy.id);
+    try {
+      const { error } = await supabase.rpc("ceo_unapprove_policy", { p_policy_id: policy.id });
+      if (error) throw error;
+      toast.success("أُلغي الاعتماد النهائي، وعادت السياسة لقائمة الانتظار.");
       await load();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -883,6 +906,7 @@ export function ExecutivePage() {
                     <th>تاريخ المراجعة</th>
                     <th>تاريخ الاعتماد</th>
                     <th>الحالة</th>
+                    <th>الإجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -911,6 +935,20 @@ export function ExecutivePage() {
                             />
                           ) : null}
                         </span>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn btn-quiet btn-unapprove"
+                          disabled={busy === policy.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void unapprovePolicy(policy);
+                          }}
+                        >
+                          <RotateCcw size={15} aria-hidden="true" />
+                          إلغاء الاعتماد
+                        </button>
                       </td>
                     </tr>
                   ))}

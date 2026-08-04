@@ -4618,6 +4618,18 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
 .exec-portal table.data tbody tr:hover {
   background: var(--surface-soft);
 }
+.exec-portal .btn-unapprove {
+  min-block-size: auto;
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+  font-size: 13px;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+.exec-portal .btn-unapprove:disabled {
+  color: var(--neutral-400);
+  cursor: not-allowed;
+}
 .exec-portal table.data .num {
   text-align: end;
   font-variant-numeric: tabular-nums;
