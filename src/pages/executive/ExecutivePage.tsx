@@ -132,7 +132,7 @@ export function ExecutivePage() {
     const now = Date.now();
     return policies
       .map((policy) => {
-        const reviewDate = policy.policy_metadata?.review_date;
+        const reviewDate = policy.policy_metadata?.review_date ?? policy.next_review_at;
         if (!reviewDate) return null;
         const parsed = new Date(reviewDate);
         if (Number.isNaN(parsed.getTime())) return null;
@@ -249,6 +249,21 @@ export function ExecutivePage() {
     }
   }
 
+  async function approveOne(policy: PolicyBundle) {
+    if (!supabase) return;
+    setBusy(policy.id);
+    try {
+      const { error } = await supabase.rpc("ceo_final_approve", { p_policy_id: policy.id });
+      if (error) throw error;
+      toast.success("تم اعتماد السياسة نهائيًا.");
+      await load();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function returnWithNote(policy: PolicyBundle) {
     if (!supabase) return;
     if (note.trim().length === 0) {
@@ -304,7 +319,7 @@ export function ExecutivePage() {
   const firstName = (profile.full_name ?? "").split(" ")[0];
 
   return (
-    <div className="exec-portal">
+    <div className="exec-portal exec-dashboard">
       {sealing ? (
         <div className="seal-stage" role="status" aria-live="polite">
           <div className="seal-stage-mark" aria-hidden="true">
@@ -505,17 +520,25 @@ export function ExecutivePage() {
                                 <div className="meta-grid">
                                   <div>
                                     <p className="caption">تاريخ الإصدار</p>
-                                    <p>{formatDate(policy.policy_metadata?.issue_date)}</p>
+                                    <p>{formatDate(policy.policy_metadata?.issue_date ?? policy.approved_at)}</p>
                                   </div>
                                   <div>
                                     <p className="caption">تاريخ المراجعة</p>
-                                    <p>{formatDate(policy.policy_metadata?.review_date)}</p>
+                                    <p>{formatDate(policy.policy_metadata?.review_date ?? policy.next_review_at)}</p>
                                   </div>
                                 </div>
 
                                 <div className="demo-row" style={{ marginBlockStart: "var(--space-5)" }}>
                                   <button type="button" className="btn btn-secondary" onClick={() => void openDocument(policy)}>
                                     عرض الوثيقة
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    disabled={busy === policy.id}
+                                    onClick={() => void approveOne(policy)}
+                                  >
+                                    {busy === policy.id ? "جاري الاعتماد..." : "اعتماد هذه السياسة"}
                                   </button>
                                   <button
                                     type="button"
@@ -606,7 +629,7 @@ export function ExecutivePage() {
                           {policyReference(policy) ?? "—"}
                         </td>
                         <td>{classification.departmentLabel}</td>
-                        <td>{formatDate(policy.policy_metadata?.review_date)}</td>
+                        <td>{formatDate(policy.policy_metadata?.review_date ?? policy.next_review_at)}</td>
                         <td>
                           <span className={`pill ${urgency.tone}`}>{urgency.label}</span>
                         </td>
@@ -724,8 +747,8 @@ export function ExecutivePage() {
                       <td className="code" dir="ltr" style={{ textAlign: "start" }}>
                         {policyReference(policy) ?? "—"}
                       </td>
-                      <td>{formatDate(policy.policy_metadata?.issue_date)}</td>
-                      <td>{formatDate(policy.policy_metadata?.review_date)}</td>
+                      <td>{formatDate(policy.policy_metadata?.issue_date ?? policy.approved_at)}</td>
+                      <td>{formatDate(policy.policy_metadata?.review_date ?? policy.next_review_at)}</td>
                       <td>{formatDate(policy.final_approved_at)}</td>
                       <td>
                         <span className="pill success">مُعتمد</span>
@@ -754,6 +777,10 @@ export function ExecutivePage() {
           </button>
         </div>
       ) : null}
+
+      <p className="exec-credit" aria-hidden="true">
+        <span>Powered by</span> <strong>Huda Althubiany</strong>
+      </p>
     </div>
   );
 }

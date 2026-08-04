@@ -5076,14 +5076,19 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   from { opacity: 0; transform: translateY(6px) translateZ(0); }
   to { opacity: 1; transform: translateZ(0); }
 }
-/* Clear the mobile bottom nav (AppShell) and the executive sticky dock */
+/* Clear the mobile bottom nav (AppShell) */
 @media (max-width: 820px) {
   .app-layout ~ .powered-by {
     inset-block-end: calc(70px + env(safe-area-inset-bottom));
   }
 }
-.exec-portal ~ .powered-by {
-  inset-block-end: calc(114px + env(safe-area-inset-bottom));
+/* The executive dashboard's queue can scroll for a long time under a fixed
+   badge no offset guesses right — drifts over card content instead of
+   staying pinned to a footer. Its own in-flow credit line (.exec-credit,
+   below) replaces it there. The short auth pages keep the floating badge —
+   they never scroll, so it stays harmlessly pinned to their corner. */
+.exec-dashboard ~ .powered-by {
+  display: none;
 }
 @media (max-width: 560px) {
   .powered-by {
@@ -5092,14 +5097,25 @@ html[dir="ltr"] .exec-portal .btn-quiet::after {
   .powered-by-label {
     display: none;
   }
-  /* The dock stacks (text row + full-width button) below this width, so it's
-     noticeably taller than the desktop single row. */
-  .exec-portal ~ .powered-by {
-    inset-block-end: calc(162px + env(safe-area-inset-bottom));
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .powered-by {
     animation: none;
   }
+}
+
+/* In-flow credit for the executive portal — sits after the dock at the
+   true end of the page instead of floating fixed over the scrollable
+   queue, so it never drifts over card content. */
+.exec-credit {
+  margin: var(--space-6) 0 var(--space-5);
+  padding: 0 var(--space-6);
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--neutral-500);
+}
+.exec-credit strong {
+  color: var(--neutral-700);
+  font-weight: 600;
 }
