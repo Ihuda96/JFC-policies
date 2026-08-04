@@ -12,40 +12,30 @@ body {
   line-height: var(--jfc-line-height-body);
 }
 
-/* ── Faded cluster emblem, fixed behind every page. Negative z-index keeps
-   it under ordinary static page content — it only peeks through wherever a
-   page leaves its own background exposed. Drifts in a slow, smooth,
-   one-directional loop biased toward the right; never alternates back and
-   forth, so the motion always reads as continuous, not a "breathing" pulse. */
+/* ── Faded cluster emblem, fixed behind every page, centered and large,
+   spinning slowly around its own center like a tire — a steady, continuous
+   rotation rather than a drift, pinned to the middle of the viewport. */
 .brand-watermark {
   position: fixed;
-  top: -10vw;
-  right: -10vw;
-  width: min(48vw, 640px);
+  top: 50%;
+  left: 50%;
+  width: min(64vw, 880px);
   aspect-ratio: 1;
   background: url("/brand/jfc-emblem.png") no-repeat center / contain;
-  opacity: 0.06;
+  opacity: 0.1;
   filter: grayscale(1);
   pointer-events: none;
   z-index: 1;
-  animation: brand-orbit 26s linear infinite;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: brand-spin 40s linear infinite;
 }
-@keyframes brand-orbit {
-  0%    { transform: translate(0, 0) rotate(0deg); }
-  12.5% { transform: translate(1.2vw, -0.8vw) rotate(0.5deg); }
-  25%   { transform: translate(2.4vw, -1vw) rotate(1deg); }
-  37.5% { transform: translate(3.2vw, -0.4vw) rotate(1.5deg); }
-  50%   { transform: translate(3.2vw, 0.6vw) rotate(1deg); }
-  62.5% { transform: translate(2.4vw, 1.2vw) rotate(0.5deg); }
-  75%   { transform: translate(1.2vw, 1vw) rotate(0deg); }
-  87.5% { transform: translate(0.4vw, 0.4vw) rotate(-0.5deg); }
-  100%  { transform: translate(0, 0) rotate(0deg); }
+@keyframes brand-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
 }
 @media (max-width: 700px) {
   .brand-watermark {
-    width: min(70vw, 420px);
-    top: -14vw;
-    right: -16vw;
+    width: min(88vw, 520px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
