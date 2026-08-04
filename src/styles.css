@@ -1061,6 +1061,52 @@ dd {
   background: var(--soft);
 }
 
+.superseded-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--jfc-feedback-warning-fg, #b8863a);
+  background: var(--jfc-feedback-warning-bg, #fbf3e6);
+  color: var(--jfc-feedback-warning-fg, #7a5220);
+  font-weight: 600;
+}
+
+.superseded-banner .text-button {
+  color: inherit;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.ack-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green-700, #197e56);
+  font-weight: 700;
+}
+
+.ack-roster {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.ack-roster li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
 .scan-sample code {
   font-family: inherit;
   direction: ltr;
@@ -3499,6 +3545,10 @@ select,
   color: #fff;
   font-size: 0.82rem;
   font-weight: 800;
+}
+.count-pill.danger {
+  background: var(--jfc-action-danger, #b3261e);
+  color: #fff;
 }
 .request-list {
   display: grid;

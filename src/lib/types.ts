@@ -108,6 +108,15 @@ export interface PolicyFile {
   created_at: string;
 }
 
+export interface PolicyAcknowledgment {
+  id: string;
+  policy_id: string;
+  version_id: string;
+  user_id: string;
+  acknowledged_at: string;
+  profiles?: Pick<Profile, "full_name"> | null;
+}
+
 export interface PolicyMetadata {
   policy_id: string;
   extracted_title: string | null;
