@@ -324,7 +324,10 @@ export function ExecutivePage() {
         .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false });
 
       if (uploadError && /already exists|duplicate/i.test(uploadError.message)) {
-        await supabase.storage.from("policy-approved").remove([path]);
+        const { error: removeError } = await supabase.storage.from("policy-approved").remove([path]);
+        if (removeError) {
+          throw new Error(`تعذّر حذف النسخة السابقة من الملف المختوم قبل استبدالها: ${errorMessage(removeError)}`);
+        }
         ({ error: uploadError } = await supabase.storage
           .from("policy-approved")
           .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false }));
