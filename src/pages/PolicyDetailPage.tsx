@@ -27,6 +27,7 @@ import {
   uploadRevision,
 } from "../lib/policyWorkflow";
 import { policyReference } from "../lib/departments";
+import { policyDates } from "../lib/policyDates";
 import { canManageQuality, canReviewPolicies } from "../lib/permissions";
 import { stampPublicUrl } from "../lib/stamp";
 import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
@@ -488,6 +489,24 @@ export function PolicyDetailPage() {
               </button>
             </form>
           ) : null}
+
+          <div className="info-card">
+            <h2>تواريخ السياسة</h2>
+            <dl>
+              <div>
+                <dt>تاريخ الإصدار</dt>
+                <dd>{formatDate(policyDates(policy).issueDate)}</dd>
+              </div>
+              <div>
+                <dt>تاريخ السريان</dt>
+                <dd>{formatDate(policyDates(policy).effectiveDate)}</dd>
+              </div>
+              <div>
+                <dt>تاريخ المراجعة القادمة</dt>
+                <dd>{formatDate(policyDates(policy).reviewDate)}</dd>
+              </div>
+            </dl>
+          </div>
 
           <div className="info-card">
             <h2>بيانات الطلب</h2>
