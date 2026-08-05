@@ -324,7 +324,10 @@ export function ExecutivePage() {
         .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false });
 
       if (uploadError && /already exists|duplicate/i.test(uploadError.message)) {
-        await supabase.storage.from("policy-approved").remove([path]);
+        const { error: removeError } = await supabase.storage.from("policy-approved").remove([path]);
+        if (removeError) {
+          throw new Error(`تعذّر حذف النسخة السابقة من الملف المختوم قبل استبدالها: ${errorMessage(removeError)}`);
+        }
         ({ error: uploadError } = await supabase.storage
           .from("policy-approved")
           .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false }));
@@ -426,7 +429,7 @@ export function ExecutivePage() {
 
     const confirmed = await confirm({
       title: "إلغاء الاعتماد النهائي",
-      body: `ستعود سياسة "${policy.title}" إلى قائمة الانتظار للاعتماد النهائي، ويُزال ختمها الحالي. لن تُرسل إلى صاحبها للمراجعة.`,
+      body: `ستعود سياسة "${policy.title}" إلى قائمة الانتظار للاعتماد النهائي، وتُحذف نسختها المختومة نهائيًا (بما فيها ما يظهر عبر رمز الباركود). لن تُرسل إلى صاحبها للمراجعة.`,
       confirmLabel: "إلغاء الاعتماد",
     });
     if (!confirmed) return;
@@ -435,7 +438,7 @@ export function ExecutivePage() {
     try {
       const { error } = await supabase.rpc("ceo_unapprove_policy", { p_policy_id: policy.id });
       if (error) throw error;
-      toast.success("أُلغي الاعتماد النهائي، وعادت السياسة لقائمة الانتظار.");
+      toast.success("أُلغي الاعتماد النهائي، وحُذفت نسختها المختومة، وعادت السياسة لقائمة الانتظار.");
       await load();
     } catch (err) {
       toast.error(errorMessage(err));
