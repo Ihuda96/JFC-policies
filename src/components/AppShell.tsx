@@ -88,35 +88,45 @@ export function AppShell() {
     { to: "/app/admin/audit", label: "سجل العمليات", icon: Shield },
   ];
 
-  const navItems = [
-    ...baseItems,
-    ...(canReviewPolicies(profile) ? reviewItems : []),
-    ...(canManageQuality(profile) ? managerItems : []),
-    ...(canAdminister(profile) ? adminItems : []),
-  ];
+  const navGroups: { label: string | null; items: NavItem[] }[] = [
+    { label: null, items: baseItems },
+    { label: "المراجعة والاعتماد", items: canReviewPolicies(profile) ? reviewItems : [] },
+    {
+      label: "الإدارة",
+      items: [
+        ...(canManageQuality(profile) ? managerItems : []),
+        ...(canAdminister(profile) ? adminItems : []),
+      ],
+    },
+  ].filter((group) => group.items.length > 0);
 
   return (
     <div className="app-layout">
       <aside className={`sidebar ${open ? "open" : ""}`}>
         <div className="brand-block">
-          <img src="/brand/jfc-logo-stacked-white.jpg" alt="تجمع جدة الصحي الأول" />
+          <img src="/brand/jfc-star-white.png" alt="تجمع جدة الصحي الأول" />
           <div>
             <strong>منصة السياسات</strong>
             <span>JFC Policies</span>
           </div>
         </div>
         <nav className="sidebar-nav" aria-label="التنقل الرئيسي">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/app"}
-              onClick={() => setOpen(false)}
-            >
-              <item.icon aria-hidden="true" />
-              <span>{item.label}</span>
-              {item.badge ? <span className="nav-badge">{item.badge}</span> : null}
-            </NavLink>
+          {navGroups.map((group, index) => (
+            <div className="sidebar-nav-group" key={group.label ?? `group-${index}`}>
+              {group.label ? <span className="sidebar-nav-label">{group.label}</span> : null}
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/app"}
+                  onClick={() => setOpen(false)}
+                >
+                  <item.icon aria-hidden="true" />
+                  <span>{item.label}</span>
+                  {item.badge ? <span className="nav-badge">{item.badge}</span> : null}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <NavLink className="settings-link" to="/app/settings" onClick={() => setOpen(false)}>
