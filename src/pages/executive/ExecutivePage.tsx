@@ -310,9 +310,25 @@ export function ExecutivePage() {
       const path = `${profile.id}/${policy.id}/${versionId}/approved-stamped.pdf`;
       const stampedBlob = new Blob([Uint8Array.from(stampedBytes)], { type: "application/pdf" });
 
+      // Plain insert-only upload (upsert: false) — Supabase's Storage
+      // service turns upsert: true into an INSERT ... ON CONFLICT DO
+      // UPDATE, and on this project that specific query shape has been
+      // observed rejecting an otherwise correctly authenticated request
+      // with a row-level security error (confirmed directly from Supabase's
+      // own Storage logs — role: authenticated, owner resolved correctly,
+      // still rejected). A plain insert avoids that code path entirely; on
+      // a re-approval where the file already exists, remove the stale copy
+      // first and insert fresh rather than upserting over it.
       let { error: uploadError } = await supabase.storage
         .from("policy-approved")
-        .upload(path, stampedBlob, { contentType: "application/pdf", upsert: true });
+        .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false });
+
+      if (uploadError && /already exists|duplicate/i.test(uploadError.message)) {
+        await supabase.storage.from("policy-approved").remove([path]);
+        ({ error: uploadError } = await supabase.storage
+          .from("policy-approved")
+          .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false }));
+      }
 
       // Storage requests carry their own snapshot of the session token,
       // separate from the RPC call that just ran moments earlier. If that
@@ -325,7 +341,7 @@ export function ExecutivePage() {
         await supabase.auth.refreshSession();
         ({ error: uploadError } = await supabase.storage
           .from("policy-approved")
-          .upload(path, stampedBlob, { contentType: "application/pdf", upsert: true }));
+          .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false }));
       }
 
       if (uploadError) {
