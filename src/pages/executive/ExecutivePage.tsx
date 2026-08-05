@@ -436,6 +436,22 @@ export function ExecutivePage() {
 
     setBusy(policy.id);
     try {
+      // Supabase refuses direct SQL deletes on storage.objects ("use the
+      // Storage API instead") so the RPC can't remove the stamped PDF's
+      // underlying file itself — only its policy_files metadata row. Do
+      // the actual storage deletion here, client-side, through the Storage
+      // API (allowed for the CEO's own uid-prefixed folder), before the
+      // RPC clears the policy's approval fields and metadata.
+      const stampedFiles = (policy.policy_files ?? []).filter(
+        (item: PolicyFile) => item.file_kind === "approved_pdf",
+      );
+      if (stampedFiles.length > 0) {
+        const { error: removeError } = await supabase.storage
+          .from("policy-approved")
+          .remove(stampedFiles.map((item) => item.storage_path));
+        if (removeError) throw removeError;
+      }
+
       const { error } = await supabase.rpc("ceo_unapprove_policy", { p_policy_id: policy.id });
       if (error) throw error;
       toast.success("أُلغي الاعتماد النهائي، وحُذفت نسختها المختومة، وعادت السياسة لقائمة الانتظار.");

@@ -9,10 +9,16 @@
 -- (open_section_library) already stops listing the policy at that point —
 -- it filters on final_approved_at is not null — but the stamped PDF file
 -- itself was left behind in storage and in policy_files, so a direct link
--- to it (or a re-approval racing with an old cached link) could still
--- surface a document claiming to be "finally approved" after the CEO
--- explicitly took that approval back. Now the file row and its underlying
--- storage object are deleted as part of unapproving.
+-- to it could still surface a document claiming to be "finally approved"
+-- after the CEO explicitly took that approval back.
+--
+-- Supabase does not allow a direct SQL DELETE on storage.objects ("Direct
+-- deletion from storage tables is not allowed. Use the Storage API
+-- instead.") — deleting the underlying file has to go through the Storage
+-- API, which only works client-side under the CEO's own authenticated
+-- session (see the client-side removal added in ExecutivePage.tsx, which
+-- runs before this RPC). This function only removes the policy_files
+-- metadata row, an ordinary table with no such restriction.
 
 begin;
 
@@ -42,17 +48,6 @@ begin
   if v_policy.final_approved_at is null then
     raise exception 'policy has not received final approval yet';
   end if;
-
-  -- Unlist the stamped PDF's storage object first (this is what the
-  -- public URL actually serves from), then its policy_files row.
-  delete from storage.objects
-  where bucket_id = 'policy-approved'
-    and name in (
-      select storage_path
-      from public.policy_files
-      where policy_id = p_policy_id
-        and file_kind = 'approved_pdf'
-    );
 
   delete from public.policy_files
   where policy_id = p_policy_id
