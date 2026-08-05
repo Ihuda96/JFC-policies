@@ -31,7 +31,7 @@ import { policyReference } from "../lib/departments";
 import { policyDates } from "../lib/policyDates";
 import { canManageQuality, canReviewPolicies } from "../lib/permissions";
 import { stampPublicUrl } from "../lib/stamp";
-import { extractPolicyCodeFromBuffer } from "../lib/documentCode";
+import { extractPolicyCodeFromBuffer, extractPolicyTextSample } from "../lib/documentCode";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
 import { isSetupError, supabase } from "../lib/supabase";
@@ -187,30 +187,48 @@ export function PolicyDetailPage() {
 
     let cancelled = false;
     void (async () => {
-      try {
-        const buffer = await downloadPolicyFileBytes(original);
-        let changed = false;
+      const buffer = await downloadPolicyFileBytes(original).catch(() => null);
+      if (!buffer || cancelled) {
+        return;
+      }
+      let changed = false;
 
-        if (needsCode) {
+      if (needsCode) {
+        try {
           const code = await extractPolicyCodeFromBuffer(buffer, original.file_name);
           if (code && !cancelled) {
             await setPolicyReference(policy.id, code);
             changed = true;
           }
+        } catch {
+          // Best-effort; the code backfill has run silently since it was
+          // first added and this isn't what's being diagnosed right now.
         }
+      }
 
-        if (needsDates && !cancelled) {
+      if (needsDates && !cancelled) {
+        try {
           const found = await extractAndRecordHeader(policy.id, buffer, original.file_name);
           if (found) {
             changed = true;
+            if (!cancelled) {
+              toast.success("تم تحديث تواريخ السياسة من الملف.");
+            }
+          } else if (!cancelled) {
+            const sample = await extractPolicyTextSample(buffer, original.file_name, 220);
+            toast.error(
+              `تعذّر العثور على تواريخ الإصدار/السريان/المراجعة في نص الملف. عيّنة مما تمت قراءته: ${sample || "(فارغة)"}`,
+            );
+          }
+        } catch (err) {
+          if (!cancelled) {
+            toast.error(`تعذّر حفظ تواريخ السياسة: ${readableWorkflowError(err)}`);
           }
         }
+      }
 
-        if (changed && !cancelled) {
-          await load({ silent: true });
-        }
-      } catch {
-        // Best-effort; ignore failures.
+      if (changed && !cancelled) {
+        await load({ silent: true });
       }
     })();
 
