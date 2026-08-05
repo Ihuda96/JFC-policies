@@ -307,31 +307,30 @@ export function ExecutivePage() {
       // CEO approval, not on every visitor's initial page load.
       const { embedStampInPdf } = await import("../../lib/stampPdf");
       const stampedBytes = await embedStampInPdf(pdfBytes, stampBytes);
-      const path = `${profile.id}/${policy.id}/${versionId}/approved-stamped.pdf`;
+      // A unique filename per attempt — never a fixed, reused path — so
+      // this upload can never collide with anything already sitting in the
+      // bucket (including any orphaned object left behind by an earlier
+      // failed attempt, which a delete-then-reinsert fallback couldn't
+      // reliably clean up: an orphan with no matching policy_files row is
+      // invisible to this account's own SELECT policy, so Storage's remove()
+      // silently no-ops on it instead of actually deleting it). Any
+      // previously-tracked stamped file for this policy is best-effort
+      // cleaned up separately, using its real recorded path.
+      const path = `${profile.id}/${policy.id}/${versionId}/approved-stamped-${Date.now()}.pdf`;
       const stampedBlob = new Blob([Uint8Array.from(stampedBytes)], { type: "application/pdf" });
 
-      // Plain insert-only upload (upsert: false) — Supabase's Storage
-      // service turns upsert: true into an INSERT ... ON CONFLICT DO
-      // UPDATE, and on this project that specific query shape has been
-      // observed rejecting an otherwise correctly authenticated request
-      // with a row-level security error (confirmed directly from Supabase's
-      // own Storage logs — role: authenticated, owner resolved correctly,
-      // still rejected). A plain insert avoids that code path entirely; on
-      // a re-approval where the file already exists, remove the stale copy
-      // first and insert fresh rather than upserting over it.
+      const previousStampedFiles = (policy.policy_files ?? []).filter(
+        (item) => item.file_kind === "approved_pdf",
+      );
+      if (previousStampedFiles.length > 0) {
+        await supabase.storage
+          .from("policy-approved")
+          .remove(previousStampedFiles.map((item) => item.storage_path));
+      }
+
       let { error: uploadError } = await supabase.storage
         .from("policy-approved")
         .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false });
-
-      if (uploadError && /already exists|duplicate/i.test(uploadError.message)) {
-        const { error: removeError } = await supabase.storage.from("policy-approved").remove([path]);
-        if (removeError) {
-          throw new Error(`تعذّر حذف النسخة السابقة من الملف المختوم قبل استبدالها: ${errorMessage(removeError)}`);
-        }
-        ({ error: uploadError } = await supabase.storage
-          .from("policy-approved")
-          .upload(path, stampedBlob, { contentType: "application/pdf", upsert: false }));
-      }
 
       // Storage requests carry their own snapshot of the session token,
       // separate from the RPC call that just ran moments earlier. If that
