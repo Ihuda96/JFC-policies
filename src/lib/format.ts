@@ -61,10 +61,9 @@ export function initials(name?: string | null) {
     return "ج";
   }
 
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
+  // A single letter reads far more cleanly than a cramped two-letter
+  // Arabic monogram, which doesn't have the distinct cap-height Latin
+  // initials rely on to stay legible at avatar size.
+  const firstWord = name.split(/\s+/).find(Boolean);
+  return firstWord ? firstWord[0] : "ج";
 }

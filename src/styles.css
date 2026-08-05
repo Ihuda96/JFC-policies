@@ -525,20 +525,32 @@ textarea {
 }
 
 .app-layout {
-  display: grid;
-  grid-template-columns: 284px minmax(0, 1fr);
+  display: block;
   min-height: 100vh;
 }
 
+/* Off-canvas by default on PC too — docked to the right (the RTL "start"
+   edge), hidden until the sidebar-toggle button opens it. The mobile
+   breakpoint below fully redefines every property this rule sets, so it
+   overrides this cleanly and mobile behavior is untouched. */
 .sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
+  position: fixed;
+  inset-block: 0;
+  right: 0;
+  z-index: 40;
+  width: 284px;
   display: flex;
   flex-direction: column;
   padding: 20px;
   background: var(--blue-950);
   color: var(--white);
+  transform: translateX(105%);
+  transition: transform 0.24s ease;
+  box-shadow: -18px 0 44px rgba(5, 34, 51, 0.28);
+}
+
+.sidebar.open {
+  transform: translateX(0);
 }
 
 .brand-block {
@@ -641,9 +653,11 @@ textarea {
   width: 38px;
   height: 38px;
   border-radius: 999px;
-  background: var(--blue-900);
+  background: linear-gradient(135deg, var(--blue-900), var(--blue-700));
   color: var(--white);
   font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0;
 }
 
 .account-chip button:not(.account-trigger),
@@ -1740,9 +1754,21 @@ code {
   background: var(--jfc-surface-elevated);
 }
 
-.mobile-only,
+/* Only ever rendered in the DOM while the sidebar is open, so it needs
+   no display:none default — it should always be visible when present. */
 .scrim {
-  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: block;
+  border: 0;
+  background: rgba(7, 56, 97, 0.36);
+}
+
+/* Opens/closes the sidebar — visible on PC now too, not just mobile
+   (renamed from .mobile-only, which it no longer only is). */
+.sidebar-toggle {
+  display: grid;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1798,7 +1824,7 @@ code {
     transform: translateX(0);
   }
 
-  .mobile-only {
+  .sidebar-toggle {
     display: grid;
   }
 
@@ -2305,7 +2331,7 @@ body {
     font-size: 1rem;
   }
   /* The bottom-nav "القائمة" button opens the drawer, so drop the top one */
-  .topbar .mobile-only {
+  .topbar .sidebar-toggle {
     display: none;
   }
   .topbar-actions {
