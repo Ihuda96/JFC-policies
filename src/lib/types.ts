@@ -56,6 +56,9 @@ export interface Profile {
    *  of final approval rather than pointing back here live. */
   stamp_path?: string | null;
   stamp_updated_at?: string | null;
+  /** Storage path of the user's own profile photo, in the public
+   *  profile-avatars bucket. Falls back to the JFHC badge when unset. */
+  avatar_path?: string | null;
 }
 
 export interface Policy {

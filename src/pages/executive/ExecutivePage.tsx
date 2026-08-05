@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { RotateCcw, Stamp } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { classifyPolicy, policyReference } from "../../lib/departments";
-import { formatDate, initials } from "../../lib/format";
+import { formatDate } from "../../lib/format";
 import { isExecutive } from "../../lib/permissions";
 import {
   downloadPolicyFileBytes,
@@ -15,6 +15,7 @@ import { errorMessage, supabase } from "../../lib/supabase";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { PoweredBy } from "../../components/PoweredBy";
 import { useToast } from "../../components/Toast";
+import { UserAvatar } from "../../components/UserAvatar";
 import { ExecutiveSetPassword } from "./ExecutiveSetPassword";
 import type { PolicyBundle, PolicyFile } from "../../lib/types";
 
@@ -569,9 +570,7 @@ export function ExecutivePage() {
               )}
             </button>
             <div className="profile-chip">
-              <span className="profile-avatar" aria-hidden="true">
-                {initials(profile.full_name)}
-              </span>
+              <UserAvatar profile={profile} baseClassName="profile-avatar" />
               <span className="profile-text">
                 <span className="primary">{profile.full_name ?? "الرئيس التنفيذي"}</span>
                 <span className="secondary">الرئيس التنفيذي</span>

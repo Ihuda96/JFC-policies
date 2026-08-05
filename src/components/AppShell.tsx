@@ -21,7 +21,8 @@ import { CommandPalette } from "./CommandPalette";
 import { NotificationBell } from "./NotificationBell";
 import { PoweredBy } from "./PoweredBy";
 import { SuperAdminChip } from "./SuperAdminChip";
-import { initials, roleLabels } from "../lib/format";
+import { UserAvatar } from "./UserAvatar";
+import { roleLabels } from "../lib/format";
 import {
   canAdminister,
   canAuthorPolicies,
@@ -171,9 +172,7 @@ export function AppShell() {
                 className="account-trigger"
                 onClick={() => setMenuOpen((value) => !value)}
               >
-                <span className={superAdmin ? "avatar avatar-super" : "avatar"}>
-                  {initials(profile?.full_name)}
-                </span>
+                <UserAvatar profile={profile} isSuperAdmin={superAdmin} />
                 <div>
                   <strong>{profile?.full_name ?? profile?.email ?? "مستخدم"}</strong>
                   {superAdmin ? <SuperAdminChip /> : <span>{roleLabels[role]}</span>}

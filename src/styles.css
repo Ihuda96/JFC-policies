@@ -713,6 +713,18 @@ textarea {
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+.avatar.avatar-photo {
+  object-fit: cover;
+  background: var(--soft);
+}
+
+.avatar-badge-icon {
+  width: 58%;
+  height: 58%;
+  object-fit: contain;
 }
 
 .account-chip button:not(.account-trigger),
@@ -848,6 +860,36 @@ textarea {
 
 .table-card {
   overflow-x: auto;
+}
+
+.avatar-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatar-settings-preview {
+  width: 76px;
+  height: 76px;
+  font-size: 1.9rem;
+  box-shadow: 0 0 0 3px var(--white), 0 0 0 4px var(--line);
+}
+
+.avatar-settings-row > div {
+  min-width: 0;
+}
+
+.avatar-settings-row p {
+  margin: 4px 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  max-width: 46ch;
+}
+
+.avatar-settings-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 table {
