@@ -547,6 +547,7 @@ textarea {
   transform: translateX(105%);
   transition: transform 0.24s ease;
   box-shadow: -18px 0 44px rgba(5, 34, 51, 0.28);
+  overflow: hidden;
 }
 
 .sidebar.open {
@@ -577,8 +578,30 @@ textarea {
 
 .sidebar-nav {
   display: grid;
+  align-content: start;
   gap: 4px;
   margin-top: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Thin, muted scrollbar — the default OS one reads jarring on a dark,
+     brand-colored panel. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.36);
 }
 
 .sidebar-nav-group {
