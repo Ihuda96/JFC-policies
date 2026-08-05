@@ -646,7 +646,7 @@ textarea {
   font-weight: 700;
 }
 
-.account-chip button,
+.account-chip button:not(.account-trigger),
 .icon-button {
   display: grid;
   place-items: center;
@@ -2000,7 +2000,7 @@ code {
 .command-empty { padding: 20px; text-align: center; color: var(--muted); }
 
 /* ── Topbar actions, bell & account menu ────────────────── */
-.topbar-actions { display: flex; align-items: center; gap: 12px; margin-inline-start: auto; }
+.topbar-actions { display: flex; align-items: center; gap: 12px; margin-inline-start: auto; min-width: 0; }
 .command-trigger {
   display: flex;
   align-items: center;
@@ -2070,15 +2070,31 @@ code {
 .bell-item em { color: var(--muted); font-size: 0.75rem; font-style: normal; }
 .bell-item.unread { background: var(--soft); }
 .bell-empty { padding: 20px; text-align: center; color: var(--muted); }
-.account-chip { position: relative; }
+.account-chip { position: relative; min-width: 0; }
 .account-trigger {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
   color: inherit;
+}
+.account-trigger .avatar { flex-shrink: 0; }
+.account-trigger > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  max-width: 160px;
+}
+.account-trigger > div strong {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .account-menu { width: 220px; padding: 6px; }
 .account-menu a,
