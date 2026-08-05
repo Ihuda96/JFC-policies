@@ -19,6 +19,7 @@ import {
   approvePolicyVersion,
   archivePolicy,
   downloadPolicyFileBytes,
+  extractAndRecordHeader,
   readableWorkflowError,
   returnPolicyForRevision,
   setPolicyReference,
@@ -160,12 +161,23 @@ export function PolicyDetailPage() {
     selectedVersionFiles.find((file) => file.file_kind === "approved_pdf") ?? null;
   const selectedFile = stampedFile ?? originalFile;
 
-  // If the full code was never stored, read it from the document and save it
-  // so the policy classifies automatically and shows its full number.
+  // If the full code and/or the letterhead's issue/effective/review dates
+  // were never stored — either the policy predates this extraction, or it
+  // failed the first time — read them from the document and save them, so
+  // the policy classifies automatically and its dates match the actual
+  // document instead of falling back to a workflow timestamp.
   useEffect(() => {
     const original =
       policy?.policy_files?.find((file) => file.file_kind === "original") ?? null;
-    if (!policy || policy.policy_number || !original) {
+    if (!policy || !original) {
+      return;
+    }
+    const needsCode = !policy.policy_number;
+    const needsDates =
+      !policy.policy_metadata?.issue_date &&
+      !policy.policy_metadata?.effective_date &&
+      !policy.policy_metadata?.review_date;
+    if (!needsCode && !needsDates) {
       return;
     }
     if (backfillAttempted.current === policy.id) {
@@ -177,12 +189,25 @@ export function PolicyDetailPage() {
     void (async () => {
       try {
         const buffer = await downloadPolicyFileBytes(original);
-        const code = await extractPolicyCodeFromBuffer(buffer, original.file_name);
-        if (code && !cancelled) {
-          await setPolicyReference(policy.id, code);
-          if (!cancelled) {
-            await load({ silent: true });
+        let changed = false;
+
+        if (needsCode) {
+          const code = await extractPolicyCodeFromBuffer(buffer, original.file_name);
+          if (code && !cancelled) {
+            await setPolicyReference(policy.id, code);
+            changed = true;
           }
+        }
+
+        if (needsDates && !cancelled) {
+          const found = await extractAndRecordHeader(policy.id, buffer, original.file_name);
+          if (found) {
+            changed = true;
+          }
+        }
+
+        if (changed && !cancelled) {
+          await load({ silent: true });
         }
       } catch {
         // Best-effort; ignore failures.

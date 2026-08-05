@@ -194,6 +194,36 @@ function dateFromField(value: string | undefined): string | null {
   return match ? match[0] : null;
 }
 
+// The letterhead prints day-first (DD/MM/YYYY), matching every policy
+// document's own header table. Converts to the ISO form Postgres expects;
+// returns null for anything that isn't a plausible calendar date.
+export function headerDateToIso(raw: string | null | undefined): string | null {
+  if (!raw) {
+    return null;
+  }
+
+  const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!match) {
+    return null;
+  }
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = match[3].length === 2 ? 2000 + Number(match[3]) : Number(match[3]);
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+
+  const iso = `${year.toString().padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return iso;
+}
+
 function stripArabicLabel(value: string | undefined, ...labels: string[]): string | null {
   if (!value) {
     return null;

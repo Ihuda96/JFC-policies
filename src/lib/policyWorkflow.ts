@@ -1,7 +1,64 @@
 import { z } from "zod";
-import { extractPolicyCode } from "./documentCode";
+import {
+  extractPolicyCodeFromBuffer,
+  extractPolicyHeaderFromBuffer,
+  headerDateToIso,
+} from "./documentCode";
 import { assertSupabase, errorMessage } from "./supabase";
 import type { Policy, PolicyFile } from "./types";
+
+// Parses the letterhead and persists whatever it could read (any of
+// issue/effective/review may be null if the document doesn't have that
+// field, or extraction can't read it). Returns whether anything was found.
+// Exported so a page that already has the file's bytes on hand (e.g. a
+// backfill pass for a policy uploaded before this extraction existed) can
+// call it directly instead of downloading the file a second time.
+export async function extractAndRecordHeader(
+  policyId: string,
+  buffer: ArrayBuffer,
+  fileName: string,
+): Promise<boolean> {
+  const supabase = assertSupabase();
+  const header = await extractPolicyHeaderFromBuffer(buffer, fileName);
+  if (!header) return false;
+
+  const issueDate = headerDateToIso(header.issueDate);
+  const effectiveDate = headerDateToIso(header.effectiveDate);
+  const reviewDate = headerDateToIso(header.reviewDate);
+  if (!issueDate && !effectiveDate && !reviewDate && !header.department) {
+    return false;
+  }
+
+  const { error } = await supabase.rpc("upsert_policy_extracted_dates", {
+    p_policy_id: policyId,
+    p_issue_date: issueDate,
+    p_effective_date: effectiveDate,
+    p_review_date: reviewDate,
+    p_issuing_department: header.department,
+    p_extracted_title: header.titleAr ?? header.titleEn,
+    p_extracted_policy_number: header.code,
+  });
+  if (error) throw error;
+
+  return true;
+}
+
+// Best-effort variant used during upload — a policy is still validly
+// uploaded even if extraction fails, so errors are swallowed here. Dates
+// simply stay unset and can be filled in later (extractAndRecordHeader can
+// be called again directly once the file's bytes are available, e.g. a
+// backfill pass for a policy uploaded before this extraction existed).
+async function recordExtractedHeader(
+  policyId: string,
+  buffer: ArrayBuffer,
+  fileName: string,
+) {
+  try {
+    await extractAndRecordHeader(policyId, buffer, fileName);
+  } catch {
+    // Ignored — see comment above.
+  }
+}
 
 const uploadSchema = z.object({
   note: z.string().max(1000).optional(),
@@ -70,7 +127,8 @@ export async function uploadPolicyDraft(input: {
 
   // Read the full policy code from the document so the policy classifies
   // automatically and shows its full number without a separate backend step.
-  const detectedCode = await extractPolicyCode(input.file);
+  const buffer = await input.file.arrayBuffer();
+  const detectedCode = await extractPolicyCodeFromBuffer(buffer, input.file.name);
 
   const { error: policyError } = await supabase.from("policies").insert({
     id: policyId,
@@ -127,6 +185,8 @@ export async function uploadPolicyDraft(input: {
   if (fileError) {
     throw fileError;
   }
+
+  await recordExtractedHeader(policyId, buffer, input.file.name);
 
   return { policyId, versionId, fileId };
 }
@@ -211,6 +271,9 @@ export async function uploadRevision(input: {
   if (fileError) {
     throw fileError;
   }
+
+  const buffer = await input.file.arrayBuffer();
+  await recordExtractedHeader(input.policy.id, buffer, input.file.name);
 
   return { versionId, fileId };
 }
