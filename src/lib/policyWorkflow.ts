@@ -25,18 +25,21 @@ export async function extractAndRecordHeader(
   const issueDate = headerDateToIso(header.issueDate);
   const effectiveDate = headerDateToIso(header.effectiveDate);
   const reviewDate = headerDateToIso(header.reviewDate);
-  if (!issueDate && !effectiveDate && !reviewDate && !header.department) {
+  if (!issueDate && !effectiveDate && !reviewDate) {
     return false;
   }
 
+  // Only the three dates — not department/title/code. The label-boundary
+  // parsing for those free-text fields isn't reliable (a field with no
+  // clearly-following label can swallow the rest of the document into
+  // itself), and the policy's own title/number are already handled
+  // separately and correctly elsewhere; overwriting them here risked
+  // replacing a clean value with garbage.
   const { error } = await supabase.rpc("upsert_policy_extracted_dates", {
     p_policy_id: policyId,
     p_issue_date: issueDate,
     p_effective_date: effectiveDate,
     p_review_date: reviewDate,
-    p_issuing_department: header.department,
-    p_extracted_title: header.titleAr ?? header.titleEn,
-    p_extracted_policy_number: header.code,
   });
   if (error) throw error;
 
