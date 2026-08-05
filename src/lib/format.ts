@@ -55,15 +55,3 @@ export function fileSize(bytes: number) {
 
   return `${(kb / 1024).toFixed(1)} م.ب`;
 }
-
-export function initials(name?: string | null) {
-  if (!name) {
-    return "ج";
-  }
-
-  // A single letter reads far more cleanly than a cramped two-letter
-  // Arabic monogram, which doesn't have the distinct cap-height Latin
-  // initials rely on to stay legible at avatar size.
-  const firstWord = name.split(/\s+/).find(Boolean);
-  return firstWord ? firstWord[0] : "ج";
-}

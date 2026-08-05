@@ -1,10 +1,16 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
-import { Save, ShieldPlus } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { Camera, Save, ShieldPlus, Trash2 } from "lucide-react";
 import { LoadingState } from "../components/LoadingState";
 import { SetupRequired } from "../components/SetupRequired";
+import { UserAvatar } from "../components/UserAvatar";
+import { useToast } from "../components/Toast";
 import { useAuth } from "../context/AuthContext";
-import { canAdminister } from "../lib/permissions";
+import { canAdminister, isSuperAdmin } from "../lib/permissions";
+import { toPngBlob } from "../lib/stamp";
 import { errorMessage, isSetupError, supabase } from "../lib/supabase";
+
+const AVATAR_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 
 interface AppSetting {
   key: string;
@@ -32,8 +38,11 @@ function formText(form: FormData, key: string) {
 }
 
 export function SettingsPage() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
+  const toast = useToast();
   const isSystemAdmin = canAdminister(profile);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [settings, setSettings] = useState<AppSetting[]>([]);
   const [adminOverrides, setAdminOverrides] = useState<SystemAdminOverride[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,6 +166,59 @@ export function SettingsPage() {
     }
   }
 
+  async function uploadAvatar(file: File) {
+    if (!supabase || !profile) return;
+
+    if (!AVATAR_TYPES.has(file.type)) {
+      toast.error("صيغ الصورة المسموحة: PNG أو JPEG أو WebP.");
+      return;
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      toast.error("حجم الصورة يجب ألا يتجاوز 2 ميجابايت.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const pngBlob = await toPngBlob(file);
+      const path = `${profile.id}/avatar-${Date.now()}.png`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("profile-avatars")
+        .upload(path, pngBlob, { contentType: "image/png", upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { error: rpcError } = await supabase.rpc("set_profile_avatar", {
+        p_storage_path: path,
+      });
+      if (rpcError) throw rpcError;
+
+      await refreshProfile();
+      toast.success("تم تحديث صورتك الشخصية.");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function removeAvatar() {
+    if (!supabase) return;
+
+    setUploadingAvatar(true);
+    try {
+      const { error: rpcError } = await supabase.rpc("clear_profile_avatar");
+      if (rpcError) throw rpcError;
+
+      await refreshProfile();
+      toast.success("أُزيلت صورتك الشخصية، وستظهر شارة التجمع بدلًا منها.");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   if (setupError) {
     return <SetupRequired message={setupError} />;
   }
@@ -180,6 +242,59 @@ export function SettingsPage() {
 
       {error ? <p className="inline-error">{error}</p> : null}
       {notice ? <p className="inline-success">{notice}</p> : null}
+
+      <section className="data-section">
+        <div className="section-title-row">
+          <div>
+            <p className="eyebrow">Personal</p>
+            <h2>الملف الشخصي</h2>
+          </div>
+        </div>
+
+        <div className="avatar-settings-row">
+          <UserAvatar profile={profile} isSuperAdmin={isSuperAdmin(profile)} className="avatar-settings-preview" />
+          <div>
+            <strong>{profile?.full_name ?? "مستخدم"}</strong>
+            <p>
+              ارفع صورة شخصية تظهر بدلًا من شارة التجمع الافتراضية في كل مكان
+              باسمك. الصيغ المسموحة: PNG أو JPEG أو WebP، بحد أقصى 2 ميجابايت.
+            </p>
+            <div className="avatar-settings-actions">
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) void uploadAvatar(file);
+                }}
+              />
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={uploadingAvatar}
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                <Camera aria-hidden="true" />
+                {profile?.avatar_path ? "تغيير الصورة" : "رفع صورة"}
+              </button>
+              {profile?.avatar_path ? (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={uploadingAvatar}
+                  onClick={() => void removeAvatar()}
+                >
+                  <Trash2 aria-hidden="true" />
+                  إزالة الصورة
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {isSystemAdmin ? (
       <section className="data-section">
