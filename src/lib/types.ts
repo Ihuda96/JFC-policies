@@ -135,6 +135,7 @@ export interface PolicyMetadata {
   extracted_version: string | null;
   issuing_department: string | null;
   issue_date: string | null;
+  effective_date: string | null;
   review_date: string | null;
   approval_date: string | null;
   language: string;
