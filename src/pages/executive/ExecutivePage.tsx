@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { classifyPolicy, policyReference } from "../../lib/departments";
 import { formatDate } from "../../lib/format";
 import { isExecutive } from "../../lib/permissions";
+import { policyDates } from "../../lib/policyDates";
 import {
   downloadPolicyFileBytes,
   readableWorkflowError,
@@ -145,7 +146,7 @@ export function ExecutivePage() {
     const now = Date.now();
     return policies
       .map((policy) => {
-        const reviewDate = policy.policy_metadata?.review_date ?? policy.next_review_at;
+        const reviewDate = policyDates(policy).reviewDate;
         if (!reviewDate) return null;
         const parsed = new Date(reviewDate);
         if (Number.isNaN(parsed.getTime())) return null;
@@ -742,11 +743,15 @@ export function ExecutivePage() {
                                 <div className="meta-grid">
                                   <div>
                                     <p className="caption">تاريخ الإصدار</p>
-                                    <p>{formatDate(policy.policy_metadata?.issue_date ?? policy.approved_at)}</p>
+                                    <p>{formatDate(policyDates(policy).issueDate)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="caption">تاريخ السريان</p>
+                                    <p>{formatDate(policyDates(policy).effectiveDate)}</p>
                                   </div>
                                   <div>
                                     <p className="caption">تاريخ المراجعة</p>
-                                    <p>{formatDate(policy.policy_metadata?.review_date ?? policy.next_review_at)}</p>
+                                    <p>{formatDate(policyDates(policy).reviewDate)}</p>
                                   </div>
                                 </div>
 
@@ -851,7 +856,7 @@ export function ExecutivePage() {
                           {policyReference(policy) ?? "—"}
                         </td>
                         <td>{classification.departmentLabel}</td>
-                        <td>{formatDate(policy.policy_metadata?.review_date ?? policy.next_review_at)}</td>
+                        <td>{formatDate(policyDates(policy).reviewDate)}</td>
                         <td>
                           <span className={`pill ${urgency.tone}`}>{urgency.label}</span>
                         </td>
@@ -970,8 +975,8 @@ export function ExecutivePage() {
                       <td className="code" dir="ltr" style={{ textAlign: "start" }}>
                         {policyReference(policy) ?? "—"}
                       </td>
-                      <td>{formatDate(policy.policy_metadata?.issue_date ?? policy.approved_at)}</td>
-                      <td>{formatDate(policy.policy_metadata?.review_date ?? policy.next_review_at)}</td>
+                      <td>{formatDate(policyDates(policy).issueDate)}</td>
+                      <td>{formatDate(policyDates(policy).reviewDate)}</td>
                       <td>{formatDate(policy.final_approved_at)}</td>
                       <td>
                         <span className="stamped-status">

@@ -25,6 +25,7 @@ import {
 } from "../lib/documentCode";
 import { formatDate } from "../lib/format";
 import { downloadPolicyFileBytes, readableWorkflowError, setPolicyReference } from "../lib/policyWorkflow";
+import { policyDates } from "../lib/policyDates";
 import { stampPublicUrl } from "../lib/stamp";
 import { isSetupError, supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -540,14 +541,25 @@ export function LibraryPage() {
                                     })()}
                                   </p>
                                   <dl>
-                                    <div>
-                                      <dt>تاريخ الاعتماد</dt>
-                                      <dd>{formatDate(policy.approved_at)}</dd>
-                                    </div>
-                                    <div>
-                                      <dt>المراجعة القادمة</dt>
-                                      <dd>{formatDate(policy.next_review_at)}</dd>
-                                    </div>
+                                    {(() => {
+                                      const dates = policyDates(policy);
+                                      return (
+                                        <>
+                                          <div>
+                                            <dt>تاريخ الإصدار</dt>
+                                            <dd>{formatDate(dates.issueDate)}</dd>
+                                          </div>
+                                          <div>
+                                            <dt>تاريخ السريان</dt>
+                                            <dd>{formatDate(dates.effectiveDate)}</dd>
+                                          </div>
+                                          <div>
+                                            <dt>المراجعة القادمة</dt>
+                                            <dd>{formatDate(dates.reviewDate)}</dd>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
                                   </dl>
                                   <div className="card-actions">
                                     <Link
