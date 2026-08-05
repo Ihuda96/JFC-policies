@@ -127,7 +127,13 @@ export function AppShell() {
 
       <div className="main-shell">
         <header className={scrolled ? "topbar scrolled" : "topbar"}>
-          <button className="icon-button mobile-only" onClick={() => setOpen(true)} aria-label="فتح القائمة">
+          <button
+            type="button"
+            className="icon-button sidebar-toggle"
+            onClick={() => setOpen((value) => !value)}
+            aria-label={open ? "إغلاق القائمة" : "فتح القائمة"}
+            aria-expanded={open}
+          >
             <Menu aria-hidden="true" />
           </button>
           <div className="topbar-title">
